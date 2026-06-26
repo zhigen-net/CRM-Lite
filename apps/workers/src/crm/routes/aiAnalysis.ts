@@ -197,8 +197,13 @@ aiAnalysisRoutes.get('/leads/:id/ai-analyses/latest', async (c) => {
 aiAnalysisRoutes.post('/leads/:id/ai-analyses', async (c) => {
   const { userId } = c.get('jwtPayload')
   const id = c.req.param('id')
-  const result = await runAnalysis(c.env, 'lead', id, userId, 'manual')
-  return c.json({ data: result }, 201)
+  try {
+    const result = await runAnalysis(c.env, 'lead', id, userId, 'manual')
+    return c.json({ data: result }, 201)
+  } catch (e) {
+    if (e instanceof HTTPException) throw e
+    throw new HTTPException(500, { message: e instanceof Error ? e.message : 'AI 分析失败' })
+  }
 })
 
 // ─── GET /api/clients/:id/ai-analyses/latest ─────────────────────────────────
@@ -218,8 +223,13 @@ aiAnalysisRoutes.get('/clients/:id/ai-analyses/latest', async (c) => {
 aiAnalysisRoutes.post('/clients/:id/ai-analyses', async (c) => {
   const { userId } = c.get('jwtPayload')
   const id = c.req.param('id')
-  const result = await runAnalysis(c.env, 'client', id, userId, 'manual')
-  return c.json({ data: result }, 201)
+  try {
+    const result = await runAnalysis(c.env, 'client', id, userId, 'manual')
+    return c.json({ data: result }, 201)
+  } catch (e) {
+    if (e instanceof HTTPException) throw e
+    throw new HTTPException(500, { message: e instanceof Error ? e.message : 'AI 分析失败' })
+  }
 })
 
 // ─── PATCH /api/ai-analyses/:id/execute-action ───────────────────────────────

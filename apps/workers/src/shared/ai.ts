@@ -39,17 +39,23 @@ export async function callAiModel(
 
   // Cloudflare Workers AI（原生绑定，无需 API Key）
   if (row.provider_type === 'cloudflare') {
-    const result = await env.AI.run(
-      row.model_id as Parameters<typeof env.AI.run>[0],
-      {
+    if (!env.AI) {
+      throw new Error('Cloudflare Workers AI 绑定未启用，请确认 wrangler.toml 中已配置 [ai] binding 并重新部署 Worker')
+    }
+    let cfResult: unknown
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      cfResult = await (env.AI as any).run(row.model_id, {
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt },
         ],
-      },
-    )
-    const content = typeof result === 'object' && result !== null && 'response' in result
-      ? String((result as { response?: unknown }).response ?? '')
+      })
+    } catch (e) {
+      throw new Error(`Cloudflare AI 调用失败（${row.model_id}）：${e instanceof Error ? e.message : String(e)}`)
+    }
+    const content = typeof cfResult === 'object' && cfResult !== null && 'response' in cfResult
+      ? String((cfResult as { response?: unknown }).response ?? '')
       : ''
     return { content, modelDisplayName: row.display_name }
   }
