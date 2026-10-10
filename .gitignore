@@ -5,6 +5,7 @@ apps/workers/wrangler.deploy.toml
 .dev.vars
 *.local
 .env
+apps/web/.env.production
 .DS_Store
 
 # TypeScript 编译产物（tsc 原地输出）
