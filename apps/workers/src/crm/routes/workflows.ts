@@ -42,8 +42,10 @@ export interface Workflow {
   updatedAt: string
 }
 
-// ── 公开接口：/api/workflows ─────────────────────────────────────────────────
+// ── 普通用户接口：/api/workflows（需登录，无需管理员）────────────────────────
 export const workflowsRoutes = new Hono<{ Bindings: Env }>()
+
+workflowsRoutes.use('*', requireAuth)
 
 workflowsRoutes.get('/', async (c) => {
   const entityType = c.req.query('entityType')

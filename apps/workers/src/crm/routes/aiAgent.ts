@@ -8,7 +8,8 @@ import { executeTool, AgentContext } from '../agent/executor'
 
 export const aiAgentRoutes = new Hono<{ Bindings: Env }>()
 
-aiAgentRoutes.use('*', requireAuth)
+// 本路由挂载在 /api 根路径下：不能用 use('*')，否则会拦截所有 /api/* 请求（包括客户门户），
+// 因此逐个接口挂 requireAuth
 
 const messageSchema = z.object({
   role: z.enum(['user', 'assistant']),
@@ -168,7 +169,7 @@ async function runOpenAiAgent(
 // ─── POST /api/ai-agent/chat ─────────────────────────────────────────────────
 
 aiAgentRoutes.post(
-  '/ai-agent/chat',
+  '/ai-agent/chat', requireAuth,
   zValidator('json', z.object({
     messages: z.array(messageSchema).min(1).max(50),
   })),

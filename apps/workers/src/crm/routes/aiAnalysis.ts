@@ -9,11 +9,12 @@ import { callAiModel, extractJson } from '../../shared/ai'
 
 export const aiAnalysisRoutes = new Hono<{ Bindings: Env }>()
 
-aiAnalysisRoutes.use('*', requireAuth)
+// 本路由挂载在 /api 根路径下：不能用 use('*')，否则会拦截所有 /api/* 请求（包括客户门户），
+// 因此逐个接口挂 requireAuth
 
 // ─── 提示词 CRUD（admin only） ────────────────────────────────────────────────
 
-aiAnalysisRoutes.get('/admin/ai/prompts', async (c) => {
+aiAnalysisRoutes.get('/admin/ai/prompts', requireAuth, async (c) => {
   const rows = await c.env.DB.prepare(
     'SELECT id, key, name, system_prompt, user_prompt_template, model_id, is_active, updated_at FROM ai_prompts ORDER BY key ASC',
   ).all()
@@ -21,7 +22,7 @@ aiAnalysisRoutes.get('/admin/ai/prompts', async (c) => {
 })
 
 aiAnalysisRoutes.put(
-  '/admin/ai/prompts/:id',
+  '/admin/ai/prompts/:id', requireAuth,
   zValidator('json', z.object({
     name:                 z.string().min(1).optional(),
     systemPrompt:         z.string().optional(),
@@ -182,7 +183,7 @@ export { runAnalysis }
 
 // ─── GET /api/leads/:id/ai-analyses/latest ───────────────────────────────────
 
-aiAnalysisRoutes.get('/leads/:id/ai-analyses/latest', async (c) => {
+aiAnalysisRoutes.get('/leads/:id/ai-analyses/latest', requireAuth, async (c) => {
   const id = c.req.param('id')
   const row = await c.env.DB.prepare(`
     SELECT id, summary, analysis, actions_json, executed_actions_json, model_display_name, created_at
@@ -194,7 +195,7 @@ aiAnalysisRoutes.get('/leads/:id/ai-analyses/latest', async (c) => {
 
 // ─── POST /api/leads/:id/ai-analyses ─────────────────────────────────────────
 
-aiAnalysisRoutes.post('/leads/:id/ai-analyses', async (c) => {
+aiAnalysisRoutes.post('/leads/:id/ai-analyses', requireAuth, async (c) => {
   const { userId } = c.get('jwtPayload')
   const id = c.req.param('id')
   const result = await runAnalysis(c.env, 'lead', id, userId, 'manual')
@@ -203,7 +204,7 @@ aiAnalysisRoutes.post('/leads/:id/ai-analyses', async (c) => {
 
 // ─── GET /api/clients/:id/ai-analyses/latest ─────────────────────────────────
 
-aiAnalysisRoutes.get('/clients/:id/ai-analyses/latest', async (c) => {
+aiAnalysisRoutes.get('/clients/:id/ai-analyses/latest', requireAuth, async (c) => {
   const id = c.req.param('id')
   const row = await c.env.DB.prepare(`
     SELECT id, summary, analysis, actions_json, executed_actions_json, model_display_name, created_at
@@ -215,7 +216,7 @@ aiAnalysisRoutes.get('/clients/:id/ai-analyses/latest', async (c) => {
 
 // ─── POST /api/clients/:id/ai-analyses ───────────────────────────────────────
 
-aiAnalysisRoutes.post('/clients/:id/ai-analyses', async (c) => {
+aiAnalysisRoutes.post('/clients/:id/ai-analyses', requireAuth, async (c) => {
   const { userId } = c.get('jwtPayload')
   const id = c.req.param('id')
   const result = await runAnalysis(c.env, 'client', id, userId, 'manual')
@@ -226,7 +227,7 @@ aiAnalysisRoutes.post('/clients/:id/ai-analyses', async (c) => {
 // 标记某个 action 已执行
 
 aiAnalysisRoutes.patch(
-  '/ai-analyses/:id/execute-action',
+  '/ai-analyses/:id/execute-action', requireAuth,
   zValidator('json', z.object({ actionType: z.string() })),
   async (c) => {
     const id = c.req.param('id')
