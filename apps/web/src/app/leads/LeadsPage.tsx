@@ -158,7 +158,7 @@ export default function LeadsPage() {
 
   useEffect(() => { if (user?.id) setColConfig(loadColConfig(user.id)) }, [user?.id])
 
-  const { data: newLeadsCount } = useQuery<number>({ queryKey: ['leads-new-count'], enabled: false })
+  const { data: newLeadsCount } = useQuery<number>({ queryKey: ['leads', 'new-count'], enabled: false })
   const prevNewCountRef = useRef<number | undefined>(undefined)
   useEffect(() => {
     if (newLeadsCount === undefined) return

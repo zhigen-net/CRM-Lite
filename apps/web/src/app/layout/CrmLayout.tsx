@@ -28,12 +28,13 @@ export default function CrmLayout() {
   ]
 
   const { data: newLeadsData } = useQuery({
-    queryKey: ['leads-new-count'],
+    queryKey: ['leads', 'new-count'],
     queryFn: () =>
-      crmApi.get<{ total: number }>('/leads', { params: { status: 'New', pageSize: 1 } })
-        .then((r) => r.data.total),
-    refetchInterval: 10_000,
-    staleTime: 0,
+      crmApi.get<{ total: number }>('/leads/new-count').then((r) => r.data.total),
+    // 每个打开的页面都会轮询：间隔过短会大量消耗 Workers 请求数和 D1 读取额度
+    // （页面在后台时 React Query 默认暂停轮询）
+    refetchInterval: 60_000,
+    staleTime: 30_000,
   })
 
   const handleLogout = () => {
