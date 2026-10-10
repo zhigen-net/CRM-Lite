@@ -2,7 +2,7 @@ import { Hono } from 'hono'
 import { zValidator } from '@hono/zod-validator'
 import { z } from 'zod'
 import { HTTPException } from 'hono/http-exception'
-import bcrypt from 'bcryptjs'
+import { hashPassword, verifyPassword } from '../../shared/password'
 import { v4 as uuidv4 } from 'uuid'
 import { signCrmJwt } from '../../shared/jwt'
 import { requireAuth, requireAdmin } from '../middleware/auth'
@@ -21,12 +21,19 @@ authRoutes.post(
       id: string; email: string; password_hash: string; name: string; role: string; team_id: string | null; is_active: number
     }>()
 
-    if (!user || !(await bcrypt.compare(password, user.password_hash))) {
+    const check = user ? await verifyPassword(password, user.password_hash) : null
+    if (!user || !check?.valid) {
       throw new HTTPException(401, { message: '邮箱或密码错误' })
     }
 
     if (!user.is_active) {
       throw new HTTPException(403, { message: '账号已被禁用，请联系管理员' })
+    }
+
+    // 旧格式（bcrypt）或迭代次数变化：登录成功后自动升级哈希
+    if (check.needsRehash) {
+      await c.env.DB.prepare('UPDATE users SET password_hash = ? WHERE id = ?')
+        .bind(await hashPassword(password), user.id).run()
     }
 
     const token = await signCrmJwt(
@@ -85,10 +92,10 @@ authRoutes.put(
       if (!body.currentPassword) {
         throw new HTTPException(400, { message: '请输入当前密码' })
       }
-      const valid = await bcrypt.compare(body.currentPassword, user.password_hash)
+      const { valid } = await verifyPassword(body.currentPassword, user.password_hash)
       if (!valid) throw new HTTPException(400, { message: '当前密码错误' })
       updates.push('password_hash = ?')
-      params.push(await bcrypt.hash(body.newPassword, 12))
+      params.push(await hashPassword(body.newPassword))
     }
 
     if (params.length === 0) return c.json({ data: { success: true } })
@@ -176,7 +183,7 @@ authRoutes.post(
     const existing = await c.env.DB.prepare('SELECT id FROM users WHERE email = ?').bind(email).first()
     if (existing) throw new HTTPException(409, { message: '邮箱已存在' })
 
-    const passwordHash = await bcrypt.hash(password, 12)
+    const passwordHash = await hashPassword(password)
     const id = uuidv4()
     await c.env.DB.prepare(
       'INSERT INTO users (id, email, password_hash, name, phone, role, team_id) VALUES (?, ?, ?, ?, ?, ?, ?)',

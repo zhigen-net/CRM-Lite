@@ -2,7 +2,7 @@ import { Hono } from 'hono'
 import { zValidator } from '@hono/zod-validator'
 import { z } from 'zod'
 import { HTTPException } from 'hono/http-exception'
-import bcrypt from 'bcryptjs'
+import { hashPassword, verifyPassword } from '../../shared/password'
 import { v4 as uuidv4 } from 'uuid'
 import { signPortalJwt } from '../../shared/jwt'
 import { requirePortalAuth } from '../middleware/auth'
@@ -20,13 +20,21 @@ portalAuthRoutes.post(
       .bind(email)
       .first<{ id: string; client_id: string; email: string; password_hash: string | null }>()
 
-    if (!clientUser?.password_hash || !(await bcrypt.compare(password, clientUser.password_hash))) {
+    const check = clientUser?.password_hash ? await verifyPassword(password, clientUser.password_hash) : null
+    if (!clientUser || !check?.valid) {
       throw new HTTPException(401, { message: '邮箱或密码错误' })
     }
 
-    await c.env.DB.prepare(
-      'UPDATE client_users SET last_login_at = CURRENT_TIMESTAMP WHERE id = ?',
-    ).bind(clientUser.id).run()
+    // 旧格式（bcrypt）或迭代次数变化：登录成功后自动升级哈希
+    if (check.needsRehash) {
+      await c.env.DB.prepare(
+        'UPDATE client_users SET password_hash = ?, last_login_at = CURRENT_TIMESTAMP WHERE id = ?',
+      ).bind(await hashPassword(password), clientUser.id).run()
+    } else {
+      await c.env.DB.prepare(
+        'UPDATE client_users SET last_login_at = CURRENT_TIMESTAMP WHERE id = ?',
+      ).bind(clientUser.id).run()
+    }
 
     const token = await signPortalJwt(
       { clientUserId: clientUser.id, clientId: clientUser.client_id },

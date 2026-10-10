@@ -32,6 +32,7 @@ import { apiFailuresRoutes } from './crm/routes/apiFailures'
 import { milestonesRoutes } from './crm/routes/milestones'
 import { requireApiKey } from './crm/middleware/apiKeyAuth'
 import { executeScheduledWorkflows } from './crm/workflow/executor'
+import { hashPassword } from './shared/password'
 
 // 客户门户路由
 import { portalAuthRoutes } from './portal/routes/auth'
@@ -96,8 +97,7 @@ app.post('/api/public/setup', zValidator('json', z.object({
     return c.json({ message: '系统已完成初始化' }, 403)
   }
   const { name, email, password } = c.req.valid('json')
-  const bcrypt = await import('bcryptjs')
-  const passwordHash = await bcrypt.default.hash(password, 12)
+  const passwordHash = await hashPassword(password)
   const id = uuidv4()
   await c.env.DB.prepare(
     'INSERT INTO users (id, email, password_hash, name, role) VALUES (?, ?, ?, ?, ?)',

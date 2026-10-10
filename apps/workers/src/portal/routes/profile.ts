@@ -2,7 +2,7 @@ import { Hono } from 'hono'
 import { zValidator } from '@hono/zod-validator'
 import { z } from 'zod'
 import { HTTPException } from 'hono/http-exception'
-import bcrypt from 'bcryptjs'
+import { hashPassword, verifyPassword } from '../../shared/password'
 import { requirePortalAuth } from '../middleware/auth'
 import { toCamel } from '../../shared/db'
 
@@ -65,9 +65,9 @@ profileRoutes.put(
       if (!clientUser?.password_hash) {
         throw new HTTPException(400, { message: '当前账户未设置密码，无法通过此方式修改' })
       }
-      const valid = await bcrypt.compare(body.currentPassword, clientUser.password_hash)
+      const { valid } = await verifyPassword(body.currentPassword, clientUser.password_hash)
       if (!valid) throw new HTTPException(400, { message: '当前密码错误' })
-      const newHash = await bcrypt.hash(body.newPassword, 12)
+      const newHash = await hashPassword(body.newPassword)
       await c.env.DB.prepare(
         'UPDATE client_users SET password_hash = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
       ).bind(newHash, clientUserId).run()
