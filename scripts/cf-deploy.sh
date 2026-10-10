@@ -65,7 +65,14 @@ echo "✔ D1 $DB_NAME ($DB_ID)"
 
 if ! wr r2 bucket info "$BUCKET_NAME" > /dev/null 2>&1; then
   echo "▶ 创建 R2 存储桶 $BUCKET_NAME"
-  wr r2 bucket create "$BUCKET_NAME"
+  if ! R2_OUT="$(wr r2 bucket create "$BUCKET_NAME" 2>&1)"; then
+    echo "$R2_OUT"
+    if echo "$R2_OUT" | grep -q "10042"; then
+      echo "❌ 该 Cloudflare 账号尚未启用 R2。"
+      echo "   请在控制台左侧菜单 → R2 对象存储 → 启用（每个账号一次），然后在 Worker → Deployments 中重试构建。"
+    fi
+    exit 1
+  fi
 fi
 echo "✔ R2 $BUCKET_NAME"
 
