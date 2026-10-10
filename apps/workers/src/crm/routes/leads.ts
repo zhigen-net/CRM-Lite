@@ -33,6 +33,21 @@ leadsRoutes.get('/sources', async (c) => {
   return c.json({ data: rows.results.map((r) => r.source) })
 })
 
+// GET /api/leads/new-count — 导航栏"新线索"角标专用的轻量计数
+// 前端会定时轮询，因此只做一次走 status 索引的 COUNT，不做 JOIN / 排序 / 子查询；
+// 可见范围与 GET /api/leads 一致（销售只统计分配给自己或本团队未分配的线索）
+leadsRoutes.get('/new-count', async (c) => {
+  const { userId, role, teamId } = c.get('jwtPayload')
+  let sql = "SELECT COUNT(*) AS total FROM leads l WHERE l.deleted_at IS NULL AND l.status = 'New'"
+  const params: unknown[] = []
+  if (role === 'sales') {
+    sql += ' AND (l.assigned_to_userId = ? OR (l.assigned_to_userId IS NULL AND l.assigned_to_teamId = ?))'
+    params.push(userId, teamId)
+  }
+  const row = await c.env.DB.prepare(sql).bind(...params).first<{ total: number }>()
+  return c.json({ total: row?.total ?? 0 })
+})
+
 // GET /api/leads
 leadsRoutes.get('/', async (c) => {
   const { userId, role, teamId } = c.get('jwtPayload')

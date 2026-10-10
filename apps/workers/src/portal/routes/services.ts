@@ -22,7 +22,7 @@ servicesRoutes.get('/', async (c) => {
 
   return c.json({
     data: service
-      ? [{ ...toCamel(service as Record<string, unknown>), contractStatus: client.contract_status }]
+      ? [{ ...(toCamel(service as Record<string, unknown>) as Record<string, unknown>), contractStatus: client.contract_status }]
       : [],
   })
 })

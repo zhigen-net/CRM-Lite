@@ -2,7 +2,7 @@ import { Hono } from 'hono'
 import { zValidator } from '@hono/zod-validator'
 import { z } from 'zod'
 import { HTTPException } from 'hono/http-exception'
-import bcrypt from 'bcryptjs'
+import { hashPassword } from '../../shared/password'
 import { requireAuth, requireAdmin } from '../middleware/auth'
 import { toCamel, toCamelList } from '../../shared/db'
 
@@ -97,7 +97,7 @@ usersRoutes.put(
     const existing = await c.env.DB.prepare('SELECT id FROM users WHERE id = ?').bind(id).first()
     if (!existing) throw new HTTPException(404, { message: '用户不存在' })
 
-    const passwordHash = await bcrypt.hash(newPassword, 12)
+    const passwordHash = await hashPassword(newPassword)
     await c.env.DB.prepare(
       'UPDATE users SET password_hash = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
     ).bind(passwordHash, id).run()

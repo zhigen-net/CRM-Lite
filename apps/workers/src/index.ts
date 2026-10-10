@@ -32,6 +32,7 @@ import { apiFailuresRoutes } from './crm/routes/apiFailures'
 import { milestonesRoutes } from './crm/routes/milestones'
 import { requireApiKey } from './crm/middleware/apiKeyAuth'
 import { executeScheduledWorkflows } from './crm/workflow/executor'
+import { hashPassword } from './shared/password'
 
 // 客户门户路由
 import { portalAuthRoutes } from './portal/routes/auth'
@@ -96,8 +97,7 @@ app.post('/api/public/setup', zValidator('json', z.object({
     return c.json({ message: '系统已完成初始化' }, 403)
   }
   const { name, email, password } = c.req.valid('json')
-  const bcrypt = await import('bcryptjs')
-  const passwordHash = await bcrypt.default.hash(password, 12)
+  const passwordHash = await hashPassword(password)
   const id = uuidv4()
   await c.env.DB.prepare(
     'INSERT INTO users (id, email, password_hash, name, role) VALUES (?, ?, ?, ?, ?)',
@@ -271,7 +271,8 @@ app.notFound((c) => c.json({ message: '接口不存在' }, 404))
 export default {
   fetch: app.fetch,
   async queue(batch: MessageBatch<{ leadId: string } | { type: string; leadId: string; assignedToUserId: string }>, env: Env): Promise<void> {
-    if (batch.queue === 'notification-queue') {
+    // 队列名由部署脚本生成：<worker名>-leads / <worker名>-notify
+    if (batch.queue.endsWith('-notify')) {
       await handleNotificationBatch(batch as MessageBatch<{ type: 'lead_assigned'; leadId: string; assignedToUserId: string }>, env)
     } else {
       await handleLeadAssignmentBatch(batch as MessageBatch<{ leadId: string }>, env)
