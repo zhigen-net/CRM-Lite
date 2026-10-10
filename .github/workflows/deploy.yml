@@ -10,7 +10,7 @@ env:
 
 jobs:
   deploy:
-    name: Deploy Workers + Pages
+    name: Deploy Worker (API + Web)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -35,7 +35,6 @@ jobs:
           echo "WORKER_NAME=${PREFIX}"              >> $GITHUB_ENV
           echo "D1_DATABASE_NAME=${PREFIX}-db"      >> $GITHUB_ENV
           echo "R2_BUCKET_NAME=${PREFIX}-store"     >> $GITHUB_ENV
-          echo "PAGES_PROJECT_NAME=${PREFIX}"       >> $GITHUB_ENV
           echo "LEAD_QUEUE_NAME=${PREFIX}-leads"    >> $GITHUB_ENV
           echo "NOTIFY_QUEUE_NAME=${PREFIX}-notify" >> $GITHUB_ENV
           echo "Prefix: $PREFIX"
@@ -54,23 +53,18 @@ jobs:
           echo "D1_DATABASE_ID=$D1_ID" >> $GITHUB_ENV
           echo "✅ Database: $D1_DATABASE_NAME ($D1_ID)"
 
-      # ── 步骤 3：确定前端 API 地址 ────────────────────────────────────
-      # 默认走 Pages Functions 反向代理（/api → Worker Service Binding），无需 workers.dev 域名
-      # 如需绕过代理直连自定义域名，可设置 Secret VITE_API_BASE_URL
-      - name: Resolve VITE_API_BASE_URL
+      # ── 步骤 3：构建前端（产物 apps/web/dist 作为 Worker 静态资源一起部署）─
+      # 前端与 API 同源（/api 由同一个 Worker 处理），VITE_API_BASE_URL 默认留空
+      # 如需让前端直连其它 API 地址，可设置 Secret VITE_API_BASE_URL 覆盖
+      - name: Build web
         env:
           API_URL_OVERRIDE: ${{ secrets.VITE_API_BASE_URL }}
         run: |
-          if [ -n "$API_URL_OVERRIDE" ]; then
-            echo "VITE_API_BASE_URL=$API_URL_OVERRIDE" >> $GITHUB_ENV
-            echo "API URL (custom override): $API_URL_OVERRIDE"
-          else
-            echo "VITE_API_BASE_URL=" >> $GITHUB_ENV
-            echo "API URL: Pages Functions proxy (/api → Worker via Service Binding)"
-          fi
+          echo "VITE_API_BASE_URL=$API_URL_OVERRIDE" > apps/web/.env.production
+          pnpm --filter web build
 
-      # ── 步骤 4：patch wrangler.toml（仅 runner 内存，不 commit）──────
-      - name: Patch wrangler.toml & deploy Workers
+      # ── 步骤 4：patch wrangler.toml（仅 runner 内存，不 commit）& 部署 Worker（API + 前端）─
+      - name: Patch wrangler.toml & deploy Worker
         working-directory: apps/workers
         run: |
           sed -i "s/placeholder-worker/$WORKER_NAME/" wrangler.toml
@@ -85,20 +79,3 @@ jobs:
       - name: Run D1 migrations
         working-directory: apps/workers
         run: npx wrangler d1 migrations apply "$D1_DATABASE_NAME" --remote
-
-      # ── 步骤 5.5：Patch Pages wrangler.toml（注入 Worker Service Binding）──
-      - name: Patch Pages wrangler.toml
-        run: |
-          sed -i "s/placeholder-pages/$PAGES_PROJECT_NAME/" apps/web/wrangler.toml
-          sed -i "s/placeholder-worker/$WORKER_NAME/" apps/web/wrangler.toml
-
-      # ── 步骤 6：构建前端（临时写 .env.production，不 commit）─────────
-      - name: Build web
-        run: |
-          echo "VITE_API_BASE_URL=$VITE_API_BASE_URL" > apps/web/.env.production
-          pnpm --filter web build
-
-      # ── 步骤 7：部署 Pages ────────────────────────────────────────────
-      - name: Deploy Pages
-        working-directory: apps/web
-        run: npx wrangler pages deploy dist --project-name "$PAGES_PROJECT_NAME" --branch main --commit-message "deploy ${{ github.sha }}"

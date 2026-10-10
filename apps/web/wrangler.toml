@@ -1,6 +1,0 @@
-name = "placeholder-pages"
-pages_build_output_dir = "dist"
-
-[[services]]
-binding = "WORKER"
-service = "placeholder-worker"

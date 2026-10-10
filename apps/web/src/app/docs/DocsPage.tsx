@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next'
 
 type SectionKey = 'intro' | 'vars' | 'actions' | 'tips' | 'api-overview' | 'api-leads'
 
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? window.location.origin
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined) || window.location.origin
 
 const EXAMPLE_REQUEST = `POST ${API_BASE_URL}/api/v1/leads
 Content-Type: application/json

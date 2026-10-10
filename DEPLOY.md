@@ -4,8 +4,8 @@
 
 | 层 | 技术 |
 |---|---|
-| 前端 | React + Vite，部署到 Cloudflare Pages |
-| 后端 | Cloudflare Workers (Hono)，TypeScript |
+| 前端 | React + Vite，构建产物作为 Worker 静态资源（Static Assets）与 API 一起部署 |
+| 后端 | Cloudflare Workers (Hono)，TypeScript；与前端共用同一个 Worker、同一域名 |
 | 数据库 | Cloudflare D1（SQLite） |
 | 文件存储 | Cloudflare R2 |
 | 任务队列 | Cloudflare Queues（线索分配、通知推送） |
@@ -23,10 +23,10 @@ Fork 仓库后只需两步即可完成全自动部署：
 
 | 类型 | 名称 | 说明 |
 |---|---|---|
-| **Secret** | `CLOUDFLARE_API_TOKEN` | Cloudflare API Token，需包含 Workers、D1、R2、Queues、Pages 的编辑权限 |
+| **Secret** | `CLOUDFLARE_API_TOKEN` | Cloudflare API Token，需包含 Workers、D1、R2、Queues 的编辑权限 |
 | **Secret** | `CLOUDFLARE_ACCOUNT_ID` | Cloudflare 账户 ID（在 CF 控制台右侧边栏查看） |
 
-> 在 Cloudflare 控制台 → My Profile → API Tokens → Create Token 创建，建议使用 "Edit Cloudflare Workers" 模板并额外添加 D1、R2、Pages、Queues 权限。
+> 在 Cloudflare 控制台 → My Profile → API Tokens → Create Token 创建，建议使用 "Edit Cloudflare Workers" 模板并额外添加 D1、R2、Queues 权限。
 
 ### 第二步：触发 Setup 工作流
 
@@ -36,7 +36,8 @@ Fork 仓库后只需两步即可完成全自动部署：
 - 从 `wrangler whoami` 获取 Account ID
 - 以 `{owner首词}-{repo首词}-{branch}` 为前缀创建所有 Cloudflare 资源
 - 生成随机 `JWT_SECRET` 和 `PORTAL_JWT_SECRET` 并写入 Worker Secrets
-- 部署 Workers、执行数据库迁移、部署前端 Pages
+- 构建前端，并与 API 一起部署到同一个 Worker
+- 执行数据库迁移
 
 完成后 Actions 日志末尾会输出访问地址。
 
@@ -56,7 +57,6 @@ Setup 工作流会根据仓库信息自动计算资源名称（如 `zhigen-crm-m
 | `WORKER_NAME` | Worker 名称 | `{owner}-{repo}-{branch}` |
 | `D1_DATABASE_NAME` | D1 数据库名称 | `{prefix}-db` |
 | `R2_BUCKET_NAME` | R2 存储桶名称 | `{prefix}-store` |
-| `PAGES_PROJECT_NAME` | Pages 项目名称 | `{prefix}` |
 | `LEAD_QUEUE_NAME` | 线索分配队列名称 | `{prefix}-leads` |
 | `NOTIFY_QUEUE_NAME` | 通知队列名称 | `{prefix}-notify` |
 
@@ -78,30 +78,31 @@ Setup 工作流会根据仓库信息自动计算资源名称（如 `zhigen-crm-m
 
 ---
 
+## 架构说明：单 Worker 部署
+
+前端和 API 部署在**同一个 Worker** 中（Workers Static Assets）：
+
+- `/api/*` 由 Worker 代码处理（`run_worker_first = ["/api/*"]`）
+- 其余请求直接命中静态资源；未匹配到文件的路径回退到 `index.html`（SPA 路由）
+- 静态资源请求不执行 Worker 代码，**免费且不计入 Workers 请求额度**
+- 前端与 API 同源，前端默认以相对路径 `/api` 调用后端，无需配置 API 地址
+
+配置见 `apps/workers/wrangler.toml` 的 `[assets]` 段。部署前必须先构建前端（`pnpm build:web`），根目录的 `pnpm deploy:all` 会自动完成这一步。
+
+> 从旧版（Worker + Pages）升级：首次部署新版后，前端访问地址变为 Worker 的地址（`{worker-name}.{subdomain}.workers.dev` 或绑定的自定义域名）。
+> 确认新地址可用后，把原来绑在 Pages 上的自定义域名改绑到 Worker，再在控制台删除旧的 Pages 项目。
+> 旧版代码保留在 tag `v1.0.0`。
+
+---
+
 ## 自定义域名
 
 在 Cloudflare 控制台手动绑定：
-- **Worker 自定义域名**：Workers & Pages → 对应 Worker → Settings → Domains & Routes
-- **Pages 自定义域名**：Workers & Pages → 对应 Pages → Custom domains
+- Workers & Pages → 对应 Worker → Settings → Domains & Routes
 
-### 更换后端地址（绑定自定义域名后必做）
+前端和 API 共用这一个域名，无需额外配置。
 
-前端的 API 地址（`VITE_API_BASE_URL`）在**构建时**编译进静态文件。  
-默认情况下，每次 Deploy 工作流会自动使用 `{worker-name}.{subdomain}.workers.dev`。
-
-如果 Worker 绑定了自定义域名并希望前端指向它，需要在 GitHub Secrets 中添加覆盖值：
-
-| Secret | 示例值 |
-|---|---|
-| `VITE_API_BASE_URL` | `https://api.yourdomain.com` |
-
-设置后触发任意一次部署（push 一个空 commit 即可）：
-
-```bash
-git commit --allow-empty -m "chore: update api url" && git push
-```
-
-> 不设置此 Secret 时，Deploy 工作流始终自动使用 workers.dev 地址，无需手动维护。
+如需让前端改为调用其它地址的 API，可在 GitHub Secrets 中设置 `VITE_API_BASE_URL`（构建时编译进前端），然后重新部署。不设置时前端使用同源 `/api`。
 
 ---
 
@@ -110,11 +111,19 @@ git commit --allow-empty -m "chore: update api url" && git push
 ```bash
 pnpm install
 
-# 启动前端开发服务器
+# 启动前端开发服务器（http://localhost:5173，/api 代理到 8787）
 pnpm --filter web dev
 
-# 启动 Workers 本地模拟
-cd apps/workers && npx wrangler dev
+# 启动 Workers 本地模拟（http://localhost:8787）
+pnpm --filter workers dev
+```
+
+> Worker 绑定了 Workers AI，本地开发需要先 `npx wrangler login`（或设置 `CLOUDFLARE_API_TOKEN`）。
+
+部署（需已配置 wrangler.toml 中的资源名）：
+
+```bash
+pnpm deploy:all   # 先构建前端，再 wrangler deploy
 ```
 
 `apps/workers/.dev.vars` 示例（本地开发用，不提交）：

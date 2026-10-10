@@ -12,8 +12,7 @@
     "dev:workers": "pnpm --filter workers dev",
     "dev": "concurrently \"pnpm dev:web\" \"pnpm dev:workers\"",
     "build:web": "pnpm --filter web build",
-    "deploy:workers": "pnpm --filter workers deploy",
-    "deploy:web": "pnpm --filter web deploy",
+    "deploy:all": "pnpm build:web && pnpm --filter workers run deploy",
     "db:migrate": "pnpm --filter workers db:migrate",
     "db:migrate:local": "pnpm --filter workers db:migrate:local",
     "typecheck": "pnpm -r typecheck"

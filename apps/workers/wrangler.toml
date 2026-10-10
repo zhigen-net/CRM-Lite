@@ -3,6 +3,15 @@ main = "src/index.ts"
 compatibility_date = "2024-09-23"
 compatibility_flags = ["nodejs_compat"]
 
+# 前端静态资源（apps/web 构建产物）与 API 由同一个 Worker 提供
+# - 静态资源请求不进入 Worker 脚本，免费且不计入请求额度
+# - 只有 /api/* 先进入 Worker；其余未命中文件的路径回退到 index.html（SPA）
+# 部署前须先构建前端：pnpm build:web
+[assets]
+directory = "../web/dist"
+not_found_handling = "single-page-application"
+run_worker_first = ["/api/*"]
+
 [vars]
 ENVIRONMENT = "production"
 

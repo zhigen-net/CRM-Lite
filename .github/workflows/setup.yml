@@ -35,7 +35,6 @@ jobs:
           echo "WORKER_NAME=${PREFIX}"              >> $GITHUB_ENV
           echo "D1_DATABASE_NAME=${PREFIX}-db"      >> $GITHUB_ENV
           echo "R2_BUCKET_NAME=${PREFIX}-store"     >> $GITHUB_ENV
-          echo "PAGES_PROJECT_NAME=${PREFIX}"       >> $GITHUB_ENV
           echo "LEAD_QUEUE_NAME=${PREFIX}-leads"    >> $GITHUB_ENV
           echo "NOTIFY_QUEUE_NAME=${PREFIX}-notify" >> $GITHUB_ENV
           echo "Prefix: $PREFIX"
@@ -88,8 +87,15 @@ jobs:
           done
           sleep 2
 
-      # ── 步骤 5：patch wrangler.toml & 部署 Worker（新账号首次部署会自动激活 workers.dev 子域名）
-      - name: Patch wrangler.toml & deploy Workers
+      # ── 步骤 5：构建前端（产物 apps/web/dist 作为 Worker 静态资源一起部署）─
+      # 前端与 API 同源（/api 由同一个 Worker 处理），VITE_API_BASE_URL 留空
+      - name: Build web
+        run: |
+          echo "VITE_API_BASE_URL=" > apps/web/.env.production
+          pnpm --filter web build
+
+      # ── 步骤 6：patch wrangler.toml & 部署 Worker（API + 前端；新账号首次部署会自动激活 workers.dev 子域名）
+      - name: Patch wrangler.toml & deploy Worker
         working-directory: apps/workers
         run: |
           sed -i "s/placeholder-worker/$WORKER_NAME/" wrangler.toml
@@ -100,7 +106,7 @@ jobs:
           sed -i "s/placeholder-notify/$NOTIFY_QUEUE_NAME/g" wrangler.toml
           npx wrangler deploy
 
-      # ── 步骤 6：获取 workers.dev 子域名（部署后子域名必然存在）────────
+      # ── 步骤 7：获取 workers.dev 子域名（部署后子域名必然存在）────────
       - name: Get workers.dev subdomain
         run: |
           SUBDOMAIN=$(curl -sf "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/subdomain" \
@@ -109,41 +115,21 @@ jobs:
             echo "❌ Could not get workers.dev subdomain after deploy"
             exit 1
           fi
-          echo "VITE_API_BASE_URL=https://${WORKER_NAME}.${SUBDOMAIN}.workers.dev" >> $GITHUB_ENV
-          echo "Workers URL: https://${WORKER_NAME}.${SUBDOMAIN}.workers.dev"
+          echo "APP_URL=https://${WORKER_NAME}.${SUBDOMAIN}.workers.dev" >> $GITHUB_ENV
 
-      # ── 步骤 7：写入 Worker Secrets ───────────────────────────────────
+      # ── 步骤 8：写入 Worker Secrets ───────────────────────────────────
       - name: Set Worker secrets
         working-directory: apps/workers
         run: |
           echo "$(openssl rand -base64 32)" | npx wrangler secret put JWT_SECRET
           echo "$(openssl rand -base64 32)" | npx wrangler secret put PORTAL_JWT_SECRET
 
-      # ── 步骤 8：执行数据库迁移 ───────────────────────────────────────
+      # ── 步骤 9：执行数据库迁移 ───────────────────────────────────────
       - name: Run D1 migrations
         working-directory: apps/workers
         run: npx wrangler d1 migrations apply "$D1_DATABASE_NAME" --remote
 
-      # ── 步骤 9：构建前端（临时写 .env.production，不 commit）─────────
-      - name: Build web
-        run: |
-          echo "VITE_API_BASE_URL=$VITE_API_BASE_URL" > apps/web/.env.production
-          pnpm --filter web build
-
-      # ── 步骤 10：创建并部署 Pages ─────────────────────────────────────
-      - name: Create Pages project
-        working-directory: apps/web
-        run: |
-          npx wrangler pages project create "$PAGES_PROJECT_NAME" --production-branch main \
-            && echo "✅ Pages project: $PAGES_PROJECT_NAME" \
-            || echo "Pages project may already exist, continuing..."
-
-      - name: Deploy Pages
-        working-directory: apps/web
-        run: npx wrangler pages deploy dist --project-name "$PAGES_PROJECT_NAME" --branch main
-
       - name: Done
         run: |
           echo "✅ Setup complete!"
-          echo "   Workers API : $VITE_API_BASE_URL"
-          echo "   Pages URL   : https://${PAGES_PROJECT_NAME}.pages.dev"
+          echo "   访问地址（前端 + API）: $APP_URL"
