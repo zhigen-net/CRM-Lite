@@ -58,7 +58,9 @@ portalAuthRoutes.post(
       'UPDATE client_users SET magic_link_token = ?, magic_link_expires_at = ? WHERE id = ?',
     ).bind(token, expiresAt, clientUser.id).run()
 
-    const magicLink = `${c.env.PORTAL_BASE_URL}/portal/login?token=${token}`
+    // 未配置 PORTAL_BASE_URL 时使用当前访问域名（前端与 API 同源）
+    const baseUrl = c.env.PORTAL_BASE_URL || new URL(c.req.url).origin
+    const magicLink = `${baseUrl}/portal/login?token=${token}`
 
     await sendEmail(
       c.env,

@@ -59,9 +59,10 @@ scripts/
 
 快速开始：
 
+0. 每个 Cloudflare 账号一次：启用 R2，并创建部署用的 API Token（权限清单见 [DEPLOY.md](./DEPLOY.md#前置条件每个-cloudflare-账号一次)）
 1. Cloudflare 控制台 → **Workers & Pages** → **Create** → **Import a repository**，选择本仓库
-2. Worker 名填环境名（如 `crm-main`），Deploy command 填 `pnpm run cf:deploy`，Build command 留空
-3. 关闭 **Builds for non-production branches**
+2. Worker 名填环境名（如 `crm-main`），Deploy command 填 `pnpm run cf:deploy`，Build command 留空，API token 选择自建 Token（需含 D1、Queues 权限，见 DEPLOY.md）
+3. Settings → Build → Branch control：取消勾选 **Enable Preview Builds**
 4. 首次构建会自动创建数据库、存储桶、队列和登录密钥；部署完成后打开 Worker 地址，按提示创建管理员账号
 
 建议的环境划分：`main` 分支 → 生产，`dev` 分支 → 测试，各自使用独立的数据和资源。
@@ -82,7 +83,7 @@ pnpm dev:web
 pnpm dev:workers
 
 # 初始化本地数据库
-pnpm --filter workers exec wrangler d1 migrations apply DB --local
+pnpm db:migrate:local
 ```
 
 后端本地开发需要先 `npx wrangler login`（Workers AI 绑定需要连接 Cloudflare），并在 `apps/workers/.dev.vars` 配置本地密钥，示例见 [DEPLOY.md](./DEPLOY.md#本地开发)。

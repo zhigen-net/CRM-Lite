@@ -1,5 +1,9 @@
 # 辅助生殖行业 CRM 系统开发指南
 
+> **说明**：本文是项目初期的设计文档，部分内容与当前实现不一致，以代码和 [README.md](./README.md)、[DEPLOY.md](./DEPLOY.md) 为准。主要差异：
+> - 前端不再部署到 Cloudflare Pages：内部 CRM（`/app`）和客户门户（`/portal`）是同一个前端应用，与 API 一起部署在同一个 Worker 中
+> - 部署方式为 Cloudflare Workers Builds 自动部署，不使用 GitHub Actions 或 Pages 的 Git 集成
+
 ## 1. 项目概述
 
 本指南旨在详细规划一个基于 Cloudflare 全家桶的辅助生殖行业 CRM（客户关系管理）系统，涵盖内部运营与销售管理以及面向客户的自助服务门户。

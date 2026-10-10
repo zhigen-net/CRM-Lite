@@ -97,7 +97,8 @@ wr d1 migrations apply "$DB_NAME" --remote -c "$DEPLOY_CONFIG"
 
 # ── 4. 部署 ─────────────────────────────────────────────────────────
 echo "▶ 部署 Worker"
-wr deploy -c "$DEPLOY_CONFIG"
+# --keep-vars：保留在控制台设置的普通变量（如 EMAIL_FROM），否则每次部署会被清除
+wr deploy -c "$DEPLOY_CONFIG" --keep-vars
 
 # ── 5. 密钥：不存在则生成 ────────────────────────────────────────────
 # 查询失败时绝不重新生成：否则会轮换已有密钥，导致所有用户被登出

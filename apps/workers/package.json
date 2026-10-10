@@ -6,8 +6,7 @@
   "scripts": {
     "dev": "mkdir -p ../web/dist && wrangler dev --port 8787",
     "typecheck": "tsc --noEmit",
-    "db:migrate": "wrangler d1 migrations apply crm-db",
-    "db:migrate:local": "wrangler d1 migrations apply crm-db --local"
+    "db:migrate:local": "wrangler d1 migrations apply DB --local"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

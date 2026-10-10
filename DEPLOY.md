@@ -53,10 +53,24 @@
 
 ## 安装（每个环境一次，全部在 Cloudflare 控制台完成）
 
-### 前置条件
+### 前置条件（每个 Cloudflare 账号一次）
 
-- 账号首次使用 R2：控制台 → R2 → 点击启用（一次性）
-- 测试环境需要仓库中存在 `dev` 分支
+1. 账号首次使用 R2：控制台 → R2 → 点击启用
+2. 创建部署用的 API Token：控制台右上角头像 → **My Profile** → **API Tokens** → **Create Token** → **Create Custom Token**，授予以下权限：
+
+| 类别 | 权限 | 级别 |
+|---|---|---|
+| Account | Account Settings | Read |
+| Account | Workers Scripts | Edit |
+| Account | Workers R2 Storage | Edit |
+| Account | D1 | Edit |
+| Account | Queues | Edit |
+| User | User Details | Read |
+| User | Memberships | Read |
+
+> Workers Builds 默认自动生成的 Token **不含 D1 和 Queues 权限**，部署脚本会在查询数据库时失败，所以必须使用这个自建 Token。同一账号下的所有环境可共用它。
+
+3. 测试环境需要仓库中存在 `dev` 分支
 
 ### 新建环境（测试环境 / 新安装 / fork 部署）
 
@@ -71,19 +85,20 @@
 | Build command | 留空 |
 | Deploy command | `pnpm run cf:deploy` |
 | Root directory | `/`（默认） |
+| API token | 选择前置条件中创建的 Token |
 
 4. 保存并部署。首次构建会自动创建数据库、存储桶、队列和密钥。
-5. Worker → **Settings** → **Build** → **Branch control**：关闭 **Builds for non-production branches**。
+5. Worker → **Settings** → **Build** → **Branch control**：取消勾选 **Enable Preview Builds**。
 
-> ⚠️ 第 5 步必须做：非生产分支的预览版本与正式版本共用同一套绑定，会直接读写该环境的数据库。
+> ⚠️ 第 5 步必须做：本项目只用 `main` / `dev` 两个固定环境，不使用预览构建；预览构建执行的是 `npx wrangler preview`，不经过部署脚本，会因配置中的占位符而失败。
 
 ### 现有生产环境接入（从 GitHub Actions 迁移）
 
 现有 Worker 已经有数据库、存储、队列和密钥，接入后会原样沿用：
 
 1. 控制台 → 打开现有 Worker（如 `zhigen-crm-main`）→ **Settings** → **Build** → **Connect**
-2. 选择本仓库，分支 `main`，Build command 留空，Deploy command 填 `pnpm run cf:deploy`
-3. 同样关闭 **Builds for non-production branches**
+2. 选择本仓库，分支 `main`，Build command 留空，Deploy command 填 `pnpm run cf:deploy`，API token 选择前置条件中创建的 Token
+3. 同样取消勾选 **Enable Preview Builds**
 4. 在 GitHub 仓库 Settings → Secrets 中删除不再使用的 `CLOUDFLARE_API_TOKEN`、`CLOUDFLARE_ACCOUNT_ID`、`VITE_API_BASE_URL`
 
 ### 首次访问
@@ -94,14 +109,11 @@
 
 ## 若构建报权限错误
 
-Workers Builds 自动生成的构建 Token 若缺少 D1 / R2 / Queues 权限：
-
-1. 在 Cloudflare 创建一个 API Token（"Edit Cloudflare Workers" 模板 + D1、R2、Queues 编辑权限）
-2. Worker → **Settings** → **Build** → **Build variables and secrets**，添加 Secret `CLOUDFLARE_API_TOKEN`
+构建日志出现 `Authentication error` / `10000` 等权限错误时，检查 Worker → **Settings** → **Build** → **API token** 是否选择了前置条件中创建的 Token，以及该 Token 是否包含上表全部权限。修改后在 **Deployments** 中重试构建。
 
 ---
 
-## 可选配置（控制台 → Worker → Settings → Variables and Secrets）
+## 可选配置（控制台 → Worker → Settings → Variables & Secrets）
 
 | Secret | 说明 |
 |---|---|
@@ -109,15 +121,17 @@ Workers Builds 自动生成的构建 Token 若缺少 D1 / R2 / Queues 权限：
 | `EMAIL_FROM_NAME` | 发件人名称（默认 `CRM`） |
 | `RESEND_API_KEY` | Resend API Key（优先使用） |
 | `SENDGRID_API_KEY` | SendGrid API Key（回退选项） |
-| `PORTAL_BASE_URL` | 客户门户访问地址，用于生成 Magic Link |
+| `PORTAL_BASE_URL` | 客户门户访问地址，用于生成 Magic Link；不设置时使用当前访问的域名 |
 
-> 未配置邮件 Key 时，发邮件操作静默跳过，不影响其他功能。在控制台设置的 Secret 不会被部署覆盖。
+> 未配置邮件 Key 时，发邮件操作静默跳过，不影响其他功能。
+> 以上配置可以用 Secret 或普通变量（Text）设置，部署时都会保留（部署脚本使用 `wrangler deploy --keep-vars`）。
 
 构建变量（Settings → Build → Build variables）：
 
 | 变量 | 说明 |
 |---|---|
 | `VITE_API_BASE_URL` | 让前端调用其它地址的 API；不设置时使用同源 `/api`（推荐） |
+| `APP_NAME` | 一般无需设置：Workers Builds 会自动提供 Worker 名（`WRANGLER_CI_OVERRIDE_NAME`） |
 
 ---
 
