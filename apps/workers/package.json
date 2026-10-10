@@ -5,7 +5,6 @@
   "type": "module",
   "scripts": {
     "dev": "mkdir -p ../web/dist && wrangler dev --port 8787",
-    "deploy": "wrangler deploy",
     "typecheck": "tsc --noEmit",
     "db:migrate": "wrangler d1 migrations apply crm-db",
     "db:migrate:local": "wrangler d1 migrations apply crm-db --local"

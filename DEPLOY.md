@@ -13,58 +13,95 @@
 
 ---
 
-## Fork 快速部署（推荐）
+## 部署方式
 
-Fork 仓库后只需两步即可完成全自动部署：
+使用 Cloudflare **Workers Builds**（Cloudflare 内置的 Git 自动部署）：
 
-### 第一步：设置 Cloudflare API Token
+- 安装时在 Cloudflare 控制台把 Worker 连接到本仓库，**之后每次 push 自动部署**
+- 不使用 GitHub Actions，GitHub 中无需配置任何 Secret
+- **无需修改任何代码**即可安装或部署：所有资源名由 Worker 名自动推导
 
-在 GitHub 仓库 **Settings → Secrets and variables → Actions** 中添加：
+每次构建执行 `pnpm run cf:deploy`（即 `scripts/cf-deploy.sh`），它是幂等的：
 
-| 类型 | 名称 | 说明 |
-|---|---|---|
-| **Secret** | `CLOUDFLARE_API_TOKEN` | Cloudflare API Token，需包含 Workers、D1、R2、Queues 的编辑权限 |
-| **Secret** | `CLOUDFLARE_ACCOUNT_ID` | Cloudflare 账户 ID（在 CF 控制台右侧边栏查看） |
+1. 由 Worker 名推导资源名，缺失的 D1 / R2 / Queue 自动创建，已存在的直接沿用
+2. 构建前端
+3. 执行 D1 迁移（先迁移）
+4. 部署 Worker（后部署）
+5. `JWT_SECRET` / `PORTAL_JWT_SECRET` 不存在时随机生成，已存在的永不改动
 
-> 在 Cloudflare 控制台 → My Profile → API Tokens → Create Token 创建，建议使用 "Edit Cloudflare Workers" 模板并额外添加 D1、R2、Queues 权限。
+资源命名规则（`<name>` 为 Worker 名）：
 
-### 第二步：触发 Setup 工作流
-
-在 GitHub Actions 页面手动触发 **Setup** 工作流。
-
-工作流会自动完成：
-- 从 `wrangler whoami` 获取 Account ID
-- 以 `{owner首词}-{repo首词}-{branch}` 为前缀创建所有 Cloudflare 资源
-- 生成随机 `JWT_SECRET` 和 `PORTAL_JWT_SECRET` 并写入 Worker Secrets
-- 构建前端，并与 API 一起部署到同一个 Worker
-- 执行数据库迁移
-
-完成后 Actions 日志末尾会输出访问地址。
-
-### 后续更新
-
-每次 push 到 `main` 分支会自动触发 **Deploy** 工作流，完成代码部署和数据库迁移。
+| 资源 | 名称 |
+|---|---|
+| D1 数据库 | `<name>-db` |
+| R2 存储桶 | `<name>-store` |
+| 线索分配队列 | `<name>-leads` |
+| 通知队列 | `<name>-notify` |
 
 ---
 
-## 自定义资源名称
+## 环境划分
 
-Setup 工作流会根据仓库信息自动计算资源名称（如 `zhigen-crm-main`）。
-如需自定义，在运行 Setup **之前**在 GitHub Variables 中预先设置以下任意项：
-
-| Variable | 说明 | 默认值 |
+| 环境 | 分支 | Worker 名（示例） |
 |---|---|---|
-| `WORKER_NAME` | Worker 名称 | `{owner}-{repo}-{branch}` |
-| `D1_DATABASE_NAME` | D1 数据库名称 | `{prefix}-db` |
-| `R2_BUCKET_NAME` | R2 存储桶名称 | `{prefix}-store` |
-| `LEAD_QUEUE_NAME` | 线索分配队列名称 | `{prefix}-leads` |
-| `NOTIFY_QUEUE_NAME` | 通知队列名称 | `{prefix}-notify` |
+| 生产 | `main` | `zhigen-crm-main` |
+| 测试 | `dev` | `zhigen-crm-dev` |
+
+两个环境各自拥有独立的 D1 / R2 / Queue，互不影响。日常流程：功能合入 `dev` → 测试环境自动更新 → 验证后合入 `main` → 生产自动更新。
 
 ---
 
-## 可选配置（Setup 完成后）
+## 安装（每个环境一次，全部在 Cloudflare 控制台完成）
 
-通过 `wrangler secret put` 配置以下可选 Secrets：
+### 前置条件
+
+- 账号首次使用 R2：控制台 → R2 → 点击启用（一次性）
+- 测试环境需要仓库中存在 `dev` 分支
+
+### 新建环境（测试环境 / 新安装 / fork 部署）
+
+1. Cloudflare 控制台 → **Workers & Pages** → **Create** → **Import a repository**
+2. 授权并选择本仓库
+3. 填写：
+
+| 设置项 | 值 |
+|---|---|
+| Project / Worker name | 环境名，如 `zhigen-crm-dev`（决定所有资源名） |
+| Production branch | `dev`（测试）或 `main`（生产） |
+| Build command | 留空 |
+| Deploy command | `pnpm run cf:deploy` |
+| Root directory | `/`（默认） |
+
+4. 保存并部署。首次构建会自动创建数据库、存储桶、队列和密钥。
+5. Worker → **Settings** → **Build** → **Branch control**：关闭 **Builds for non-production branches**。
+
+> ⚠️ 第 5 步必须做：非生产分支的预览版本与正式版本共用同一套绑定，会直接读写该环境的数据库。
+
+### 现有生产环境接入（从 GitHub Actions 迁移）
+
+现有 Worker 已经有数据库、存储、队列和密钥，接入后会原样沿用：
+
+1. 控制台 → 打开现有 Worker（如 `zhigen-crm-main`）→ **Settings** → **Build** → **Connect**
+2. 选择本仓库，分支 `main`，Build command 留空，Deploy command 填 `pnpm run cf:deploy`
+3. 同样关闭 **Builds for non-production branches**
+4. 在 GitHub 仓库 Settings → Secrets 中删除不再使用的 `CLOUDFLARE_API_TOKEN`、`CLOUDFLARE_ACCOUNT_ID`、`VITE_API_BASE_URL`
+
+### 首次访问
+
+部署完成后访问 `https://<name>.<你的子域>.workers.dev`（或绑定的自定义域名），首次打开会进入初始化页面创建管理员账号。
+
+---
+
+## 若构建报权限错误
+
+Workers Builds 自动生成的构建 Token 若缺少 D1 / R2 / Queues 权限：
+
+1. 在 Cloudflare 创建一个 API Token（"Edit Cloudflare Workers" 模板 + D1、R2、Queues 编辑权限）
+2. Worker → **Settings** → **Build** → **Build variables and secrets**，添加 Secret `CLOUDFLARE_API_TOKEN`
+
+---
+
+## 可选配置（控制台 → Worker → Settings → Variables and Secrets）
 
 | Secret | 说明 |
 |---|---|
@@ -74,35 +111,40 @@ Setup 工作流会根据仓库信息自动计算资源名称（如 `zhigen-crm-m
 | `SENDGRID_API_KEY` | SendGrid API Key（回退选项） |
 | `PORTAL_BASE_URL` | 客户门户访问地址，用于生成 Magic Link |
 
-> 未配置邮件 Key 时，发邮件操作静默跳过，不影响其他功能。
+> 未配置邮件 Key 时，发邮件操作静默跳过，不影响其他功能。在控制台设置的 Secret 不会被部署覆盖。
 
----
+构建变量（Settings → Build → Build variables）：
 
-## 架构说明：单 Worker 部署
-
-前端和 API 部署在**同一个 Worker** 中（Workers Static Assets）：
-
-- `/api/*` 由 Worker 代码处理（`run_worker_first = ["/api/*"]`）
-- 其余请求直接命中静态资源；未匹配到文件的路径回退到 `index.html`（SPA 路由）
-- 静态资源请求不执行 Worker 代码，**免费且不计入 Workers 请求额度**
-- 前端与 API 同源，前端默认以相对路径 `/api` 调用后端，无需配置 API 地址
-
-配置见 `apps/workers/wrangler.toml` 的 `[assets]` 段。部署前必须先构建前端（`pnpm build:web`），根目录的 `pnpm deploy:all` 会自动完成这一步。
-
-> 从旧版（Worker + Pages）升级：首次部署新版后，前端访问地址变为 Worker 的地址（`{worker-name}.{subdomain}.workers.dev` 或绑定的自定义域名）。
-> 确认新地址可用后，把原来绑在 Pages 上的自定义域名改绑到 Worker，再在控制台删除旧的 Pages 项目。
-> 旧版代码保留在 tag `v1.0.0`。
+| 变量 | 说明 |
+|---|---|
+| `VITE_API_BASE_URL` | 让前端调用其它地址的 API；不设置时使用同源 `/api`（推荐） |
 
 ---
 
 ## 自定义域名
 
-在 Cloudflare 控制台手动绑定：
-- Workers & Pages → 对应 Worker → Settings → Domains & Routes
+控制台 → 对应 Worker → **Settings** → **Domains & Routes** 添加。前端和 API 共用这一个域名，无需其它配置。
 
-前端和 API 共用这一个域名，无需额外配置。
+---
 
-如需让前端改为调用其它地址的 API，可在 GitHub Secrets 中设置 `VITE_API_BASE_URL`（构建时编译进前端），然后重新部署。不设置时前端使用同源 `/api`。
+## 架构说明：单 Worker
+
+前端和 API 部署在同一个 Worker 中（配置见 `apps/workers/wrangler.toml` 的 `[assets]` 段）：
+
+- `/api/*` 由 Worker 代码处理（`run_worker_first = ["/api/*"]`）
+- 其余请求直接命中静态资源；未匹配文件的路径回退到 `index.html`（SPA 路由）
+- 静态资源请求不执行 Worker 代码，免费且不计入 Workers 请求额度
+
+`wrangler.toml` 中的资源名均为占位符，由部署脚本在构建时替换（生成临时文件 `wrangler.deploy.toml`，不修改仓库文件）。
+
+> 旧版（Worker + Pages + GitHub Actions）代码保留在 tag `v1.0.0`。
+
+---
+
+## 回滚
+
+控制台 → Worker → **Deployments** → 选择历史版本 → **Rollback**。
+注意：回滚只回退代码，不回退数据库迁移，所以迁移应保持向后兼容（只加表/加字段，不删除、不改名）。
 
 ---
 
@@ -120,12 +162,6 @@ pnpm --filter workers dev
 
 > Worker 绑定了 Workers AI，本地开发需要先 `npx wrangler login`（或设置 `CLOUDFLARE_API_TOKEN`）。
 
-部署（需已配置 wrangler.toml 中的资源名）：
-
-```bash
-pnpm deploy:all   # 先构建前端，再 wrangler deploy
-```
-
 `apps/workers/.dev.vars` 示例（本地开发用，不提交）：
 
 ```
@@ -137,26 +173,15 @@ RESEND_API_KEY=
 PORTAL_BASE_URL=http://localhost:5173
 ```
 
-本地 wrangler.toml 需要对应的环境变量，在 `.dev.vars` 同级创建 `.env` 文件或直接 export：
+### 从本地手动部署（一般不需要）
 
 ```bash
-export CLOUDFLARE_ACCOUNT_ID=你的账户ID
-export WORKER_NAME=crm-workers-dev
-export D1_DATABASE_NAME=crm-db-dev
-export D1_DATABASE_ID=你的D1数据库ID
-export R2_BUCKET_NAME=crm-storage-dev
-export LEAD_QUEUE_NAME=lead-assignment-queue-dev
-export NOTIFY_QUEUE_NAME=notification-queue-dev
+npx wrangler login
+APP_NAME=zhigen-crm-dev pnpm run cf:deploy
 ```
 
 ---
 
 ## 数据库迁移
 
-迁移文件位于 `apps/workers/migrations/`，命名规则 `NNNN_描述.sql`。
-
-```bash
-# 手动应用到远端
-cd apps/workers
-npx wrangler d1 migrations apply "$D1_DATABASE_NAME" --remote
-```
+迁移文件位于 `apps/workers/migrations/`，命名规则 `NNNN_描述.sql`。每次部署自动执行，无需手动操作。

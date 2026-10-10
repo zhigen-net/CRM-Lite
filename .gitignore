@@ -1,6 +1,7 @@
 node_modules/
 dist/
 .wrangler/
+apps/workers/wrangler.deploy.toml
 .dev.vars
 *.local
 .env

@@ -12,7 +12,7 @@
     "dev:workers": "pnpm --filter workers dev",
     "dev": "concurrently \"pnpm dev:web\" \"pnpm dev:workers\"",
     "build:web": "pnpm --filter web build",
-    "deploy:all": "pnpm build:web && pnpm --filter workers run deploy",
+    "cf:deploy": "bash scripts/cf-deploy.sh",
     "db:migrate": "pnpm --filter workers db:migrate",
     "db:migrate:local": "pnpm --filter workers db:migrate:local",
     "typecheck": "pnpm -r typecheck"
