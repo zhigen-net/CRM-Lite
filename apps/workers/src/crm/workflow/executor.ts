@@ -288,12 +288,18 @@ export async function executeWorkflowsForTrigger(
 
 // ── 定时工作流（Cron 每日执行）────────────────────────────────────────────────
 
+// 每次定时运行的处理上限，避免超出 Workers 单次调用的限制
+// （免费版：10ms CPU、50 个外部请求）。未处理完的记录不会被记为已执行，下次运行继续处理。
+const MAX_ENTITIES_PER_RUN = 100
+const MAX_EXTERNAL_CALLS_PER_RUN = 40   // 邮件 + webhook
+
 export async function executeScheduledWorkflows(db: D1Database, env: Env): Promise<void> {
   // 读取系统时区
   const tzRow = await db.prepare("SELECT value FROM system_settings WHERE key = 'timezone'")
     .first<{ value: string }>()
   const timezone = tzRow?.value ?? 'Asia/Shanghai'
   const today = new Date().toLocaleDateString('en-CA', { timeZone: timezone }) // YYYY-MM-DD
+  const timeVars = buildTimeVars(timezone)
 
   // 查询所有启用的 scheduled 工作流
   const { results: scheduledRows } = await db.prepare(
@@ -306,49 +312,78 @@ export async function executeScheduledWorkflows(db: D1Database, env: Env): Promi
 
   if (!scheduledWorkflows.length) return
 
+  let entitiesLeft = MAX_ENTITIES_PER_RUN
+  let externalCallsLeft = MAX_EXTERNAL_CALLS_PER_RUN
+
   for (const { row, trigger, actions } of scheduledWorkflows) {
     if (trigger.type !== 'scheduled') continue
+    if (entitiesLeft <= 0 || externalCallsLeft <= 0) {
+      console.warn(`[workflow/scheduled] 已达本次运行上限，工作流 ${row.id} 留待下次运行`)
+      break
+    }
     const { condition, field, days } = trigger
     const entityType = row.entity_type as 'lead' | 'client'
     const table  = entityType === 'lead' ? 'leads' : 'clients'
     const fieldMap = FIELD_TO_COLUMN[entityType] ?? {}
+    const externalCallsPerEntity = actions.filter((a) => a.type === 'webhook' || a.type === 'send_email').length
+
+    // 每个匹配结果带上 trigger_key；已在 workflow_scheduled_runs 中记录过的组合直接排除
+    const notYetRun = (keyExpr: string) => `NOT EXISTS (
+      SELECT 1 FROM workflow_scheduled_runs r
+      WHERE r.workflow_id = ? AND r.entity_id = e.id AND r.trigger_key = ${keyExpr}
+    )`
 
     try {
-      let entityIds: string[] = []
+      let matched: { id: string; trigger_key: string }[] = []
 
       if (condition === 'date_is_today' && field) {
         const col = fieldMap[field]
         if (!col) continue
         const { results } = await db.prepare(
-          `SELECT id FROM ${table} WHERE DATE(${col}) = ?`,
-        ).bind(today).all<{ id: string }>()
-        entityIds = results.map((r) => r.id)
+          `SELECT e.id, ? AS trigger_key FROM ${table} e
+           WHERE e.deleted_at IS NULL AND DATE(e.${col}) = ? AND ${notYetRun('?')}
+           LIMIT ?`,
+        ).bind(today, today, row.id, today, entitiesLeft).all<{ id: string; trigger_key: string }>()
+        matched = results
 
       } else if (condition === 'date_overdue' && field) {
         const col = fieldMap[field]
         if (!col) continue
         const { results } = await db.prepare(
-          `SELECT id FROM ${table} WHERE ${col} IS NOT NULL AND DATE(${col}) < ?`,
-        ).bind(today).all<{ id: string }>()
-        entityIds = results.map((r) => r.id)
+          `SELECT e.id, CAST(e.${col} AS TEXT) AS trigger_key FROM ${table} e
+           WHERE e.deleted_at IS NULL AND e.${col} IS NOT NULL AND DATE(e.${col}) < ?
+             AND ${notYetRun(`CAST(e.${col} AS TEXT)`)}
+           LIMIT ?`,
+        ).bind(today, row.id, entitiesLeft).all<{ id: string; trigger_key: string }>()
+        matched = results
 
-      } else if (condition === 'no_activity_days' && days != null && days > 0) {
-        // 找出最近 N 天内没有跟进记录的实体
+      } else if (condition === 'no_activity_days' && days != null && Number(days) > 0) {
+        // 找出最近 N 天内没有跟进记录的实体；trigger_key = 最近一次跟进日期（无跟进为 'none'）
         const col = entityType === 'lead' ? 'lead_id' : 'client_id'
         const { results } = await db.prepare(
-          `SELECT e.id FROM ${table} e
-           WHERE NOT EXISTS (
-             SELECT 1 FROM sales_activities a
-             WHERE a.${col} = e.id
-               AND a.activity_type != 'System'
-               AND a.activity_date >= DATE(?, '-${days} days')
-           )`,
-        ).bind(today).all<{ id: string }>()
-        entityIds = results.map((r) => r.id)
+          `SELECT e.id, e.trigger_key FROM (
+             SELECT x.id, COALESCE((
+               SELECT MAX(a.activity_date) FROM sales_activities a
+               WHERE a.${col} = x.id AND a.activity_type != 'System'
+             ), 'none') AS trigger_key
+             FROM ${table} x WHERE x.deleted_at IS NULL
+           ) e
+           WHERE (e.trigger_key = 'none' OR e.trigger_key < DATE(?, ?))
+             AND ${notYetRun('e.trigger_key')}
+           LIMIT ?`,
+        ).bind(today, `-${Math.floor(Number(days))} days`, row.id, entitiesLeft).all<{ id: string; trigger_key: string }>()
+        matched = results
       }
 
       // 对每个匹配实体执行动作
-      for (const entityId of entityIds) {
+      for (const { id: entityId, trigger_key: triggerKey } of matched) {
+        if (entitiesLeft <= 0 || externalCallsLeft < externalCallsPerEntity) {
+          console.warn(`[workflow/scheduled] 已达本次运行上限，工作流 ${row.id} 剩余记录留待下次运行`)
+          break
+        }
+        entitiesLeft--
+        externalCallsLeft -= externalCallsPerEntity
+
         try {
           let entityData: Record<string, unknown> = {}
           if (entityType === 'lead') {
@@ -365,7 +400,7 @@ export async function executeScheduledWorkflows(db: D1Database, env: Env): Promi
             entityData = raw ? (toCamel(raw) as Record<string, unknown>) : {}
           }
 
-          const ctx = buildContext(entityData, buildTimeVars(timezone))
+          const ctx = buildContext(entityData, timeVars)
 
           for (const action of actions) {
             try {
@@ -396,6 +431,11 @@ export async function executeScheduledWorkflows(db: D1Database, env: Env): Promi
               console.error(`[workflow/scheduled] action ${action.type} failed for ${entityId}:`, err)
             }
           }
+
+          // 记为已执行（单个动作失败也记录，避免每天重复发送其它成功的动作）
+          await db.prepare(
+            'INSERT OR IGNORE INTO workflow_scheduled_runs (workflow_id, entity_id, trigger_key) VALUES (?, ?, ?)',
+          ).bind(row.id, entityId, triggerKey).run()
         } catch (err) {
           console.error(`[workflow/scheduled] entity ${entityId} failed:`, err)
         }
