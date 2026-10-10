@@ -271,7 +271,8 @@ app.notFound((c) => c.json({ message: '接口不存在' }, 404))
 export default {
   fetch: app.fetch,
   async queue(batch: MessageBatch<{ leadId: string } | { type: string; leadId: string; assignedToUserId: string }>, env: Env): Promise<void> {
-    if (batch.queue === 'notification-queue') {
+    // 队列名由部署脚本生成：<worker名>-leads / <worker名>-notify
+    if (batch.queue.endsWith('-notify')) {
       await handleNotificationBatch(batch as MessageBatch<{ type: 'lead_assigned'; leadId: string; assignedToUserId: string }>, env)
     } else {
       await handleLeadAssignmentBatch(batch as MessageBatch<{ leadId: string }>, env)

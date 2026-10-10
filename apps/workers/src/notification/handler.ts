@@ -64,8 +64,6 @@ async function processNotification(msg: NotificationMessage, env: Env): Promise<
   ])
 }
 
-import { sendEmail } from '../shared/email'
-
 export function buildWebhookPayload(url: string, text: string): object {
   if (url.includes('qyapi.weixin.qq.com')) {
     // 企业微信机器人
