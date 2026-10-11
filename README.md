@@ -107,5 +107,6 @@ pnpm db:migrate:local
 
 ## 相关文档
 
+- [AGENTS.md](./AGENTS.md)：开发约定（分支流程、迁移规则等，开发者和编码 agent 都须遵守）
 - [DEPLOY.md](./DEPLOY.md)：部署与运维
 - [CRM_Development_Guide.md](./CRM_Development_Guide.md)：最初的系统设计文档（架构部分描述的是早期的 Pages + Workers 方案）
