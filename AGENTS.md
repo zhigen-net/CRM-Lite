@@ -18,6 +18,7 @@
   - `main` 分支 → 生产 Worker
 - 所有改动先合入 `dev`，在 `crm-dev` 验证通过后，再由 `dev` 合入 `main`。**不要直接 push `main`**，也不要从功能分支直接向 `main` 开 PR。
 - 功能分支从 `dev` 拉出，PR 的目标分支是 `dev`。
+- 在 Cloudflare 上连接本仓库的每个 Worker / Pages 项目都要**关闭预览构建**（Preview Builds / Preview branches），否则其它分支和 PR 会触发必然失败的构建检查。
 - 部署只走 Workers Builds（`pnpm run cf:deploy` → `scripts/cf-deploy.sh`）。**不要加回 GitHub Actions 部署**，不要引入需要在 GitHub 配置 Secret 的流程。
 - `apps/workers/wrangler.toml` 中的资源名（`placeholder-*`、全零 `database_id`）是占位符，由部署脚本替换。**不要改成真实值**，不要提交 `wrangler.deploy.toml`。
 
