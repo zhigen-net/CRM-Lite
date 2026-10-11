@@ -155,6 +155,15 @@
 
 ---
 
+## 日志与排错
+
+`wrangler.toml` 中已开启 `[observability]`，Worker 的 `console.log`、未捕获异常和每个请求都会持久化保存（免费版每天 20 万条，保留 3 天）。
+
+- 查看：控制台 → 对应 Worker → **Observability** / **Logs**，可按路径、状态码、错误信息筛选
+- 构建失败：控制台 → 对应 Worker → **Deployments** → 点开失败的构建查看日志
+
+---
+
 ## 回滚
 
 控制台 → Worker → **Deployments** → 选择历史版本 → **Rollback**。
