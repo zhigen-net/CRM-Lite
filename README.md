@@ -12,7 +12,7 @@ Worker 不能绑定其他 Cloudflare 账号下的域名。这个分支是一个�
 3. 构建设置：
    - Framework preset：`None`
    - Build command：留空
-   - Build output directory：`public`
+   - Build output directory：`dist`
    - Root directory：留空
 4. **Environment variables** 添加：
    - `TARGET_URL` = Worker 地址，例如 `https://zhigen-crm-main.xxx.workers.dev`
