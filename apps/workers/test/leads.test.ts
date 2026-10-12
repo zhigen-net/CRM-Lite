@@ -1,8 +1,10 @@
 // 线索行为测试：以界面接口（/api/leads）的现有行为为标准，
 // 要求 AI 助手工具、对外接口 /api/v1/leads、失败补录与之保持一致。
 import { env } from 'cloudflare:workers'
-import { beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { executeTool } from '../src/crm/agent/executor'
+import { actorFromJwt } from '../src/domain/actor'
+import { createLead } from '../src/domain/leads/service'
 import {
   api, createTeam, createUser, insertLead, leadRow, leadsCount, systemActivities, type TestUser,
 } from './helpers'
@@ -201,5 +203,65 @@ describe('新建线索', () => {
     expect((await leadRow(leadId))?.name).toBe('新建-补录')
     const f = await env.DB.prepare('SELECT resolution FROM api_lead_failures WHERE id = ?').bind(fid).first<{ resolution: string }>()
     expect(f?.resolution).toBe('created_lead')
+  })
+})
+
+describe('新建线索：所有入口都进入分配队列并触发"新建"类工作流', () => {
+  const wfId = `wf-oncreate-${Date.now()}`
+
+  beforeAll(async () => {
+    await env.DB.prepare('INSERT INTO workflows (id, name, entity_type, trigger, actions, is_active) VALUES (?, ?, ?, ?, ?, 1)')
+      .bind(wfId, 'test on_create', 'lead', JSON.stringify({ type: 'on_create' }),
+        JSON.stringify([{ type: 'set_field', field: 'lostReason', value: 'wf-ran' }])).run()
+  })
+  afterAll(async () => {
+    await env.DB.prepare('DELETE FROM workflows WHERE id = ?').bind(wfId).run()
+  })
+
+  async function waitForWorkflow(leadId: string) {
+    for (let i = 0; i < 50; i++) {
+      if ((await leadRow(leadId))?.lost_reason === 'wf-ran') return true
+      await new Promise((r) => setTimeout(r, 20))
+    }
+    return false
+  }
+
+  it('业务服务：createLead 推送分配队列', async () => {
+    const sent: unknown[] = []
+    const pending: Promise<unknown>[] = []
+    const fakeEnv = { ...env, LEAD_ASSIGNMENT_QUEUE: { send: async (m: unknown) => { sent.push(m) } } } as unknown as Env
+    const id = await createLead({ db: env.DB, env: fakeEnv, waitUntil: (p) => { pending.push(p) } },
+      actorFromJwt({ userId: ops.id, role: 'operations', teamId: null }, 'api'),
+      { source: 's', name: 'q', contactInfo: 'c', intendedServices: ['其他'] })
+    await Promise.allSettled(pending)
+    expect(sent).toEqual([{ leadId: id }])
+    expect(await waitForWorkflow(id)).toBe(true)
+  })
+
+  it('对外接口新建会触发工作流', async () => {
+    const key = `crm_wf_${Date.now()}`
+    const hash = [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(key)))]
+      .map((b) => b.toString(16).padStart(2, '0')).join('')
+    await env.DB.prepare('INSERT INTO api_keys (id, user_id, key_hash, key_prefix) VALUES (?, ?, ?, ?)')
+      .bind(`ak-wf-${Date.now()}`, ops.id, hash, key.slice(0, 12)).run()
+    const { exports } = await import('cloudflare:workers')
+    const res = await exports.default.fetch('http://crm.test/api/v1/leads', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'X-API-Key': key },
+      body: JSON.stringify({ source: '广告', name: 'wf-API', contactInfo: '1', intendedServices: ['其他'] }),
+    })
+    const { id } = ((await res.json()) as { data: { id: string } }).data
+    expect(await waitForWorkflow(id)).toBe(true)
+  })
+
+  it('失败补录新建会触发工作流，并保留广告字段和附加信息', async () => {
+    const fid = `f-wf-${Date.now()}`
+    await env.DB.prepare('INSERT INTO api_lead_failures (id, request_body, error_message) VALUES (?, ?, ?)')
+      .bind(fid, JSON.stringify({ source: '广告', name: 'wf-补录', contactInfo: '1', intendedServices: ['其他'], campaign: '秋季', 备用: 'x' }), 'boom').run()
+    const res = await api(admin, 'POST', `/api/admin/api-failures/${fid}/create-lead`)
+    const { leadId } = ((await res.json()) as { data: { leadId: string } }).data
+    expect(await waitForWorkflow(leadId)).toBe(true)
+    const row = await leadRow(leadId)
+    expect(JSON.parse(String(row?.ad_info))).toEqual({ 广告计划: '秋季' })
+    expect(String(row?.notes)).toContain('备用：x')
   })
 })

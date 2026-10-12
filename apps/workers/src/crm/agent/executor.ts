@@ -1,16 +1,35 @@
 import { v4 as uuidv4 } from 'uuid'
 import { toCamel, toCamelList } from '../../shared/db'
+import { actorFromJwt, type Role } from '../../domain/actor'
+import { DomainError } from '../../domain/errors'
+import * as leads from '../../domain/leads/service'
 
 export interface AgentContext {
   db: D1Database
+  env: Env
   userId: string
-  role: string
+  role: Role
+  teamId: string | null
+  waitUntil(promise: Promise<unknown>): void
 }
+
+const actorOf = (ctx: AgentContext) => actorFromJwt(ctx, 'assistant')
+const depsOf = (ctx: AgentContext) => ({ db: ctx.db, env: ctx.env, waitUntil: ctx.waitUntil })
 
 type ToolInput = Record<string, unknown>
 type ToolResult = unknown
 
 export async function executeTool(ctx: AgentContext, toolName: string, input: ToolInput): Promise<ToolResult> {
+  try {
+    return await dispatch(ctx, toolName, input)
+  } catch (err) {
+    // 业务错误（无权限、参数无效等）以 { error } 返回给模型，让它能据此调整
+    if (err instanceof DomainError) return { error: err.message }
+    throw err
+  }
+}
+
+async function dispatch(ctx: AgentContext, toolName: string, input: ToolInput): Promise<ToolResult> {
   switch (toolName) {
     case 'query_leads':      return queryLeads(ctx, input)
     case 'get_lead':         return getLead(ctx, input)
@@ -25,47 +44,22 @@ export async function executeTool(ctx: AgentContext, toolName: string, input: To
   }
 }
 
-// ─── 查询线索 ─────────────────────────────────────────────────────────────────
+// ─── 查询线索（可见范围与界面一致，由 domain/leads 决定） ───────────────────────
 
 async function queryLeads(ctx: AgentContext, input: ToolInput) {
-  const { db, userId, role } = ctx
-  const search      = input.search as string | undefined
-  const status      = input.status as string | undefined
-  const nextContact = input.nextContact as string | undefined
-  const mine        = input.mine as boolean | undefined
-  const pageSize    = Math.min(50, Number(input.pageSize ?? 10))
-
-  let where = 'WHERE l.deleted_at IS NULL'
-  const params: unknown[] = []
-
-  if (role === 'sales') {
-    where += ' AND l.assigned_to_userId = ?'
-    params.push(userId)
-  } else if (mine) {
-    where += ' AND l.assigned_to_userId = ?'
-    params.push(userId)
-  }
-  if (status) { where += ' AND l.status = ?'; params.push(status) }
-  if (nextContact === 'overdue') where += " AND l.next_contact_date IS NOT NULL AND l.next_contact_date < date('now')"
-  else if (nextContact === 'today') where += " AND l.next_contact_date = date('now')"
-  else if (nextContact === 'week') where += " AND l.next_contact_date IS NOT NULL AND l.next_contact_date BETWEEN date('now') AND date('now', '+7 days')"
-  if (search) {
-    where += ' AND (l.name LIKE ? OR l.contact_info LIKE ? OR l.source LIKE ? OR CAST(l.lead_no AS TEXT) LIKE ?)'
-    const q = `%${search}%`
-    params.push(q, q, q, q)
-  }
-
-  const SELECT = 'SELECT l.id, l.lead_no, l.name, l.contact_info, l.status, l.source, l.next_contact_date, l.intended_services, assign_u.name as assigned_to_name FROM leads l LEFT JOIN users assign_u ON l.assigned_to_userId = assign_u.id'
-  const [rows, countRow] = await Promise.all([
-    db.prepare(`${SELECT} ${where} ORDER BY l.created_at DESC LIMIT ?`).bind(...params, pageSize).all<Record<string, unknown>>(),
-    db.prepare(`SELECT COUNT(*) as total FROM leads l ${where}`).bind(...params).first<{ total: number }>(),
-  ])
-
+  const result = await leads.listLeads(ctx.db, actorOf(ctx), {
+    search: input.search as string | undefined,
+    status: input.status as string | undefined,
+    nextContact: input.nextContact as string | undefined,
+    mine: input.mine as boolean | undefined,
+    pageSize: Math.min(50, Number(input.pageSize ?? 10)),
+  })
+  // 只返回模型需要的字段，节省上下文
   return {
-    total: countRow?.total ?? 0,
-    leads: toCamelList(rows.results).map((l) => ({
-      ...l,
-      intendedServices: (() => { try { return JSON.parse(l.intendedServices as string) } catch { return [] } })(),
+    total: result.total,
+    leads: result.data.map((l) => ({
+      id: l.id, leadNo: l.leadNo, name: l.name, contactInfo: l.contactInfo, status: l.status, source: l.source,
+      nextContactDate: l.nextContactDate, intendedServices: l.intendedServices, assignedToName: l.assignedToName,
     })),
   }
 }
@@ -73,23 +67,10 @@ async function queryLeads(ctx: AgentContext, input: ToolInput) {
 // ─── 线索详情 ─────────────────────────────────────────────────────────────────
 
 async function getLead(ctx: AgentContext, input: ToolInput) {
-  const { db, userId, role } = ctx
   const id = input.id as string
+  const lead = await leads.getLead(ctx.db, actorOf(ctx), id)
 
-  const row = await db.prepare(`
-    SELECT l.*, assign_u.name as assigned_to_name
-    FROM leads l LEFT JOIN users assign_u ON l.assigned_to_userId = assign_u.id
-    WHERE l.id = ? AND l.deleted_at IS NULL
-  `).bind(id).first<Record<string, unknown>>()
-  if (!row) return { error: '线索不存在' }
-  if (role === 'sales' && row.assigned_to_userId !== userId) return { error: '无权访问此线索' }
-
-  const lead = toCamel(row) as Record<string, unknown>
-  if (typeof lead.intendedServices === 'string') {
-    try { lead.intendedServices = JSON.parse(lead.intendedServices as string) } catch { lead.intendedServices = [] }
-  }
-
-  const actRows = await db.prepare(`
+  const actRows = await ctx.db.prepare(`
     SELECT sa.activity_type, sa.description, sa.activity_date, sa.next_contact_date, u.name as user_name
     FROM sales_activities sa LEFT JOIN users u ON sa.user_id = u.id
     WHERE sa.lead_id = ? ORDER BY sa.activity_date DESC, sa.created_at DESC LIMIT 10
@@ -200,33 +181,18 @@ async function createActivity(ctx: AgentContext, input: ToolInput) {
   return { success: true, activityId: id, message: '跟进记录已创建' }
 }
 
-// ─── 更新线索 ─────────────────────────────────────────────────────────────────
+// ─── 更新线索（与界面相同的校验和附带处理） ─────────────────────────────────
 
 async function updateLead(ctx: AgentContext, input: ToolInput) {
-  const { db, userId, role } = ctx
-  const id = input.id as string
+  const patch: leads.UpdateLeadPatch = {}
+  if (input.status !== undefined) patch.status = input.status as string
+  if (input.notes !== undefined) patch.notes = input.notes as string | null
+  if (input.assignedToUserId !== undefined) patch.assignedToUserId = input.assignedToUserId as string | null
+  if (input.nextContactDate !== undefined) patch.nextContactDate = input.nextContactDate as string | null
+  if (input.intendedServices !== undefined) patch.intendedServices = input.intendedServices as string[]
+  if (Object.keys(patch).length === 0) return { error: '未提供任何要更新的字段' }
 
-  const lead = await db.prepare('SELECT assigned_to_userId, status FROM leads WHERE id = ? AND deleted_at IS NULL').bind(id).first<{ assigned_to_userId: string | null; status: string }>()
-  if (!lead) return { error: '线索不存在' }
-  if (lead.status === 'Converted') return { error: '线索已转化，不可修改' }
-  if (role === 'sales' && lead.assigned_to_userId !== userId) return { error: '无权操作此线索' }
-
-  const updates: string[] = ['updated_at = CURRENT_TIMESTAMP']
-  const params: unknown[] = []
-
-  if (input.status !== undefined)           { updates.push('status = ?');            params.push(input.status) }
-  if (input.notes !== undefined)            { updates.push('notes = ?');             params.push(input.notes) }
-  if (input.assignedToUserId !== undefined) { updates.push('assigned_to_userId = ?'); params.push(input.assignedToUserId) }
-  if (input.nextContactDate !== undefined)  { updates.push('next_contact_date = ?'); params.push(input.nextContactDate) }
-  if (input.intendedServices !== undefined) {
-    updates.push('intended_services = ?')
-    params.push(JSON.stringify(input.intendedServices))
-  }
-
-  if (updates.length === 1) return { error: '未提供任何要更新的字段' }
-
-  params.push(id)
-  await db.prepare(`UPDATE leads SET ${updates.join(', ')} WHERE id = ?`).bind(...params).run()
+  await leads.updateLead(depsOf(ctx), actorOf(ctx), input.id as string, patch)
   return { success: true, message: '线索已更新' }
 }
 
