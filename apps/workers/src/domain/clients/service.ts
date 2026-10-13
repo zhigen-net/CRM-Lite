@@ -177,6 +177,8 @@ export async function updateClient(deps: Deps, actor: Actor, id: string, patch: 
   const { db } = deps
   const existing = await findActiveClient(db, id)
   assertCanEditClient(actor, existing)
+  // 工作流发起的修改：不写系统变更记录（无操作人），也不再触发工作流（避免循环）
+  const byWorkflow = actor.via === 'workflow'
 
   const sets: string[] = ['updated_at = CURRENT_TIMESTAMP']
   const params: unknown[] = []
@@ -219,7 +221,7 @@ export async function updateClient(deps: Deps, actor: Actor, id: string, patch: 
     const [oldName, newName] = await Promise.all([name(existing.assigned_sales_userId), name(patch.assignedSalesUserId)])
     changes.push(`负责人：${oldName ?? '（未分配）'} → ${newName ?? '（未分配）'}`)
   }
-  if (changes.length > 0) {
+  if (changes.length > 0 && !byWorkflow) {
     await insertSystemActivityStatement(db, { clientId: id }, actor.userId, changes.join('；')).run()
   }
 
@@ -231,7 +233,7 @@ export async function updateClient(deps: Deps, actor: Actor, id: string, patch: 
     ['nextContactDate', existing.next_contact_date, patch.nextContactDate],
   ]
   for (const [field, oldVal, newVal] of fieldChanges) {
-    if (newVal !== undefined && newVal !== null && newVal !== oldVal) {
+    if (!byWorkflow && newVal !== undefined && newVal !== null && newVal !== oldVal) {
       fireWorkflow(deps, 'client', id, { type: 'field_change', field, to: String(newVal) })
     }
   }
