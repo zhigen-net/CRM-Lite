@@ -5,7 +5,7 @@ import { toCamel } from '../../shared/db'
 import type { Actor, Deps } from '../actor'
 import { badRequest, forbidden, notFound } from '../errors'
 import { fireWorkflow } from '../workflows'
-import { insertActivityStatement, insertAttachmentStatements, type AttachmentInput } from '../activities/records'
+import { insertActivityStatement, insertAttachmentStatements, insertSystemActivityStatement, type AttachmentInput } from '../activities/records'
 import { assertCanChangeLeadTeam, assertCanEditLead, assertCanViewLead, leadVisibility } from './policy'
 
 // 与 leads 表的 CHECK 约束一致
@@ -265,10 +265,7 @@ export async function updateLead(deps: Deps, actor: Actor, id: string, patch: Up
     changes.push(`下次联系→${patch.nextContactDate ?? '无'}`)
   }
   if (changes.length > 0) {
-    await db.prepare(
-      `INSERT INTO sales_activities (id, lead_id, user_id, activity_type, description, activity_date)
-       VALUES (?, ?, ?, 'System', ?, CURRENT_TIMESTAMP)`,
-    ).bind(uuidv4(), id, actor.userId, changes.join('；')).run()
+    await insertSystemActivityStatement(db, { leadId: id }, actor.userId, changes.join('；')).run()
   }
 
   // "字段变化"类工作流

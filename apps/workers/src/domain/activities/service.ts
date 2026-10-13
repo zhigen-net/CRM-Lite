@@ -4,8 +4,7 @@ import { toCamel, toCamelList } from '../../shared/db'
 import type { Actor, Deps } from '../actor'
 import { badRequest, notFound } from '../errors'
 import { fireWorkflow } from '../workflows'
-import { assertCanEditLead } from '../leads/policy'
-import { assertCanEditClient } from '../clients/policy'
+import { activityVisibility, assertCanWriteActivity } from './policy'
 import { insertActivityStatement, insertAttachmentStatements, type AttachmentInput } from './records'
 
 const ACTIVITY_SELECT = `
@@ -58,14 +57,9 @@ export async function listActivities(db: D1Database, actor: Actor, f: ActivityLi
   const pageSize = Math.min(100, Math.max(1, f.pageSize ?? 20))
   const offset = (page - 1) * pageSize
 
-  let where = 'WHERE 1=1'
-  const params: unknown[] = []
-
-  // 销售只能看自己负责的线索/客户下的跟进记录
-  if (actor.role === 'sales') {
-    where += ' AND (l.assigned_to_userId = ? OR c.assigned_sales_userId = ?)'
-    params.push(actor.userId, actor.userId)
-  }
+  const scope = activityVisibility(actor)
+  let where = 'WHERE 1=1' + scope.sql
+  const params: unknown[] = [...scope.params]
 
   if (f.clientId && f.leadId) { where += ' AND (sa.client_id = ? OR sa.lead_id = ?)'; params.push(f.clientId, f.leadId) }
   else if (f.clientId) { where += ' AND sa.client_id = ?'; params.push(f.clientId) }
@@ -139,19 +133,18 @@ export async function createActivity(deps: Deps, actor: Actor, input: CreateActi
   const clientId = input.clientId ?? null
   if (!leadId && !clientId) throw badRequest('跟进记录必须关联线索或客户')
 
-  // 关联对象必须存在，且操作者有修改权限（跟进记录会改写下次联系时间）
-  if (leadId) {
-    const lead = await db.prepare('SELECT assigned_to_userId, assigned_to_teamId FROM leads WHERE id = ? AND deleted_at IS NULL')
+  // 关联对象必须存在，且操作者有修改权限
+  const lead = leadId
+    ? await db.prepare('SELECT assigned_to_userId, assigned_to_teamId FROM leads WHERE id = ? AND deleted_at IS NULL')
       .bind(leadId).first<{ assigned_to_userId: string | null; assigned_to_teamId: string | null }>()
-    if (!lead) throw notFound('线索不存在')
-    assertCanEditLead(actor, lead)
-  }
-  if (clientId) {
-    const client = await db.prepare('SELECT assigned_sales_userId FROM clients WHERE id = ? AND deleted_at IS NULL')
+    : null
+  if (leadId && !lead) throw notFound('线索不存在')
+  const client = clientId
+    ? await db.prepare('SELECT assigned_sales_userId FROM clients WHERE id = ? AND deleted_at IS NULL')
       .bind(clientId).first<{ assigned_sales_userId: string | null }>()
-    if (!client) throw notFound('客户不存在')
-    assertCanEditClient(actor, client)
-  }
+    : null
+  if (clientId && !client) throw notFound('客户不存在')
+  assertCanWriteActivity(actor, lead, client)
 
   const type = await db.prepare(
     "SELECT metadata FROM option_items WHERE group_key = 'activity_type' AND value = ? AND is_active = 1",

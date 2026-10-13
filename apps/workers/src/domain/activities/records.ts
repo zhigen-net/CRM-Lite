@@ -35,3 +35,14 @@ export function insertAttachmentStatements(db: D1Database, activityId: string, a
     ).bind(crypto.randomUUID(), activityId, att.key, att.name, att.size ?? 0),
   )
 }
+
+/** 系统变更记录（状态变更、转化等），记在操作人名下，时间为当前 UTC 时间（与 CURRENT_TIMESTAMP 同格式） */
+export function insertSystemActivityStatement(
+  db: D1Database, target: { leadId?: string | null; clientId?: string | null }, userId: string, description: string,
+): D1PreparedStatement {
+  return insertActivityStatement(db, {
+    id: crypto.randomUUID(), leadId: target.leadId ?? null, clientId: target.clientId ?? null, userId,
+    activityType: 'System', description, activityDate: new Date().toISOString().replace('T', ' ').slice(0, 19),
+    nextContactDate: null,
+  })
+}

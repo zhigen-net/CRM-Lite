@@ -4,6 +4,7 @@ import { toCamel } from '../../shared/db'
 import type { Actor, Deps } from '../actor'
 import { DomainError, forbidden, notFound } from '../errors'
 import { fireWorkflow } from '../workflows'
+import { insertSystemActivityStatement } from '../activities/records'
 import { assertCanEditLead } from '../leads/policy'
 import { adjustLeadsCount, findActiveLead } from '../leads/service'
 import { assertCanEditClient, assertCanViewClient, clientVisibility } from './policy'
@@ -148,10 +149,7 @@ export async function createClient(deps: Deps, actor: Actor, input: CreateClient
       db.prepare("UPDATE leads SET status = 'Converted', updated_at = CURRENT_TIMESTAMP WHERE id = ?").bind(input.leadId),
       // 线索下的跟进记录关联到新客户
       db.prepare('UPDATE sales_activities SET client_id = ? WHERE lead_id = ? AND client_id IS NULL').bind(id, input.leadId),
-      db.prepare(
-        `INSERT INTO sales_activities (id, client_id, lead_id, user_id, activity_type, description, activity_date)
-         VALUES (?, ?, ?, ?, 'System', '线索已转化为客户', CURRENT_TIMESTAMP)`,
-      ).bind(crypto.randomUUID(), id, input.leadId, actor.userId),
+      insertSystemActivityStatement(db, { leadId: input.leadId, clientId: id }, actor.userId, '线索已转化为客户'),
     ])
     if (lead.status !== 'Lost' && lead.assigned_to_userId) await adjustLeadsCount(db, lead.assigned_to_userId, -1)
     fireWorkflow(deps, 'lead', input.leadId, { type: 'field_change', field: 'status', to: 'Converted' })
@@ -222,10 +220,7 @@ export async function updateClient(deps: Deps, actor: Actor, id: string, patch: 
     changes.push(`负责人：${oldName ?? '（未分配）'} → ${newName ?? '（未分配）'}`)
   }
   if (changes.length > 0) {
-    await db.prepare(
-      `INSERT INTO sales_activities (id, client_id, user_id, activity_type, description, activity_date)
-       VALUES (?, ?, ?, 'System', ?, CURRENT_TIMESTAMP)`,
-    ).bind(crypto.randomUUID(), id, actor.userId, changes.join('；')).run()
+    await insertSystemActivityStatement(db, { clientId: id }, actor.userId, changes.join('；')).run()
   }
 
   const fieldChanges: Array<[string, unknown, unknown]> = [
