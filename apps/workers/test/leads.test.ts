@@ -6,16 +6,9 @@ import { executeTool } from '../src/crm/agent/executor'
 import { actorFromJwt } from '../src/domain/actor'
 import { createLead } from '../src/domain/leads/service'
 import {
-  api, createTeam, createUser, insertLead, leadRow, leadsCount, systemActivities, type TestUser,
+  agentCtx, api, createTeam, createUser, insertLead, leadRow, leadsCount, systemActivities, type TestUser,
 } from './helpers'
 
-function agentCtx(user: TestUser) {
-  const pending: Promise<unknown>[] = []
-  return {
-    ctx: { db: env.DB, env, userId: user.id, role: user.role, teamId: user.teamId, waitUntil: (p: Promise<unknown>) => { pending.push(p) } },
-    settle: () => Promise.allSettled(pending),
-  }
-}
 
 let teamA: string, teamB: string
 let admin: TestUser, salesA: TestUser, salesA2: TestUser, salesB: TestUser, ops: TestUser

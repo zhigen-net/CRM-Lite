@@ -23,3 +23,8 @@ export interface Deps {
   env: Env
   waitUntil(promise: Promise<unknown>): void
 }
+
+/** 从 HTTP 请求上下文构造依赖（Hono 的 Context 满足这个结构） */
+export function depsFrom(c: { env: Env; executionCtx: { waitUntil(p: Promise<unknown>): void } }): Deps {
+  return { db: c.env.DB, env: c.env, waitUntil: (p) => c.executionCtx.waitUntil(p) }
+}

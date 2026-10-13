@@ -2,9 +2,10 @@
 // 参数校验、权限、写库以及附带处理（线索数、变更记录、分配队列、工作流）只在这里实现。
 import { v4 as uuidv4 } from 'uuid'
 import { toCamel } from '../../shared/db'
-import { executeWorkflowsForTrigger } from '../../crm/workflow/executor'
 import type { Actor, Deps } from '../actor'
 import { badRequest, forbidden, notFound } from '../errors'
+import { fireWorkflow } from '../workflows'
+import { insertActivityStatement, insertAttachmentStatements, insertSystemActivityStatement, type AttachmentInput } from '../activities/records'
 import { assertCanChangeLeadTeam, assertCanEditLead, assertCanViewLead, leadVisibility } from './policy'
 
 // 与 leads 表的 CHECK 约束一致
@@ -49,20 +50,13 @@ function assertValidStatus(status: string): asserts status is LeadStatus {
   }
 }
 
-async function findActiveLead(db: D1Database, id: string): Promise<LeadRow> {
+export async function findActiveLead(db: D1Database, id: string): Promise<LeadRow> {
   const lead = await db.prepare('SELECT * FROM leads WHERE id = ? AND deleted_at IS NULL').bind(id).first<LeadRow>()
   if (!lead) throw notFound('线索不存在')
   return lead
 }
 
-function triggerWorkflow(deps: Deps, leadId: string, event: Parameters<typeof executeWorkflowsForTrigger>[4], label: string) {
-  deps.waitUntil(
-    executeWorkflowsForTrigger(deps.db, deps.env, 'lead', leadId, event)
-      .catch((err) => console.error(`[workflow] ${label} lead error:`, err)),
-  )
-}
-
-async function adjustLeadsCount(db: D1Database, userId: string, delta: 1 | -1) {
+export async function adjustLeadsCount(db: D1Database, userId: string, delta: 1 | -1) {
   const sql = delta > 0
     ? 'UPDATE users SET current_leads_count = current_leads_count + 1 WHERE id = ?'
     : 'UPDATE users SET current_leads_count = MAX(0, current_leads_count - 1) WHERE id = ?'
@@ -191,7 +185,7 @@ export async function createLead(deps: Deps, actor: Actor, input: CreateLeadInpu
   } catch (err) {
     console.error(`[leads] 推送分配队列失败 ${id}:`, err)
   }
-  triggerWorkflow(deps, id, { type: 'on_create' }, 'on_create')
+  fireWorkflow(deps, 'lead', id, { type: 'on_create' })
   return id
 }
 
@@ -271,10 +265,7 @@ export async function updateLead(deps: Deps, actor: Actor, id: string, patch: Up
     changes.push(`下次联系→${patch.nextContactDate ?? '无'}`)
   }
   if (changes.length > 0) {
-    await db.prepare(
-      `INSERT INTO sales_activities (id, lead_id, user_id, activity_type, description, activity_date)
-       VALUES (?, ?, ?, 'System', ?, CURRENT_TIMESTAMP)`,
-    ).bind(uuidv4(), id, actor.userId, changes.join('；')).run()
+    await insertSystemActivityStatement(db, { leadId: id }, actor.userId, changes.join('；')).run()
   }
 
   // "字段变化"类工作流
@@ -285,7 +276,7 @@ export async function updateLead(deps: Deps, actor: Actor, id: string, patch: Up
   ]
   for (const [field, oldVal, newVal] of fieldChanges) {
     if (newVal !== undefined && newVal !== null && newVal !== oldVal) {
-      triggerWorkflow(deps, id, { type: 'field_change', field, to: String(newVal) }, `field_change ${field}`)
+      fireWorkflow(deps, 'lead', id, { type: 'field_change', field, to: String(newVal) })
     }
   }
 }
@@ -298,7 +289,7 @@ export interface StatusTransitionInput {
     activityType: string
     description?: string | undefined
     activityDate: string
-    attachmentKeys?: { key: string; name: string; size?: number | undefined; mimeType?: string | undefined }[] | undefined
+    attachmentKeys?: AttachmentInput[] | undefined
   }
   fields?: { lostReason?: string | undefined; nextContactDate?: string | undefined; intendedServices?: string[] | undefined; [k: string]: unknown } | undefined
 }
@@ -331,26 +322,20 @@ export async function transitionLeadStatus(deps: Deps, actor: Actor, id: string,
   if (fields.intendedServices) { sets.push('intended_services = ?'); params.push(JSON.stringify(fields.intendedServices)) }
   params.push(id)
 
+  // 状态、跟进记录、附件在同一个 batch 中原子写入
   const actId = uuidv4()
-  const nextContactDate = fields.nextContactDate ?? null
   await db.batch([
     db.prepare(`UPDATE leads SET ${sets.join(', ')} WHERE id = ?`).bind(...params),
-    db.prepare(
-      'INSERT INTO sales_activities (id, lead_id, user_id, activity_type, description, activity_date, next_contact_date) VALUES (?, ?, ?, ?, ?, ?, ?)',
-    ).bind(actId, id, actor.userId, body.activity.activityType, description, body.activity.activityDate, nextContactDate),
+    insertActivityStatement(db, {
+      id: actId, leadId: id, clientId: null, userId: actor.userId,
+      activityType: body.activity.activityType, description,
+      activityDate: body.activity.activityDate, nextContactDate: fields.nextContactDate ?? null,
+    }),
+    ...insertAttachmentStatements(db, actId, body.activity.attachmentKeys ?? []),
   ])
 
   if (!TERMINAL.includes(lead.status) && TERMINAL.includes(body.targetStatus) && lead.assigned_to_userId) {
     await adjustLeadsCount(db, lead.assigned_to_userId, -1)
-  }
-
-  const attachments = body.activity.attachmentKeys ?? []
-  if (attachments.length > 0) {
-    await db.batch(attachments.map((att) =>
-      db.prepare(
-        'INSERT INTO activity_attachments (id, activity_id, name, file_key, size, mime_type, uploaded_by) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      ).bind(uuidv4(), actId, att.name, att.key, att.size ?? null, att.mimeType ?? null, actor.userId),
-    ))
   }
 
   const triggers: Array<[string, unknown]> = [
@@ -359,7 +344,7 @@ export async function transitionLeadStatus(deps: Deps, actor: Actor, id: string,
     ...(fields.nextContactDate ? [['nextContactDate', fields.nextContactDate] as [string, unknown]] : []),
   ]
   for (const [field, val] of triggers) {
-    triggerWorkflow(deps, id, { type: 'field_change', field, to: String(val) }, `field_change status-transition ${field}`)
+    fireWorkflow(deps, 'lead', id, { type: 'field_change', field, to: String(val) })
   }
 }
 
