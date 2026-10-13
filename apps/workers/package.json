@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "mkdir -p ../web/dist && wrangler dev --port 8787",
     "typecheck": "tsc --noEmit",
-    "db:migrate:local": "wrangler d1 migrations apply DB --local"
+    "db:migrate:local": "wrangler d1 migrations apply DB --local",
+    "test": "vitest run"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -16,11 +17,14 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@cloudflare/vitest-plugin": "^1.4.0",
     "@cloudflare/workers-types": "^5.20261010.1",
     "@hono/zod-validator": "^0.4.1",
     "@types/bcryptjs": "^2.4.6",
     "@types/uuid": "^10.0.0",
     "typescript": "^5.5.3",
+    "vite": "^7",
+    "vitest": "~4.1.11",
     "wrangler": "^4.149.0"
   }
 }

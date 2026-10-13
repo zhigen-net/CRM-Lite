@@ -33,6 +33,10 @@ import { milestonesRoutes } from './crm/routes/milestones'
 import { requireApiKey } from './crm/middleware/apiKeyAuth'
 import { executeScheduledWorkflows } from './crm/workflow/executor'
 import { hashPassword } from './shared/password'
+import { actorFromJwt } from './domain/actor'
+import { DomainError } from './domain/errors'
+import { createLead } from './domain/leads/service'
+import { normalizeExternalLead } from './domain/leads/intake'
 
 // 客户门户路由
 import { portalAuthRoutes } from './portal/routes/auth'
@@ -119,16 +123,6 @@ app.get('/api/public/settings', async (c) => {
   })
 })
 
-const KNOWN_V1_FIELDS = new Set(['source', 'name', 'contactInfo', 'intendedServices', 'notes', 'adInfo'])
-// 顶层广告字段别名（兼容旧格式，统一映射为中文 key）
-const AD_FIELD_ALIASES: Record<string, string> = {
-  ip: 'ip', url: 'url',
-  account: '账户', '账户': '账户',
-  campaign: '广告计划', '广告计划': '广告计划',
-  adGroup: '广告组', '广告组': '广告组', ad_group: '广告组',
-  ad: '广告', '广告': '广告',
-}
-
 const v1LeadSchema = z.object({
   source: z.string().min(1, '请填写来源'),
   name: z.string().min(1, '请填写姓名'),
@@ -151,62 +145,12 @@ app.post(
   zValidator('json', v1LeadSchema),
   async (c) => {
     const body = c.req.valid('json') as Record<string, unknown>
-    const { userId } = c.get('jwtPayload')
-    const id = uuidv4()
+    const actor = actorFromJwt(c.get('jwtPayload'), 'api')
+    const deps = { db: c.env.DB, env: c.env, waitUntil: (p: Promise<unknown>) => c.executionCtx.waitUntil(p) }
 
-    // 查询系统中存在的服务名
     try {
-      const serviceRows = await c.env.DB.prepare('SELECT name FROM services WHERE deleted_at IS NULL').all<{ name: string }>()
-      const validServiceNames = new Set(serviceRows.results.map((r) => r.name))
-
-      const notesParts: string[] = []
-      if (body.notes) notesParts.push(String(body.notes))
-
-      // 检查意向服务：不在系统中的附加到备注，并替换为「其他」
-      const submittedServices = body.intendedServices as string[]
-      const unknownServices = submittedServices.filter((s) => !validServiceNames.has(s))
-      if (unknownServices.length > 0) {
-        notesParts.push(`意向服务（系统未收录）：${unknownServices.join('、')}`)
-      }
-      const finalServices = submittedServices.map((s) => validServiceNames.has(s) ? s : '其他')
-      // 去重
-      const dedupedServices = [...new Set(finalServices)]
-
-      // 提取广告字段到 ad_info：优先用 adInfo 对象，再合并顶层别名字段，其余未知字段拼到备注
-      const adInfo: Record<string, string> = {}
-      // 1. adInfo 对象中的字段
-      if (body.adInfo && typeof body.adInfo === 'object') {
-        for (const [k, v] of Object.entries(body.adInfo as Record<string, unknown>)) {
-          if (v !== undefined && v !== null && v !== '') adInfo[k] = String(v)
-        }
-      }
-      // 2. 顶层别名字段（兼容旧格式，已有的 adInfo key 不覆盖）
-      const extraFields: string[] = []
-      for (const [k, v] of Object.entries(body)) {
-        if (KNOWN_V1_FIELDS.has(k)) continue
-        const adKey = AD_FIELD_ALIASES[k]
-        if (adKey) {
-          if (!adInfo[adKey]) adInfo[adKey] = String(v)
-        } else {
-          extraFields.push(`${k}：${v}`)
-        }
-      }
-      if (extraFields.length > 0) {
-        notesParts.push(`附加信息：${extraFields.join('；')}`)
-      }
-
-      const finalNotes = notesParts.length > 0 ? notesParts.join('\n') : null
-      const finalAdInfo = Object.keys(adInfo).length > 0 ? JSON.stringify(adInfo) : null
-
-      await c.env.DB.prepare(
-        `INSERT INTO leads (id, source, name, contact_info, intended_services, status, notes, ad_info, created_by_userId, lead_no)
-         VALUES (?, ?, ?, ?, ?, 'New', ?, ?, ?, (SELECT COALESCE(MAX(lead_no), 0) + 1 FROM leads))`,
-      ).bind(
-        id, body.source as string, body.name as string, body.contactInfo as string,
-        JSON.stringify(dedupedServices),
-        finalNotes, finalAdInfo, userId,
-      ).run()
-      await c.env.LEAD_ASSIGNMENT_QUEUE?.send({ leadId: id }).catch(() => {})
+      const input = await normalizeExternalLead(c.env.DB, body)
+      const id = await createLead(deps, actor, input)
       return c.json({ data: { id, status: 'New' } }, 201)
     } catch (err) {
       // 异步保存失败记录，不阻塞响应，也不抛出新错误
@@ -259,6 +203,9 @@ app.route('/api/client/milestones', portalMilestonesRoutes)
 
 app.onError((err, c) => {
   if (err instanceof HTTPException) {
+    return c.json({ message: err.message }, err.status)
+  }
+  if (err instanceof DomainError) {
     return c.json({ message: err.message }, err.status)
   }
   console.error(err)

@@ -28,6 +28,12 @@
 - **迁移必须向后兼容**：只加表、加字段、加索引；不删除、不改名、不改类型。原因：部署时先迁移后发布代码，且控制台回滚只回退代码、不回退数据库。确需删除时，先发布不再使用该字段的代码，下一个版本再删。
 - **不要修改已合入的迁移文件**，修正请新增迁移。
 
+## 业务规则分层
+
+- 业务规则（参数校验、权限与可见范围、写库、附带处理）写在 `apps/workers/src/domain/`，各入口（`/api/*` 路由、`/api/v1`、AI 助手工具、以后的 MCP）只做参数解析和响应格式，**不要在入口里直接写库或重复实现规则**。
+- 线索已迁移到 `domain/leads/`：`policy.ts` 定义可见范围与修改权限，`service.ts` 负责增删改查及附带处理（线索数、系统变更记录、分配队列、工作流），`intake.ts` 整理外部推送的数据。客户、跟进记录尚未迁移，改动时优先迁移再修改。
+- 业务错误抛 `DomainError`（带状态码），由入口转换：HTTP 接口返回对应状态码，AI 助手工具返回 `{ error }`。
+
 ## Workers 运行时
 
 - Worker 有 CPU 时间限制：不要引入重 CPU 的纯 JS 库（例如已因此把 bcryptjs 换成 Web Crypto PBKDF2，见 `apps/workers/src/shared/password.ts`）。优先用 Web Crypto 等平台原生 API。
@@ -43,7 +49,8 @@
 
 - 文档、代码注释用中文；标识符用英文。
 - 提交信息格式：`type(scope): 描述`，type 用 `feat` / `fix` / `perf` / `refactor` / `docs` / `build` 等。
-- 提交前运行：`pnpm -r typecheck`；涉及前端时再运行 `pnpm --filter web build`。
+- 提交前运行：`pnpm -r typecheck` 和 `pnpm test`（在 Workers 运行时中跑，使用本地 D1）；涉及前端时再运行 `pnpm --filter web build`。
+- 修改业务规则时同步补测试（`apps/workers/test/`）；以界面接口的现有行为为准，其它入口要与之一致。
 - 改动保持聚焦：一个 PR 做一件事，不顺手重构无关代码。
 
 ## 排错

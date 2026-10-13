@@ -1,8 +1,10 @@
 import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
-import { v4 as uuidv4 } from 'uuid'
 import { requireAuth, requireAdmin } from '../middleware/auth'
 import { toCamelList } from '../../shared/db'
+import { actorFromJwt } from '../../domain/actor'
+import { createLead } from '../../domain/leads/service'
+import { normalizeExternalLead } from '../../domain/leads/intake'
 
 export const apiFailuresRoutes = new Hono<{ Bindings: Env }>()
 
@@ -39,33 +41,13 @@ apiFailuresRoutes.post('/:id/create-lead', async (c) => {
     throw new HTTPException(422, { message: '请求体数据损坏，无法解析' })
   }
 
-  // 查询系统中存在的服务名
-  const serviceRows = await c.env.DB.prepare(
-    'SELECT name FROM services WHERE deleted_at IS NULL',
-  ).all<{ name: string }>()
-  const validServiceNames = new Set(serviceRows.results.map((r) => r.name))
-
-  const submittedServices = Array.isArray(body.intendedServices)
-    ? (body.intendedServices as string[])
-    : ['其他']
-  const finalServices = [...new Set(
-    submittedServices.map((s) => validServiceNames.has(s) ? s : '其他'),
-  )]
-
-  const leadId = uuidv4()
-  await c.env.DB.prepare(
-    `INSERT INTO leads (id, source, name, contact_info, intended_services, status, notes, ad_info, created_by_userId, lead_no)
-     VALUES (?, ?, ?, ?, ?, 'New', ?, ?, ?, (SELECT COALESCE(MAX(lead_no), 0) + 1 FROM leads))`,
-  ).bind(
-    leadId,
-    String(body.source ?? ''),
-    String(body.name ?? ''),
-    String(body.contactInfo ?? body.contact_info ?? ''),
-    JSON.stringify(finalServices),
-    body.notes ? String(body.notes) : null,
-    body.adInfo ? JSON.stringify(body.adInfo) : null,
-    userId,
-  ).run()
+  // 与对外接口走同一套整理规则和新建流程（进入自动分配、触发"新建"类工作流）
+  const input = await normalizeExternalLead(c.env.DB, body)
+  const leadId = await createLead(
+    { db: c.env.DB, env: c.env, waitUntil: (p: Promise<unknown>) => c.executionCtx.waitUntil(p) },
+    actorFromJwt(c.get('jwtPayload'), 'web'),
+    input,
+  )
 
   await c.env.DB.prepare(
     `UPDATE api_lead_failures
