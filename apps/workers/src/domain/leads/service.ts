@@ -193,6 +193,8 @@ export async function createLead(deps: Deps, actor: Actor, input: CreateLeadInpu
 
 export interface UpdateLeadPatch {
   status?: string | undefined
+  lostReason?: string | null | undefined
+  source?: string | undefined
   notes?: string | null | undefined
   assignedToUserId?: string | null | undefined
   assignedToTeamId?: string | null | undefined
@@ -208,6 +210,8 @@ export async function updateLead(deps: Deps, actor: Actor, id: string, patch: Up
   const lead = await findActiveLead(db, id)
   if (lead.status === 'Converted') throw forbidden('线索已转化，不可修改')
   assertCanEditLead(actor, lead)
+  // 工作流发起的修改：不写系统变更记录（无操作人），也不再触发工作流（避免循环）
+  const byWorkflow = actor.via === 'workflow'
 
   if (patch.status !== undefined) assertValidStatus(patch.status)
   if (patch.intendedServices !== undefined && patch.intendedServices.length === 0) throw badRequest('请至少选择一个意向服务')
@@ -218,7 +222,8 @@ export async function updateLead(deps: Deps, actor: Actor, id: string, patch: Up
       .bind(patch.assignedToUserId).first<{ team_id: string | null }>()
     if (!target) throw badRequest('指派目标用户不存在或已停用')
     const changingTeam = patch.assignedToTeamId !== undefined
-    if (!changingTeam && lead.assigned_to_teamId && target.team_id !== lead.assigned_to_teamId) {
+    // 工作流由管理员配置，保留原有行为：允许直接指派给其它团队的人
+    if (!byWorkflow && !changingTeam && lead.assigned_to_teamId && target.team_id !== lead.assigned_to_teamId) {
       throw badRequest('只能指派给本团队的销售，如需跨团队请同时指定新团队（assignedToTeamId）')
     }
   }
@@ -229,6 +234,8 @@ export async function updateLead(deps: Deps, actor: Actor, id: string, patch: Up
   const set = (col: string, val: unknown) => { sets.push(`${col} = ?`); params.push(val) }
 
   if (patch.status !== undefined) set('status', patch.status)
+  if (patch.lostReason !== undefined) set('lost_reason', patch.lostReason)
+  if (patch.source !== undefined) set('source', patch.source)
   if (patch.notes !== undefined) set('notes', patch.notes)
   if (patch.assignedToUserId !== undefined) set('assigned_to_userId', patch.assignedToUserId)
   if (patch.assignedToTeamId !== undefined) set('assigned_to_teamId', patch.assignedToTeamId)
@@ -264,7 +271,7 @@ export async function updateLead(deps: Deps, actor: Actor, id: string, patch: Up
   if (patch.nextContactDate !== undefined && patch.nextContactDate !== lead.next_contact_date) {
     changes.push(`下次联系→${patch.nextContactDate ?? '无'}`)
   }
-  if (changes.length > 0) {
+  if (changes.length > 0 && !byWorkflow) {
     await db.prepare(
       `INSERT INTO sales_activities (id, lead_id, user_id, activity_type, description, activity_date)
        VALUES (?, ?, ?, 'System', ?, CURRENT_TIMESTAMP)`,
@@ -278,7 +285,7 @@ export async function updateLead(deps: Deps, actor: Actor, id: string, patch: Up
     ['nextContactDate', lead.next_contact_date, patch.nextContactDate],
   ]
   for (const [field, oldVal, newVal] of fieldChanges) {
-    if (newVal !== undefined && newVal !== null && newVal !== oldVal) {
+    if (!byWorkflow && newVal !== undefined && newVal !== null && newVal !== oldVal) {
       fireWorkflow(deps, 'lead', id, { type: 'field_change', field, to: String(newVal) })
     }
   }
