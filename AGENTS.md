@@ -30,7 +30,8 @@
 ## 业务规则分层
 
 - 业务规则（参数校验、权限与可见范围、写库、附带处理）写在 `apps/workers/src/domain/`，各入口（`/api/*` 路由、`/api/v1`、AI 助手工具、以后的 MCP）只做参数解析和响应格式，**不要在入口里直接写库或重复实现规则**。
-- 线索已迁移到 `domain/leads/`：`policy.ts` 定义可见范围与修改权限，`service.ts` 负责增删改查及附带处理（线索数、系统变更记录、分配队列、工作流），`intake.ts` 整理外部推送的数据。客户、跟进记录尚未迁移，改动时优先迁移再修改。
+- 已迁移：`domain/leads/`（线索）、`domain/clients/`（客户、线索转化）、`domain/activities/`（跟进记录、附件、里程碑推进）。每个目录下 `policy.ts` 定义可见范围与修改权限，`service.ts` 负责读写及附带处理（线索数、系统变更记录、分配队列、工作流）。工作流动作（`crm/workflow/executor.ts`）尚未迁移，改动时优先迁移再修改。
+- 跟进记录和附件的写库语句只在 `domain/activities/records.ts`，其它地方不要直接 INSERT。
 - 业务错误抛 `DomainError`（带状态码），由入口转换：HTTP 接口返回对应状态码，AI 助手工具返回 `{ error }`。
 
 ## Workers 运行时

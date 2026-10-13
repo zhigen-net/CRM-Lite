@@ -1,134 +1,23 @@
 import { Hono } from 'hono'
 import { zValidator } from '@hono/zod-validator'
 import { z } from 'zod'
-import { v4 as uuidv4 } from 'uuid'
 import { requireAuth } from '../middleware/auth'
-import { toCamel, toCamelList } from '../../shared/db'
-import { executeWorkflowsForTrigger } from '../workflow/executor'
+import { actorFromJwt, depsFrom } from '../../domain/actor'
+import * as activities from '../../domain/activities/service'
 
+// 跟进记录接口：只做参数解析与响应格式，业务规则在 domain/activities
 export const activitiesRoutes = new Hono<{ Bindings: Env }>()
 
 activitiesRoutes.use('*', requireAuth)
 
-const ACTIVITY_SELECT = `
-  SELECT sa.*, u.name as user_name, c.name as client_name, l.name as lead_name,
-    (SELECT json_group_array(json_object('key', aa.r2_object_key, 'name', aa.file_name, 'size', aa.file_size))
-     FROM activity_attachments aa WHERE aa.activity_id = sa.id) as raw_attachments
-  FROM sales_activities sa
-  LEFT JOIN users u ON sa.user_id = u.id
-  LEFT JOIN clients c ON sa.client_id = c.id
-  LEFT JOIN leads l ON sa.lead_id = l.id`
-
-const ACTIVITY_COUNT_FROM = `
-  FROM sales_activities sa
-  LEFT JOIN users u ON sa.user_id = u.id
-  LEFT JOIN clients c ON sa.client_id = c.id
-  LEFT JOIN leads l ON sa.lead_id = l.id`
-
-function parseAttachments(raw: unknown): { key: string; name: string; size: number }[] {
-  if (!raw || raw === 'null') return []
-  try { return JSON.parse(raw as string) } catch { return [] }
-}
-
-function parseExtraData(raw: unknown): Record<string, unknown> | null {
-  if (!raw) return null
-  try { return JSON.parse(raw as string) } catch { return null }
-}
-
 activitiesRoutes.get('/', async (c) => {
-  const {
-    clientId, leadId, search,
-    activityType, assignedUserId, entityType,
-    activityDate, nextContact,
-    page: pageStr, pageSize: pageSizeStr,
-  } = c.req.query()
-  const { userId, role } = c.get('jwtPayload')
-
-  const page = Math.max(1, parseInt(pageStr ?? '1'))
-  const pageSize = Math.min(100, Math.max(1, parseInt(pageSizeStr ?? '20')))
-  const offset = (page - 1) * pageSize
-
-  let whereClause = 'WHERE 1=1'
-  const params: unknown[] = []
-
-  // sales 只能看自己负责的线索/客户的活动
-  if (role === 'sales') {
-    whereClause += ' AND (l.assigned_to_userId = ? OR c.assigned_sales_userId = ?)'
-    params.push(userId, userId)
-  }
-
-  if (clientId && leadId) {
-    whereClause += ' AND (sa.client_id = ? OR sa.lead_id = ?)'
-    params.push(clientId, leadId)
-  } else if (clientId) {
-    whereClause += ' AND sa.client_id = ?'
-    params.push(clientId)
-  } else if (leadId) {
-    whereClause += ' AND sa.lead_id = ?'
-    params.push(leadId)
-  }
-
-  if (activityType) {
-    whereClause += ' AND sa.activity_type = ?'
-    params.push(activityType)
-  }
-
-  if (assignedUserId && role !== 'sales') {
-    whereClause += ' AND sa.user_id = ?'
-    params.push(assignedUserId)
-  }
-
-  if (entityType === 'lead') {
-    whereClause += ' AND sa.lead_id IS NOT NULL AND sa.client_id IS NULL'
-  } else if (entityType === 'client') {
-    whereClause += ' AND sa.client_id IS NOT NULL'
-  }
-
-  const now = new Date().toISOString().slice(0, 10)
-  if (activityDate === 'today') {
-    whereClause += ' AND sa.activity_date >= ? AND sa.activity_date < date(?, "+1 day")'
-    params.push(now, now)
-  } else if (activityDate === 'week') {
-    whereClause += ' AND sa.activity_date >= date(?, "-7 days") AND sa.activity_date <= ?'
-    params.push(now, now)
-  } else if (activityDate === 'month') {
-    whereClause += ' AND sa.activity_date >= date(?, "-30 days") AND sa.activity_date <= ?'
-    params.push(now, now)
-  }
-
-  if (nextContact === 'overdue') {
-    whereClause += ' AND sa.next_contact_date IS NOT NULL AND sa.next_contact_date < ?'
-    params.push(now)
-  } else if (nextContact === 'today') {
-    whereClause += ' AND sa.next_contact_date = ?'
-    params.push(now)
-  } else if (nextContact === 'week') {
-    whereClause += ' AND sa.next_contact_date >= ? AND sa.next_contact_date <= date(?, "+7 days")'
-    params.push(now, now)
-  }
-
-  if (search) {
-    whereClause += ' AND (sa.description LIKE ? OR u.name LIKE ? OR c.name LIKE ? OR l.name LIKE ?)'
-    const q = `%${search}%`
-    params.push(q, q, q, q)
-  }
-
-  const countRow = await c.env.DB.prepare(
-    `SELECT COUNT(*) as total ${ACTIVITY_COUNT_FROM} ${whereClause}`,
-  ).bind(...params).first<{ total: number }>()
-  const total = countRow?.total ?? 0
-
-  const results = await c.env.DB.prepare(
-    `${ACTIVITY_SELECT} ${whereClause} ORDER BY sa.created_at DESC LIMIT ? OFFSET ?`,
-  ).bind(...params, pageSize, offset).all()
-
-  const data = toCamelList(results.results as Record<string, unknown>[]).map((a) => ({
-    ...a,
-    attachments: parseAttachments(a.rawAttachments),
-    extraData: parseExtraData(a.extraData),
-    rawAttachments: undefined,
-  }))
-  return c.json({ data, total, page, pageSize })
+  const q = c.req.query()
+  const result = await activities.listActivities(c.env.DB, actorFromJwt(c.get('jwtPayload'), 'web'), {
+    clientId: q.clientId, leadId: q.leadId, search: q.search, activityType: q.activityType,
+    assignedUserId: q.assignedUserId, entityType: q.entityType, activityDate: q.activityDate, nextContact: q.nextContact,
+    page: parseInt(q.page ?? '1') || 1, pageSize: parseInt(q.pageSize ?? '20') || 20,
+  })
+  return c.json(result)
 })
 
 activitiesRoutes.post(
@@ -151,127 +40,10 @@ activitiesRoutes.post(
     }),
   ),
   async (c) => {
-    const body = c.req.valid('json')
-    const { userId } = c.get('jwtPayload')
-
-    // 动态验证 activityType 是否在 option_items 中，同时取 metadata
-    const validType = await c.env.DB.prepare(
-      "SELECT id, metadata FROM option_items WHERE group_key = 'activity_type' AND value = ? AND is_active = 1",
-    ).bind(body.activityType).first<{ id: string; metadata: string | null }>()
-    if (!validType) {
-      return c.json({ message: '无效的跟进类型' }, 400)
-    }
-    // 解析 milestoneMapping 配置
-    let milestoneMapping: { stepName?: string; action: 'in_progress' | 'complete'; advanceNext?: boolean } | null = null
-    if (validType.metadata) {
-      try {
-        const meta = JSON.parse(validType.metadata)
-        if (meta.milestoneMapping) milestoneMapping = meta.milestoneMapping
-      } catch { /* ignore */ }
-    }
-    const id = uuidv4()
-
-    await c.env.DB.prepare(
-      `INSERT INTO sales_activities (id, client_id, lead_id, user_id, activity_type, description, activity_date, next_contact_date, extra_data)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    )
-      .bind(id, body.clientId ?? null, body.leadId ?? null, userId, body.activityType, body.description ?? null, body.activityDate, body.nextContactDate ?? null, body.extraData ? JSON.stringify(body.extraData) : null)
-      .run()
-
-    if (body.attachmentKeys.length > 0) {
-      const stmts = body.attachmentKeys.map((att) =>
-        c.env.DB.prepare(
-          'INSERT INTO activity_attachments (id, activity_id, r2_object_key, file_name, file_size) VALUES (?, ?, ?, ?, ?)',
-        ).bind(uuidv4(), id, att.key, att.name, att.size),
-      )
-      await c.env.DB.batch(stmts)
-    }
-
-    // 同步更新下次联系日期
-    if (body.clientId && body.nextContactDate) {
-      await c.env.DB.prepare(
-        'UPDATE clients SET next_contact_date = ? WHERE id = ?',
-      ).bind(body.nextContactDate, body.clientId).run()
-    }
-    if (body.leadId && body.nextContactDate) {
-      await c.env.DB.prepare(
-        'UPDATE leads SET next_contact_date = ? WHERE id = ?',
-      ).bind(body.nextContactDate, body.leadId).run()
-    }
-
-    const rawActivity = await c.env.DB.prepare(
-      `${ACTIVITY_SELECT} WHERE sa.id = ?`,
-    ).bind(id).first()
-    const rawAct = toCamel(rawActivity as Record<string, unknown>)
-    const activity = {
-      ...rawAct,
-      attachments: parseAttachments((rawActivity as Record<string, unknown>).raw_attachments),
-      extraData: parseExtraData(rawAct.extraData),
-      rawAttachments: undefined,
-    }
-
-    // 自动推进客户里程碑
-    if (milestoneMapping && body.clientId) {
-      c.executionCtx.waitUntil(
-        applyMilestoneMapping(c.env.DB, body.clientId, milestoneMapping)
-          .catch((err) => console.error('[milestone] auto-update failed:', err)),
-      )
-    }
-
-    // 触发跟进工作流
-    c.executionCtx.waitUntil(
-      executeWorkflowsForTrigger(c.env.DB, c.env, 'activity', id, { type: 'on_create' })
-        .catch((err) => console.error('[workflow/activity] on_create failed:', err)),
-    )
-
-    return c.json({ data: activity }, 201)
+    const { attachmentKeys, ...body } = c.req.valid('json')
+    const id = await activities.createActivity(depsFrom(c), actorFromJwt(c.get('jwtPayload'), 'web'), {
+      ...body, attachments: attachmentKeys,
+    })
+    return c.json({ data: await activities.loadActivity(c.env.DB, id) }, 201)
   },
 )
-
-// 根据活动类型的 milestoneMapping 自动更新里程碑状态
-async function applyMilestoneMapping(
-  db: D1Database,
-  clientId: string,
-  mapping: { stepName?: string; action: 'in_progress' | 'complete'; advanceNext?: boolean },
-) {
-  const now = new Date().toISOString().slice(0, 10)
-
-  let milestone: { id: string; step_index: number; service_id: string } | null = null
-
-  if (mapping.stepName) {
-    // 按步骤名匹配（取第一个未完成的同名步骤）
-    milestone = await db.prepare(
-      `SELECT id, step_index, service_id FROM client_milestones
-       WHERE client_id = ? AND step_name = ? AND status != 'completed'
-       ORDER BY step_index ASC LIMIT 1`,
-    ).bind(clientId, mapping.stepName).first<{ id: string; step_index: number; service_id: string }>()
-  } else {
-    // 无步骤名则匹配当前 in_progress 步骤
-    milestone = await db.prepare(
-      `SELECT id, step_index, service_id FROM client_milestones
-       WHERE client_id = ? AND status = 'in_progress'
-       ORDER BY step_index ASC LIMIT 1`,
-    ).bind(clientId).first<{ id: string; step_index: number; service_id: string }>()
-  }
-
-  if (!milestone) return
-
-  const newStatus = mapping.action === 'complete' ? 'completed' : 'in_progress'
-  const completedDate = mapping.action === 'complete' ? now : null
-
-  const updates = completedDate
-    ? `status = '${newStatus}', completed_date = '${completedDate}', updated_at = datetime('now')`
-    : `status = '${newStatus}', updated_at = datetime('now')`
-
-  await db.prepare(
-    `UPDATE client_milestones SET ${updates} WHERE id = ?`,
-  ).bind(milestone.id).run()
-
-  // 自动推进下一步为 in_progress
-  if (mapping.action === 'complete' && mapping.advanceNext !== false) {
-    await db.prepare(
-      `UPDATE client_milestones SET status = 'in_progress', updated_at = datetime('now')
-       WHERE client_id = ? AND service_id = ? AND step_index = ? AND status = 'pending'`,
-    ).bind(clientId, milestone.service_id, milestone.step_index + 1).run()
-  }
-}

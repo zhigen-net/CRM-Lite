@@ -2,7 +2,7 @@ import { Hono } from 'hono'
 import { zValidator } from '@hono/zod-validator'
 import { z } from 'zod'
 import { requireAuth, requireAdmin } from '../middleware/auth'
-import { actorFromJwt } from '../../domain/actor'
+import { actorFromJwt, depsFrom } from '../../domain/actor'
 import * as leads from '../../domain/leads/service'
 
 // 线索接口：只做参数解析与响应格式，业务规则在 domain/leads
@@ -10,9 +10,6 @@ export const leadsRoutes = new Hono<{ Bindings: Env }>()
 
 leadsRoutes.use('*', requireAuth)
 
-const deps = (c: { env: Env; executionCtx: { waitUntil(p: Promise<unknown>): void } }) => ({
-  db: c.env.DB, env: c.env, waitUntil: (p: Promise<unknown>) => c.executionCtx.waitUntil(p),
-})
 
 // GET /api/leads/sources — 返回去重的来源列表（用于前端自动补全）
 leadsRoutes.get('/sources', async (c) => {
@@ -55,7 +52,7 @@ const leadSchema = z.object({
 
 // POST /api/leads
 leadsRoutes.post('/', zValidator('json', leadSchema), async (c) => {
-  const id = await leads.createLead(deps(c), actorFromJwt(c.get('jwtPayload'), 'web'), {
+  const id = await leads.createLead(depsFrom(c), actorFromJwt(c.get('jwtPayload'), 'web'), {
     ...c.req.valid('json'), linkCreatorTeam: true,
   })
   return c.json({ data: await leads.loadLead(c.env.DB, id) }, 201)
@@ -79,7 +76,7 @@ leadsRoutes.put(
   ),
   async (c) => {
     const id = c.req.param('id')
-    await leads.updateLead(deps(c), actorFromJwt(c.get('jwtPayload'), 'web'), id, c.req.valid('json'))
+    await leads.updateLead(depsFrom(c), actorFromJwt(c.get('jwtPayload'), 'web'), id, c.req.valid('json'))
     return c.json({ data: await leads.loadLead(c.env.DB, id) })
   },
 )
@@ -89,7 +86,7 @@ leadsRoutes.put(
 leadsRoutes.post('/:id/status-transition', async (c) => {
   const id = c.req.param('id')
   const body = await c.req.json<leads.StatusTransitionInput>()
-  await leads.transitionLeadStatus(deps(c), actorFromJwt(c.get('jwtPayload'), 'web'), id, body)
+  await leads.transitionLeadStatus(depsFrom(c), actorFromJwt(c.get('jwtPayload'), 'web'), id, body)
   return c.json({ data: await leads.loadLead(c.env.DB, id) })
 })
 
