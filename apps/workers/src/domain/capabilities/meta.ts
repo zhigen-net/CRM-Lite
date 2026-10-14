@@ -48,6 +48,18 @@ export const queryUsers: Capability = {
   },
 }
 
+export const queryTeams: Capability = {
+  name: 'query_teams',
+  description: '查询团队列表，获取团队ID和名称。修改线索所属团队前调用此工具确认团队ID。',
+  scope: 'meta:read',
+  readOnly: true,
+  inputSchema: { type: 'object', properties: {} },
+  async run({ db }) {
+    const rows = await db.prepare('SELECT id, name, region FROM teams ORDER BY name ASC').all<{ id: string; name: string; region: string | null }>()
+    return { teams: rows.results }
+  },
+}
+
 export const whoami: Capability = {
   name: 'whoami',
   description: '查看当前身份：用户名、角色、所属团队，以及本次授权可用的权限范围。角色决定可见数据（销售只能看到自己负责的线索和客户）。',

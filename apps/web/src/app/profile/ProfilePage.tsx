@@ -170,10 +170,10 @@ function ApiTab() {
   const absoluteEndpoint = `${API_BASE || window.location.origin}/api/v1/leads`
   const mcpUrl = `${API_BASE || window.location.origin}/api/mcp`
   const [mcpUrlCopied, setMcpUrlCopied] = useState(false)
-  // 从 MCP 卡片新建：默认只读权限，用途预填
+  // 从 MCP 卡片新建：MCP 用于管理员、客服维护数据，默认读写权限，用途预填
   const openCreateForMcp = () => {
     form.reset({ name: t('profile.api.mcpCard.defaultName') })
-    setScopes([...SCOPE_PRESETS.readonly])
+    setScopes([...SCOPE_PRESETS.readwrite])
     setShowCreate(true)
   }
 

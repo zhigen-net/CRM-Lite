@@ -2,6 +2,7 @@
 import * as clients from '../clients/service'
 import { recentActivities } from '../activities/service'
 import { badRequest } from '../errors'
+import { getLead } from '../leads/service'
 import type { Capability } from './types'
 
 export const queryClients: Capability = {
@@ -55,13 +56,16 @@ export const getClient: Capability = {
 
 export const updateClient: Capability = {
   name: 'update_client',
-  description: '更新客户字段，包括合同状态、服务套餐、联系方式、下次联系时间。重要：重要变更请同时用 create_activity 留下操作记录。',
+  description: '更新客户字段：姓名、电话、邮箱、合同状态、服务套餐、负责销售、客户备注、下次联系时间。只传需要修改的字段。重要变更请同时用 create_activity 留下操作记录。',
   scope: 'clients:write',
   readOnly: false,
   inputSchema: {
     type: 'object',
     properties: {
       id:              { type: 'string', description: '客户ID' },
+      name:            { type: 'string', description: '客户姓名' },
+      assignedSalesUserId: { type: ['string', 'null'], description: '负责销售的用户ID（用 query_users 查询），传 null 取消' },
+      notes:           { type: ['string', 'null'], description: '客户备注（客户详情页显示的备注，会覆盖原备注）' },
       contractStatus:  { type: 'string', description: '合同状态值，先用 get_options(contract_status) 确认可用值' },
       servicePlans:    { type: 'array', items: { type: 'string' }, description: '服务套餐名称列表' },
       phone:           { type: 'string', description: '联系电话' },
@@ -72,6 +76,14 @@ export const updateClient: Capability = {
   },
   async run(deps, actor, input) {
     const patch: clients.UpdateClientPatch = {}
+    if (input.name !== undefined) patch.name = input.name as string
+    if (input.assignedSalesUserId !== undefined) patch.assignedSalesUserId = input.assignedSalesUserId as string | null
+    if (input.notes !== undefined) {
+      // 备注存在 detailedProfile 里：在原资料上合并，不丢失来源等其它字段
+      const current = await clients.getClient(deps.db, actor, input.id as string)
+      const profile = (current.detailedProfile ?? {}) as Record<string, unknown>
+      patch.detailedProfile = { ...profile, notes: input.notes }
+    }
     if (input.contractStatus !== undefined) patch.contractStatus = input.contractStatus as string | null
     if (input.phone !== undefined) patch.phone = input.phone as string | null
     if (input.email !== undefined) patch.email = input.email as string | null
@@ -81,5 +93,36 @@ export const updateClient: Capability = {
 
     await clients.updateClient(deps, actor, input.id as string, patch)
     return { success: true, message: '客户已更新' }
+  },
+}
+
+export const convertLead: Capability = {
+  name: 'convert_lead',
+  description: '把线索转化为客户（与界面「转化为客户」相同）：线索状态变为 Converted，跟进记录迁移到新客户，并触发相关工作流。已转化的线索不能重复转化。姓名、电话默认取线索的信息。',
+  scope: 'clients:write',
+  readOnly: false,
+  inputSchema: {
+    type: 'object',
+    properties: {
+      leadId:              { type: 'string', description: '要转化的线索ID' },
+      name:                { type: 'string', description: '客户姓名，默认取线索姓名' },
+      phone:               { type: 'string', description: '联系电话，默认取线索联系方式' },
+      email:               { type: 'string', description: '邮箱' },
+      servicePlans:        { type: 'array', items: { type: 'string' }, description: '服务套餐名称列表' },
+      assignedSalesUserId: { type: 'string', description: '负责销售的用户ID，默认取线索负责人' },
+    },
+    required: ['leadId'],
+  },
+  async run(deps, actor, input) {
+    const lead = await getLead(deps.db, actor, input.leadId as string)
+    const id = await clients.createClient(deps, actor, {
+      leadId: input.leadId as string,
+      name: (input.name as string | undefined) ?? String(lead.name ?? ''),
+      phone: (input.phone as string | undefined) ?? (lead.contactInfo as string | null) ?? null,
+      email: (input.email as string | undefined) ?? null,
+      servicePlans: (input.servicePlans as string[] | undefined) ?? [],
+      assignedSalesUserId: (input.assignedSalesUserId as string | undefined) ?? (lead.assignedToUserId as string | null) ?? null,
+    })
+    return { success: true, clientId: id, message: '线索已转化为客户' }
   },
 }
