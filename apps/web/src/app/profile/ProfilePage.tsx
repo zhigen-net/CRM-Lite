@@ -11,6 +11,7 @@ import { Input } from '@/shared/components/Input'
 import { Button } from '@/shared/components/Button'
 import { Modal } from '@/shared/components/Modal'
 import { formatDate } from '@/shared/utils/format'
+import { ApiIntegrationDialog } from './ApiIntegrationDialog'
 
 const TAB_KEYS = ['info', 'password', 'api', 'notify'] as const
 type TabKey = typeof TAB_KEYS[number]
@@ -130,8 +131,8 @@ function ApiTab() {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   const [showCreate, setShowCreate] = useState(false)
-  const [newKey, setNewKey] = useState<string | null>(null)
-  const [copied, setCopied] = useState(false)
+  // 打开 AI 接入弹窗：刚生成时带完整密钥，从列表打开时 key 为空
+  const [integration, setIntegration] = useState<{ name: string; key: string | null } | null>(null)
 
   const { data, isLoading } = useQuery({
     queryKey: ['api-keys'],
@@ -152,7 +153,7 @@ function ApiTab() {
       queryClient.invalidateQueries({ queryKey: ['api-keys'] })
       setShowCreate(false)
       form.reset()
-      setNewKey(res.data.data.key)
+      setIntegration({ name: res.data.data.name, key: res.data.data.key })
     },
   })
 
@@ -161,39 +162,12 @@ function ApiTab() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['api-keys'] }),
   })
 
-  const copyKey = () => {
-    if (!newKey) return
-    navigator.clipboard.writeText(newKey).then(() => {
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    })
-  }
-
   const endpoint = `${API_BASE}/api/v1/leads`
+  // 给 AI 的提示词需要完整地址（默认同源部署时 API_BASE 为空）
+  const absoluteEndpoint = `${API_BASE || window.location.origin}/api/v1/leads`
 
   return (
     <div className="space-y-4 max-w-2xl">
-      {/* 新密钥展示 */}
-      {newKey && (
-        <div className="rounded-lg border border-amber-300 bg-amber-50 p-4">
-          <p className="text-sm font-medium text-amber-800 mb-2">{t('profile.api.notice')}</p>
-          <div className="flex items-center gap-2">
-            <code className="flex-1 break-all rounded bg-white border border-amber-200 px-3 py-2 text-sm font-mono text-gray-800">
-              {newKey}
-            </code>
-            <Button size="sm" variant="secondary" onClick={copyKey}>
-              {copied ? t('profile.api.copied') : t('profile.api.copy')}
-            </Button>
-          </div>
-          <button
-            className="mt-2 text-xs text-amber-600 hover:text-amber-800 underline"
-            onClick={() => setNewKey(null)}
-          >
-            {t('profile.api.dismiss')}
-          </button>
-        </div>
-      )}
-
       <div className="rounded-lg border bg-white overflow-hidden">
         <div className="flex items-center justify-between px-4 py-3 border-b">
           <h2 className="font-medium text-gray-900 text-sm">{t('profile.api.keys')}</h2>
@@ -221,7 +195,13 @@ function ApiTab() {
                   <td className="px-4 py-2.5 font-mono text-xs text-gray-500">{k.keyPrefix}...</td>
                   <td className="px-4 py-2.5 text-gray-500">{formatDate(k.createdAt)}</td>
                   <td className="px-4 py-2.5 text-gray-500">{k.lastUsedAt ? formatDate(k.lastUsedAt) : t('profile.api.cols.never')}</td>
-                  <td className="px-4 py-2.5 text-right">
+                  <td className="px-4 py-2.5 text-right whitespace-nowrap">
+                    <button
+                      onClick={() => setIntegration({ name: k.name, key: null })}
+                      className="mr-3 text-xs text-primary-600 hover:text-primary-800"
+                    >
+                      {t('profile.api.prompt.open')}
+                    </button>
                     <button
                       onClick={() => { if (confirm(t('profile.api.revokeConfirm', { name: k.name }))) deleteMutation.mutate(k.id) }}
                       className="text-xs text-red-500 hover:text-red-700"
@@ -277,6 +257,16 @@ function ApiTab() {
           </div>
         </div>
       </div>
+
+      {integration && (
+        <ApiIntegrationDialog
+          endpoint={absoluteEndpoint}
+          services={(services ?? []).map((s) => s.name)}
+          apiKey={integration.key}
+          keyName={integration.name}
+          onClose={() => setIntegration(null)}
+        />
+      )}
 
       {showCreate && (
         <Modal

@@ -881,7 +881,46 @@
         "bodyExample": "{\n  \"source\": \"website-form\",\n  \"name\": \"Jane Smith\",\n  \"contactInfo\": \"+1-555-0100\",\n  \"intendedServices\": [\"IVF Abroad\"],\n  \"notes\": \"notes (optional)\",\n  \"adInfo\": {\n    \"ip\": \"1.2.3.4\",\n    \"url\": \"https://landing.example.com\",\n    \"account\": \"Google Ads Account A\",\n    \"campaign\": \"IVF-Global\",\n    \"adGroup\": \"Women 25-35\",\n    \"ad\": \"Creative Copy 01\"\n  }\n}",
         "curlExample": "curl -X POST {{endpoint}} \\\n  -H \"Content-Type: application/json\" \\\n  -H \"X-API-Key: crm_your_key_here\" \\\n  -d '{\"source\":\"website\",\"name\":\"Jane Smith\",\"contactInfo\":\"+1-555-0100\",\"intendedServices\":[\"IVF Abroad\"],\"adInfo\":{\"ip\":\"1.2.3.4\",\"campaign\":\"IVF-Global\"}}'"
       },
-      "namePlaceholder": "e.g. Website Form, Mini Program"
+      "namePlaceholder": "e.g. Website Form, Mini Program",
+      "prompt": {
+        "open": "AI setup",
+        "createdTitle": "API key created",
+        "title": "AI setup: {{name}}",
+        "keyHiddenHint": "The full key is shown only once, when it is created. The prompt below reads the key from the CRM_API_KEY environment variable; give the key you saved to the AI or whoever deploys the integration.",
+        "scenarioLabel": "Scenario",
+        "scenarios": {
+          "website": "Website form",
+          "webhook": "Ad platform push",
+          "generic": "General"
+        },
+        "scenarioDesc": {
+          "website": "Leads submitted through website or landing page forms go straight into the CRM",
+          "webhook": "Lead callbacks from ad platforms such as Baidu, Ocean Engine or Tencent Ads",
+          "generic": "For coding AIs such as Claude Code or Cursor to decide how to integrate"
+        },
+        "copyPrompt": "Copy AI setup prompt",
+        "copyCurl": "Copy cURL test command",
+        "preview": "Preview prompt",
+        "securityTip": "The prompt contains the key. Use one key per integration with a clear purpose, and revoke it when it is no longer used or may have leaked.",
+        "keyInline": "X-API-Key: {{key}}\n  (Store the key in the CRM_API_KEY environment variable. Do not commit it to the repository or put it in front-end code visible to browsers.)",
+        "keyEnv": "X-API-Key: read from the CRM_API_KEY environment variable (ask me for it if it is not set; do not commit it to the repository or put it in front-end code visible to browsers)",
+        "noServices": "(no services configured yet; use 其他)",
+        "task": {
+          "website": "Please connect our website lead form to the CRM: every form submission should create a lead in the CRM.",
+          "webhook": "Please connect lead pushes from our ad platforms (e.g. Baidu, Ocean Engine, Tencent Ads) to the CRM: every lead the platform receives should be forwarded to the CRM as a new lead.",
+          "generic": "Please integrate our system with the CRM lead API so that leads are created automatically."
+        },
+        "spec": "## CRM lead API\n- Endpoint: POST {{endpoint}}\n- Headers:\n  Content-Type: application/json\n  {{keyLine}}\n- Body fields (JSON):\n  - source (required, string): lead source, e.g. \"Website form\", \"Baidu ads\"\n  - name (required, string): customer name\n  - contactInfo (required, string): phone, WeChat or email\n  - intendedServices (required, string array, at least one): services of interest. Allowed values: {{services}}. Values not in the list are recorded as 其他 (Other) with the original value added to notes\n  - notes (optional, string): notes\n  - adInfo (optional, object): ad tracking info with keys ip, url, 账户 (account), 广告计划 (campaign), 广告组 (ad group), 广告 (ad)\n  - Any other fields are accepted and appended to notes\n- Success: HTTP 201 with {\"data\":{\"id\":\"lead id\",\"status\":\"New\"}}\n- Errors: 401 missing or invalid key; 400 invalid parameters (e.g. a required field is missing); the body has a message field explaining why\n- CORS is allowed, but the key must never be exposed to browsers",
+        "req": {
+          "website": "## Requirements\n1. The key must not appear in front-end code. The form should post to our own back end (or a cloud/edge function), which adds the key and forwards the request to the CRM.\n2. Map the form fields to the fields above; make source identify the page; put the landing page url, visitor ip and ad parameters from the URL into adInfo where possible.\n3. If the CRM call fails, do not change what the visitor sees; just log it on the back end.",
+          "webhook": "## Requirements\n1. Ad platforms usually cannot send custom headers, so use a relay (e.g. a Cloudflare Worker or cloud function) that receives the platform push, verifies the platform signature and forwards it to the CRM.\n2. Map the platform fields to the fields above: source is the platform name; account, campaign, ad group and ad go into adInfo.\n3. Return the success response the platform expects; when the CRM returns an error, log it and rely on the platform's retry mechanism if needed.",
+          "generic": "## Requirements\n1. First understand the structure of our existing system, pick the most suitable integration point, and tell me your plan.\n2. Keep the key only in server-side environment variables.\n3. If a field mapping is unclear, ask me instead of guessing."
+        },
+        "verify": "## Verification\nWhen done, send one test lead with source \"Integration test\" and confirm it returns 201. Then tell me the test lead's ID so I can delete it in the CRM.",
+        "testSource": "Integration test",
+        "testName": "Test",
+        "testService": "其他"
+      }
     },
     "notifications": {
       "email": "Email Notifications",
