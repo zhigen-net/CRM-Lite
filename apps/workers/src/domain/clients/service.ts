@@ -1,6 +1,7 @@
 // 客户业务服务：界面接口与 AI 助手共用。
 // 负责：可见范围与修改权限、线索转化、写库及附带处理（变更记录、线索数、工作流）。
 import { toCamel } from '../../shared/db'
+import { assertDate, assertOptionValue } from '../validation'
 import type { Actor, Deps } from '../actor'
 import { DomainError, forbidden, notFound } from '../errors'
 import { fireWorkflow } from '../workflows'
@@ -179,6 +180,11 @@ export async function updateClient(deps: Deps, actor: Actor, id: string, patch: 
   assertCanEditClient(actor, existing)
   // 工作流发起的修改：不写系统变更记录（无操作人），也不再触发工作流（避免循环）
   const byWorkflow = actor.via === 'workflow'
+  assertDate(patch.nextContactDate, '下次联系时间')
+  // 只校验有变化的值：历史数据里已停用的选项，原样保存时不应报错
+  if (patch.contractStatus !== undefined && patch.contractStatus !== existing.contract_status) {
+    await assertOptionValue(db, 'contract_status', patch.contractStatus, '合同状态')
+  }
 
   const sets: string[] = ['updated_at = CURRENT_TIMESTAMP']
   const params: unknown[] = []

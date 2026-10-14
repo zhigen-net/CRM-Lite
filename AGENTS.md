@@ -37,6 +37,7 @@
 - 通过 API Key / MCP 读取时，没有 `contacts:read` 权限的联系方式会打码（`domain/capabilities/redact.ts`）；能力返回新的联系方式字段时同步补充 `CONTACT_KEYS`。非界面入口的调用记录在 `audit_log`（`domain/audit.ts`）。
 - 跟进记录和附件的写库语句只在 `domain/activities/records.ts`，其它地方不要直接 INSERT。
 - 下载 R2 文件前必须经过 `domain/files.ts` 的权限检查（销售只能下载自己负责的线索/客户下的附件）；新增文件类型时同步补充规则。
+- 选项类字段（状态、合同状态、丢失原因等）和日期字段写库前用 `domain/validation.ts` 校验（选项值必须在「选项配置」中启用；日期 `YYYY-MM-DD`），新增此类字段时同步调用。
 - 业务错误抛 `DomainError`（带状态码），由入口转换：HTTP 接口返回对应状态码，AI 助手工具返回 `{ error }`。
 - 对外接口 `/api/v1/*` 的字段或行为变化时，同步更新 `crm/routes/v1Docs.ts`（`llms.txt` / `openapi.json`）和前端接入提示词（`profile.api.prompt.*`），AI 接入依赖它们。
 

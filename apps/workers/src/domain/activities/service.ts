@@ -3,6 +3,7 @@
 import { toCamel, toCamelList } from '../../shared/db'
 import type { Actor, Deps } from '../actor'
 import { badRequest, notFound } from '../errors'
+import { assertDate, assertDateTime } from '../validation'
 import { fireWorkflow } from '../workflows'
 import { activityVisibility, assertCanWriteActivity } from './policy'
 import { insertActivityStatement, insertAttachmentStatements, type AttachmentInput } from './records'
@@ -132,6 +133,9 @@ export async function createActivity(deps: Deps, actor: Actor, input: CreateActi
   const leadId = input.leadId ?? null
   const clientId = input.clientId ?? null
   if (!leadId && !clientId) throw badRequest('跟进记录必须关联线索或客户')
+  if (!input.activityDate) throw badRequest('缺少跟进时间')
+  assertDateTime(input.activityDate, '跟进时间')
+  assertDate(input.nextContactDate, '下次联系时间')
 
   // 关联对象必须存在，且操作者有修改权限
   const lead = leadId

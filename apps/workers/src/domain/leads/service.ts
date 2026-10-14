@@ -7,6 +7,7 @@ import { badRequest, forbidden, notFound } from '../errors'
 import { fireWorkflow } from '../workflows'
 import { insertActivityStatement, insertAttachmentStatements, insertSystemActivityStatement, type AttachmentInput } from '../activities/records'
 import { assertCanChangeLeadTeam, assertCanEditLead, assertCanViewLead, leadVisibility } from './policy'
+import { assertDate, assertDateTime, assertOptionValue } from '../validation'
 
 // 与 leads 表的 CHECK 约束一致
 export const LEAD_STATUSES = ['New', 'Contacted', 'Qualified', 'Converted', 'Lost'] as const
@@ -29,6 +30,7 @@ interface LeadRow {
   assigned_to_userId: string | null
   assigned_to_teamId: string | null
   next_contact_date: string | null
+  lost_reason: string | null
 }
 
 export type Lead = Record<string, unknown>
@@ -215,6 +217,11 @@ export async function updateLead(deps: Deps, actor: Actor, id: string, patch: Up
 
   if (patch.status !== undefined) assertValidStatus(patch.status)
   if (patch.intendedServices !== undefined && patch.intendedServices.length === 0) throw badRequest('请至少选择一个意向服务')
+  assertDate(patch.nextContactDate, '下次联系时间')
+  // 只校验有变化的值：历史数据里已停用的选项，原样保存时不应报错
+  if (patch.lostReason !== undefined && patch.lostReason !== lead.lost_reason) {
+    await assertOptionValue(db, 'lost_reason', patch.lostReason, '丢失原因')
+  }
 
   if (patch.assignedToUserId !== undefined && patch.assignedToUserId !== null) {
     // 被指派人必须有效，且属于该线索的团队（同时变更团队时除外）
@@ -311,8 +318,11 @@ export async function transitionLeadStatus(deps: Deps, actor: Actor, id: string,
   assertCanEditLead(actor, lead)
   assertValidStatus(body.targetStatus)
   if (!body.activity?.activityType || !body.activity.activityDate) throw badRequest('缺少跟进记录')
+  assertDateTime(body.activity.activityDate, '跟进时间')
 
   const fields = body.fields ?? {}
+  assertDate(fields.nextContactDate, '下次联系时间')
+  await assertOptionValue(db, 'lost_reason', fields.lostReason, '丢失原因')
 
   // 把字段值拼进跟进描述，让跟进列表信息完整
   const fieldLines: string[] = []
