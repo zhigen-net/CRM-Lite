@@ -999,6 +999,13 @@
         "webHint": "Connectors in claude.ai and ChatGPT on the web require OAuth, which is not supported yet.",
         "pushOnlyHint": "This key can only push leads. To let an AI read or update CRM data, create a key with Read only or Read & write permissions and use the MCP configuration.",
         "keyPlaceholder": "<your API key>"
+      },
+      "mcpCard": {
+        "title": "MCP: let AI work in the CRM",
+        "desc": "Connect from AI tools such as Claude Code, Cursor or Claude Desktop to let the AI read leads and clients, add activities and update statuses. The AI acts within the key's permissions and your role, and every call is recorded in the audit log.",
+        "create": "Create MCP key",
+        "defaultName": "MCP (AI tool)",
+        "steps": "Steps: create a key (Read only or Read & write) → copy the Claude Code command or JSON config from the dialog → paste it into your AI tool. For existing keys, click \"AI setup\" in the list."
       }
     },
     "notifications": {

@@ -168,9 +168,40 @@ function ApiTab() {
   const endpoint = `${API_BASE}/api/v1/leads`
   // 给 AI 的提示词需要完整地址（默认同源部署时 API_BASE 为空）
   const absoluteEndpoint = `${API_BASE || window.location.origin}/api/v1/leads`
+  const mcpUrl = `${API_BASE || window.location.origin}/api/mcp`
+  const [mcpUrlCopied, setMcpUrlCopied] = useState(false)
+  // 从 MCP 卡片新建：默认只读权限，用途预填
+  const openCreateForMcp = () => {
+    form.reset({ name: t('profile.api.mcpCard.defaultName') })
+    setScopes([...SCOPE_PRESETS.readonly])
+    setShowCreate(true)
+  }
 
   return (
     <div className="space-y-4 max-w-2xl">
+      {/* MCP 入口：让 AI 工具直接查询和维护 CRM */}
+      <div className="rounded-lg border border-primary-200 bg-primary-50/40 p-4">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <h2 className="font-medium text-gray-900 text-sm">{t('profile.api.mcpCard.title')}</h2>
+            <p className="mt-1 text-xs text-gray-500">{t('profile.api.mcpCard.desc')}</p>
+          </div>
+          <Button size="sm" onClick={openCreateForMcp}>{t('profile.api.mcpCard.create')}</Button>
+        </div>
+        <div className="mt-3 flex items-center gap-2">
+          <span className="text-xs text-gray-500 shrink-0">{t('profile.api.mcp.url')}</span>
+          <code className="flex-1 min-w-0 truncate rounded bg-white border px-2 py-1 text-xs font-mono text-gray-700">{mcpUrl}</code>
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={() => navigator.clipboard.writeText(mcpUrl).then(() => { setMcpUrlCopied(true); setTimeout(() => setMcpUrlCopied(false), 2000) }).catch(() => {})}
+          >
+            {mcpUrlCopied ? t('profile.api.copied') : t('profile.api.copy')}
+          </Button>
+        </div>
+        <p className="mt-2 text-xs text-gray-400">{t('profile.api.mcpCard.steps')}</p>
+      </div>
+
       <div className="rounded-lg border bg-white overflow-hidden">
         <div className="flex items-center justify-between px-4 py-3 border-b">
           <h2 className="font-medium text-gray-900 text-sm">{t('profile.api.keys')}</h2>
