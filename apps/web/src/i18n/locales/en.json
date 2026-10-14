@@ -885,36 +885,24 @@
       "copied": "Copied",
       "copy": "Copy",
       "dismiss": "I've saved it, close this",
-      "keys": "API Keys",
       "generate": "Generate New Key",
-      "empty": "No API keys. Click the button above to generate one.",
       "cols": {
-        "usage": "Usage",
-        "prefix": "Key Prefix",
-        "createdAt": "Created",
-        "lastUsed": "Last Used",
-        "never": "Never",
-        "scopes": "Scopes"
+        "usage": "Usage"
       },
       "revoke": "Revoke",
       "revokeConfirm": "Revoke \"{{name}}",
       "docs": {
-        "title": "Lead push API (website forms, ad platforms and other external systems)",
-        "submit": "Submit a New Lead",
         "headers": "Headers",
         "body": "Request Body (JSON)",
         "services": "Available Services (intendedServices field)",
         "servicesHint": "Unknown service names will be recorded as \"Other\"",
         "adInfo": "Optional fields for ad tracking (ip, url, account, campaign, ad group, ad). Viewable in lead details.",
-        "curl": "cURL Example",
         "response": "Success Response (201)",
         "yourApiKey": "your API Key",
-        "bodyExample": "{\n  \"source\": \"website-form\",\n  \"name\": \"Jane Smith\",\n  \"contactInfo\": \"+1-555-0100\",\n  \"intendedServices\": [\"IVF Abroad\"],\n  \"notes\": \"notes (optional)\",\n  \"adInfo\": {\n    \"ip\": \"1.2.3.4\",\n    \"url\": \"https://landing.example.com\",\n    \"account\": \"Google Ads Account A\",\n    \"campaign\": \"IVF-Global\",\n    \"adGroup\": \"Women 25-35\",\n    \"ad\": \"Creative Copy 01\"\n  }\n}",
-        "curlExample": "curl -X POST {{endpoint}} \\\n  -H \"Content-Type: application/json\" \\\n  -H \"X-API-Key: crm_your_key_here\" \\\n  -d '{\"source\":\"website\",\"name\":\"Jane Smith\",\"contactInfo\":\"+1-555-0100\",\"intendedServices\":[\"IVF Abroad\"],\"adInfo\":{\"ip\":\"1.2.3.4\",\"campaign\":\"IVF-Global\"}}'"
+        "bodyExample": "{\n  \"source\": \"website-form\",\n  \"name\": \"Jane Smith\",\n  \"contactInfo\": \"+1-555-0100\",\n  \"intendedServices\": [\"IVF Abroad\"],\n  \"notes\": \"notes (optional)\",\n  \"adInfo\": {\n    \"ip\": \"1.2.3.4\",\n    \"url\": \"https://landing.example.com\",\n    \"account\": \"Google Ads Account A\",\n    \"campaign\": \"IVF-Global\",\n    \"adGroup\": \"Women 25-35\",\n    \"ad\": \"Creative Copy 01\"\n  }\n}"
       },
       "namePlaceholder": "e.g. Website Form, Mini Program",
       "prompt": {
-        "open": "AI setup",
         "createdTitle": "API key created",
         "title": "AI setup: {{name}}",
         "keyHiddenHint": "The full key is shown only once, when it is created. The prompt below reads the key from the CRM_API_KEY environment variable; give the key you saved to the AI or whoever deploys the integration.",
@@ -999,13 +987,6 @@
         "webHint": "Connectors in claude.ai and ChatGPT on the web require OAuth, which is not supported yet.",
         "pushOnlyHint": "This key can only push leads. To let an AI read or update CRM data, create a key with Read only or Read & write permissions and use the MCP configuration.",
         "keyPlaceholder": "<your API key>"
-      },
-      "mcpCard": {
-        "title": "MCP: let AI work in the CRM",
-        "desc": "For admins and customer service maintaining clients and leads: connect from AI tools such as Claude Code, Cursor or Claude Desktop to let the AI read and update leads and clients, add activities and convert leads. The AI acts within the key's permissions and your role, and every call is recorded in the audit log.",
-        "create": "Create MCP key",
-        "defaultName": "MCP (AI tool)",
-        "steps": "Steps: click \"Create MCP key\" (Read & write by default) → copy the Claude Code command or JSON config from the dialog → paste it into your AI tool. For existing keys, click \"AI setup\" in the list."
       }
     },
     "notifications": {
@@ -1481,6 +1462,55 @@
   "aiAccess": {
     "title": "AI Access",
     "subtitle": "Connect AI agents (Claude Code, Cursor, etc.) or external systems to the CRM. Keys act as you and never exceed your role.",
-    "auditLink": "View audit log →"
+    "auditLink": "View audit log →",
+    "sections": {
+      "mcp": {
+        "title": "AI tools (MCP)",
+        "desc": "Use natural language in AI tools such as Claude Code, Cursor or Claude Desktop to read and maintain clients and leads. Made for admins and customer service."
+      },
+      "push": {
+        "title": "Push leads from external systems",
+        "desc": "Website forms, ad platforms and other external systems push new leads into the CRM automatically."
+      },
+      "keyCount": "Keys: {{count}}"
+    },
+    "mcp": {
+      "stepsTitle": "Set up in three steps",
+      "create": "Create MCP key",
+      "defaultName": "MCP (AI tool)",
+      "step1": {
+        "title": "Create a key",
+        "desc": "Read & write by default, with full contact details; you can switch to read only."
+      },
+      "step2": {
+        "title": "Copy the config",
+        "desc": "Copy the Claude Code command or the Cursor / Claude Desktop JSON config from the dialog and paste it into your AI tool."
+      },
+      "step3": {
+        "title": "Just ask",
+        "desc": "The AI works in the CRM within your permissions and role, and every step is recorded in the audit log."
+      },
+      "examplesTitle": "Things you can ask:",
+      "example1": "Which clients need a follow-up today?",
+      "example2": "Mark Zhang San as contacted and log the phone call we just had",
+      "example3": "Convert lead 1024 to a client and assign it to Li Si",
+      "example4": "List last week's new leads that are still unassigned",
+      "keysTitle": "MCP keys",
+      "empty": "No MCP keys yet. Click \"Create MCP key\" to get started"
+    },
+    "push": {
+      "keysTitle": "Push keys",
+      "intro": "Use one key per connected system so each can be disabled on its own. After creating a key you can copy a setup prompt for an AI to write the integration code.",
+      "create": "Create push key",
+      "defaultName": "Website form",
+      "empty": "No push keys yet",
+      "docsToggle": "API reference",
+      "llmsHint": "AIs with web access can read the live API reference directly:"
+    },
+    "keys": {
+      "lastUsed": "Last used {{time}}",
+      "neverUsed": "Never used",
+      "view": "View config"
+    }
   }
 }
