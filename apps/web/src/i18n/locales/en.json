@@ -981,9 +981,24 @@
           "clients_write": "Update clients",
           "activities_read": "Read activities",
           "activities_write": "Add activities",
-          "meta_read": "Read options & users"
+          "meta_read": "Read options & users",
+          "contacts_read": "View full contact details"
         },
         "hint": "The key acts as you and is also limited by your role (e.g. sales only see their own leads)."
+      },
+      "mcp": {
+        "modes": {
+          "mcp": "MCP (AI works in the CRM)",
+          "push": "Push leads"
+        },
+        "intro": "Add the configuration below to an MCP-capable AI tool such as Claude Code, Cursor or Claude Desktop, and the AI can read and update CRM data within this key's permissions. Every call is recorded in Settings → Audit Log.",
+        "url": "MCP URL",
+        "claudeCode": "Claude Code command",
+        "json": "JSON config (Cursor, Claude Desktop, etc.)",
+        "maskedHint": "This key does not have the \"View full contact details\" permission, so phone numbers and emails are masked for the AI.",
+        "webHint": "Connectors in claude.ai and ChatGPT on the web require OAuth, which is not supported yet.",
+        "pushOnlyHint": "This key can only push leads. To let an AI read or update CRM data, create a key with Read only or Read & write permissions and use the MCP configuration.",
+        "keyPlaceholder": "<your API key>"
       }
     },
     "notifications": {

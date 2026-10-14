@@ -134,7 +134,7 @@ function ApiTab() {
   const queryClient = useQueryClient()
   const [showCreate, setShowCreate] = useState(false)
   // 打开 AI 接入弹窗：刚生成时带完整密钥，从列表打开时 key 为空
-  const [integration, setIntegration] = useState<{ name: string; key: string | null } | null>(null)
+  const [integration, setIntegration] = useState<{ name: string; key: string | null; scopes: string[] } | null>(null)
 
   const { data, isLoading } = useQuery({
     queryKey: ['api-keys'],
@@ -152,11 +152,11 @@ function ApiTab() {
 
   const createMutation = useMutation({
     mutationFn: (body: ApiKeyForm) =>
-      crmApi.post<{ data: { id: string; name: string; keyPrefix: string; key: string } }>('/auth/api-keys', { ...body, scopes }),
+      crmApi.post<{ data: { id: string; name: string; keyPrefix: string; key: string; scopes: string[] } }>('/auth/api-keys', { ...body, scopes }),
     onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: ['api-keys'] })
       closeCreate()
-      setIntegration({ name: res.data.data.name, key: res.data.data.key })
+      setIntegration({ name: res.data.data.name, key: res.data.data.key, scopes: res.data.data.scopes })
     },
   })
 
@@ -202,7 +202,7 @@ function ApiTab() {
                   <td className="px-4 py-2.5 text-gray-500">{k.lastUsedAt ? formatDate(k.lastUsedAt) : t('profile.api.cols.never')}</td>
                   <td className="px-4 py-2.5 text-right whitespace-nowrap">
                     <button
-                      onClick={() => setIntegration({ name: k.name, key: null })}
+                      onClick={() => setIntegration({ name: k.name, key: null, scopes: k.scopes ?? [] })}
                       className="mr-3 text-xs text-primary-600 hover:text-primary-800"
                     >
                       {t('profile.api.prompt.open')}
@@ -269,6 +269,7 @@ function ApiTab() {
           services={(services ?? []).map((s) => s.name)}
           apiKey={integration.key}
           keyName={integration.name}
+          scopes={integration.scopes}
           onClose={() => setIntegration(null)}
         />
       )}

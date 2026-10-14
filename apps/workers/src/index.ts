@@ -32,6 +32,7 @@ import { apiFailuresRoutes } from './crm/routes/apiFailures'
 import { milestonesRoutes } from './crm/routes/milestones'
 import { v1DocsRoutes } from './crm/routes/v1Docs'
 import { auditLogRoutes } from './crm/routes/auditLog'
+import { mcpRoutes } from './crm/routes/mcp'
 import { requireApiKey, requireScope } from './crm/middleware/apiKeyAuth'
 import { executeScheduledWorkflows } from './crm/workflow/executor'
 import { hashPassword } from './shared/password'
@@ -128,6 +129,9 @@ app.get('/api/public/settings', async (c) => {
 
 // 对外接口说明（无需鉴权）
 app.route('/api/v1', v1DocsRoutes)
+
+// MCP 服务（API Key 鉴权）
+app.route('/api/mcp', mcpRoutes)
 
 const v1LeadSchema = z.object({
   source: z.string().min(1, '请填写来源'),
