@@ -885,36 +885,24 @@
       "copied": "已复制",
       "copy": "复制",
       "dismiss": "我已保存，关闭提示",
-      "keys": "API Keys",
       "generate": "生成新 Key",
-      "empty": "暂无 API Key，点击右上角生成",
       "cols": {
-        "usage": "用途",
-        "prefix": "Key 前缀",
-        "createdAt": "创建时间",
-        "lastUsed": "最后使用",
-        "never": "从未",
-        "scopes": "权限"
+        "usage": "用途"
       },
       "revoke": "吊销",
       "revokeConfirm": "确认吊销「{{name}}",
       "docs": {
-        "title": "推送线索接口（网站表单、广告平台等外部系统）",
-        "submit": "提交新线索",
         "headers": "请求头",
         "body": "请求体（JSON）",
         "services": "可选服务分类（intendedServices 字段）",
         "servicesHint": "填写系统中不存在的服务名将被自动记录为「其他」",
         "adInfo": "可选字段，用于记录广告追踪信息（ip、url、账户、广告计划、广告组、广告），提交后可在线索详情页查看。",
-        "curl": "cURL 示例",
         "response": "成功响应（201）",
         "yourApiKey": "你的 API Key",
-        "bodyExample": "{\n  \"source\": \"官网表单\",\n  \"name\": \"张三\",\n  \"contactInfo\": \"13800138000\",\n  \"intendedServices\": [\"赴美试管\"],\n  \"notes\": \"备注（可选）\",\n  \"adInfo\": {\n    \"ip\": \"1.2.3.4\",\n    \"url\": \"https://landing.example.com\",\n    \"账户\": \"百度账户A\",\n    \"广告计划\": \"试管婴儿-全国\",\n    \"广告组\": \"25-35岁女性\",\n    \"广告\": \"创意文案01\"\n  }\n}",
-        "curlExample": "curl -X POST {{endpoint}} \\\n  -H \"Content-Type: application/json\" \\\n  -H \"X-API-Key: crm_your_key_here\" \\\n  -d '{\"source\":\"官网\",\"name\":\"张三\",\"contactInfo\":\"138xxxx\",\"intendedServices\":[\"赴美试管\"],\"adInfo\":{\"ip\":\"1.2.3.4\",\"广告计划\":\"试管-全国\"}}'"
+        "bodyExample": "{\n  \"source\": \"官网表单\",\n  \"name\": \"张三\",\n  \"contactInfo\": \"13800138000\",\n  \"intendedServices\": [\"赴美试管\"],\n  \"notes\": \"备注（可选）\",\n  \"adInfo\": {\n    \"ip\": \"1.2.3.4\",\n    \"url\": \"https://landing.example.com\",\n    \"账户\": \"百度账户A\",\n    \"广告计划\": \"试管婴儿-全国\",\n    \"广告组\": \"25-35岁女性\",\n    \"广告\": \"创意文案01\"\n  }\n}"
       },
       "namePlaceholder": "如：官网表单、小程序接入",
       "prompt": {
-        "open": "AI 接入",
         "createdTitle": "API Key 已生成",
         "title": "AI 接入：{{name}}",
         "keyHiddenHint": "完整密钥只在生成时显示一次。下面的提示词改为从环境变量 CRM_API_KEY 读取密钥，请把你保存的密钥交给 AI 或部署人员。",
@@ -999,13 +987,6 @@
         "webHint": "claude.ai、ChatGPT 网页版的连接器需要 OAuth 授权，暂不支持。",
         "pushOnlyHint": "这把密钥只能推送线索。要让 AI 查询或修改 CRM 数据，请新建「只读」或「读写」权限的密钥，再使用 MCP 配置。",
         "keyPlaceholder": "<你的 API Key>"
-      },
-      "mcpCard": {
-        "title": "MCP：让 AI 直接操作 CRM",
-        "desc": "给管理员、客服日常维护客户和线索用：在 Claude Code、Cursor、Claude Desktop 等 AI 工具里接入后，可以让 AI 查询和修改线索、客户，写跟进记录，转化客户。AI 按密钥权限和你的角色操作，所有调用都记录在审计日志。",
-        "create": "创建 MCP 密钥",
-        "defaultName": "MCP（AI 工具）",
-        "steps": "步骤：点击「创建 MCP 密钥」（默认读写权限）→ 在弹窗中复制 Claude Code 命令或 JSON 配置 → 粘贴到 AI 工具。已有的密钥可点击列表中的「AI 接入」查看配置。"
       }
     },
     "notifications": {
@@ -1481,6 +1462,55 @@
   "aiAccess": {
     "title": "AI 接入",
     "subtitle": "把 AI Agent（Claude Code、Cursor 等）或外部系统接入 CRM。密钥以你的身份操作，权限不超过你的角色。",
-    "auditLink": "查看审计日志 →"
+    "auditLink": "查看审计日志 →",
+    "sections": {
+      "mcp": {
+        "title": "AI 工具（MCP）",
+        "desc": "在 Claude Code、Cursor、Claude Desktop 等 AI 工具里，用自然语言查询和维护客户、线索。适合管理员、客服日常使用。"
+      },
+      "push": {
+        "title": "外部系统推送线索",
+        "desc": "网站表单、广告平台等外部系统把新线索自动推送进 CRM。"
+      },
+      "keyCount": "已有 {{count}} 把密钥"
+    },
+    "mcp": {
+      "stepsTitle": "三步接入",
+      "create": "创建 MCP 密钥",
+      "defaultName": "MCP（AI 工具）",
+      "step1": {
+        "title": "创建密钥",
+        "desc": "默认读写权限，可查看完整联系方式；也可以改为只读。"
+      },
+      "step2": {
+        "title": "复制配置",
+        "desc": "在弹窗中复制 Claude Code 命令，或 Cursor / Claude Desktop 的 JSON 配置，粘贴到 AI 工具。"
+      },
+      "step3": {
+        "title": "直接说需求",
+        "desc": "AI 会按你的权限和角色操作 CRM，每一步都记录在审计日志。"
+      },
+      "examplesTitle": "可以这样对 AI 说：",
+      "example1": "今天有哪些客户需要跟进？",
+      "example2": "把张三的状态改为已联系，并记录刚才的电话沟通",
+      "example3": "把线索 1024 转为客户，负责销售设为李四",
+      "example4": "列出上周新增、还没分配的线索",
+      "keysTitle": "MCP 密钥",
+      "empty": "还没有 MCP 密钥，点击「创建 MCP 密钥」开始"
+    },
+    "push": {
+      "keysTitle": "推送密钥",
+      "intro": "每个接入的系统用一把密钥，方便单独停用。创建后可复制给 AI 的接入提示词，让 AI 帮你写对接代码。",
+      "create": "创建推送密钥",
+      "defaultName": "官网表单",
+      "empty": "还没有推送密钥",
+      "docsToggle": "接口说明",
+      "llmsHint": "能联网的 AI 可以直接读取实时生成的接口说明："
+    },
+    "keys": {
+      "lastUsed": "最后使用 {{time}}",
+      "neverUsed": "从未使用",
+      "view": "查看配置"
+    }
   }
 }
