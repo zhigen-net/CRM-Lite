@@ -30,6 +30,7 @@ import { entitySchemaRoutes } from './crm/routes/entitySchema'
 import { recycleBinRoutes } from './crm/routes/recycleBin'
 import { apiFailuresRoutes } from './crm/routes/apiFailures'
 import { milestonesRoutes } from './crm/routes/milestones'
+import { v1DocsRoutes } from './crm/routes/v1Docs'
 import { requireApiKey } from './crm/middleware/apiKeyAuth'
 import { executeScheduledWorkflows } from './crm/workflow/executor'
 import { hashPassword } from './shared/password'
@@ -123,6 +124,9 @@ app.get('/api/public/settings', async (c) => {
   })
 })
 
+// 对外接口说明（无需鉴权）
+app.route('/api/v1', v1DocsRoutes)
+
 const v1LeadSchema = z.object({
   source: z.string().min(1, '请填写来源'),
   name: z.string().min(1, '请填写姓名'),
@@ -147,6 +151,12 @@ app.post(
     const body = c.req.valid('json') as Record<string, unknown>
     const actor = actorFromJwt(c.get('jwtPayload'), 'api')
     const deps = { db: c.env.DB, env: c.env, waitUntil: (p: Promise<unknown>) => c.executionCtx.waitUntil(p) }
+
+    // 试运行：只返回整理后的结果，不建线索、不记失败
+    if (['1', 'true'].includes(c.req.query('dryRun') ?? '')) {
+      const input = await normalizeExternalLead(c.env.DB, body)
+      return c.json({ data: { dryRun: true, lead: input } })
+    }
 
     try {
       const input = await normalizeExternalLead(c.env.DB, body)
