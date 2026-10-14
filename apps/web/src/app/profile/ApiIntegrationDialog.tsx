@@ -20,6 +20,15 @@ export function docsUrlOf(endpoint: string): string {
   return endpoint.replace(/\/leads$/, '/llms.txt')
 }
 
+/** 与服务端 pickFallbackService 一致：未收录的服务改记为系统里已有的「其他 / Other」 */
+function fallbackServiceOf(services: string[]): string {
+  for (const alias of ['其他', '其它', 'other', 'others']) {
+    const hit = services.find((n) => n.trim().toLowerCase() === alias)
+    if (hit) return hit
+  }
+  return '其他'
+}
+
 function keyLineOf(t: TFunction, apiKey: string | null): string {
   return apiKey ? t('profile.api.prompt.keyInline', { key: apiKey }) : t('profile.api.prompt.keyEnv')
 }
@@ -34,6 +43,7 @@ export function buildIntegrationPrompt(t: TFunction, input: PromptInput): string
       endpoint: input.endpoint,
       docsUrl: docsUrlOf(input.endpoint),
       keyLine,
+      fallback: fallbackServiceOf(input.services),
       services: input.services.length > 0 ? input.services.join('、') : t(`${p}.noServices`),
     }),
     t(`${p}.req.${input.scenario}`),
