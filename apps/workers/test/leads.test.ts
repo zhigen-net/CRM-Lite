@@ -135,12 +135,12 @@ describe('状态流转（带跟进记录）', () => {
     const res = await api(owner, 'POST', `/api/leads/${id}/status-transition`, {
       targetStatus: 'Lost',
       activity: { activityType: 'Call', description: '不需要了', activityDate: '2026-10-12 10:00:00' },
-      fields: { lostReason: '价格' },
+      fields: { lostReason: '价格问题' },
     })
     expect(res.status).toBe(200)
     const row = await leadRow(id)
     expect(row?.status).toBe('Lost')
-    expect(row?.lost_reason).toBe('价格')
+    expect(row?.lost_reason).toBe('价格问题')
     expect(await leadsCount(owner.id)).toBe(2)
     const act = await env.DB.prepare("SELECT description FROM sales_activities WHERE lead_id = ? AND activity_type = 'Call'")
       .bind(id).first<{ description: string }>()
@@ -205,7 +205,7 @@ describe('新建线索：所有入口都进入分配队列并触发"新建"类�
   beforeAll(async () => {
     await env.DB.prepare('INSERT INTO workflows (id, name, entity_type, trigger, actions, is_active) VALUES (?, ?, ?, ?, ?, 1)')
       .bind(wfId, 'test on_create', 'lead', JSON.stringify({ type: 'on_create' }),
-        JSON.stringify([{ type: 'set_field', field: 'lostReason', value: 'wf-ran' }])).run()
+        JSON.stringify([{ type: 'set_field', field: 'source', value: 'wf-ran' }])).run()
   })
   afterAll(async () => {
     await env.DB.prepare('DELETE FROM workflows WHERE id = ?').bind(wfId).run()
@@ -213,7 +213,7 @@ describe('新建线索：所有入口都进入分配队列并触发"新建"类�
 
   async function waitForWorkflow(leadId: string) {
     for (let i = 0; i < 50; i++) {
-      if ((await leadRow(leadId))?.lost_reason === 'wf-ran') return true
+      if ((await leadRow(leadId))?.source === 'wf-ran') return true
       await new Promise((r) => setTimeout(r, 20))
     }
     return false
