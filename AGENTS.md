@@ -32,6 +32,7 @@
 
 - 业务规则（参数校验、权限与可见范围、写库、附带处理）写在 `apps/workers/src/domain/`，各入口（`/api/*` 路由、`/api/v1`、AI 助手工具、以后的 MCP）只做参数解析和响应格式，**不要在入口里直接写库或重复实现规则**。
 - 已迁移：`domain/leads/`（线索）、`domain/clients/`（客户、线索转化）、`domain/activities/`（跟进记录、附件、里程碑推进）。每个目录下 `policy.ts` 定义可见范围与修改权限，`service.ts` 负责读写及附带处理（线索数、系统变更记录、分配队列、工作流）。工作流改字段统一走 `domain/workflowWrites.ts`（以系统身份调用上述服务，不写变更记录、不再触发工作流，避免循环）。
+- 对 AI 开放的能力（AI 助手工具、以后的 MCP 工具）统一登记在 `domain/capabilities/`：名称、说明、输入 schema、所需 scope 只定义一次，各入口从注册表生成工具列表并通过 `invokeCapability` 调用，不要在入口里单独定义工具。
 - 跟进记录和附件的写库语句只在 `domain/activities/records.ts`，其它地方不要直接 INSERT。
 - 下载 R2 文件前必须经过 `domain/files.ts` 的权限检查（销售只能下载自己负责的线索/客户下的附件）；新增文件类型时同步补充规则。
 - 业务错误抛 `DomainError`（带状态码），由入口转换：HTTP 接口返回对应状态码，AI 助手工具返回 `{ error }`。
