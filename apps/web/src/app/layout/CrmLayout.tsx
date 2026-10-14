@@ -20,6 +20,8 @@ export default function CrmLayout() {
     { to: '/app/clients', label: t('nav.clients') },
     { to: '/app/activities', label: t('nav.activities') },
     { to: '/app/products', label: t('nav.products'), roles: ['admin', 'operations'] },
+    // 所有角色可用：用户通过 AI Agent（MCP）或外部系统接入 CRM
+    { to: '/app/ai-access', label: t('nav.aiAccess') },
   ]
 
   const adminNavItems = [
@@ -98,7 +100,6 @@ export default function CrmLayout() {
             {[
               { tab: 'info',     icon: '👤', labelKey: 'profile.tabs.basic' },
               { tab: 'password', icon: '🔑', labelKey: 'profile.tabs.password' },
-              { tab: 'api',      icon: '🔌', labelKey: 'profile.tabs.api' },
               { tab: 'notify',   icon: '🔔', labelKey: 'profile.tabs.notifications' },
             ].map(({ tab, icon, labelKey }) => (
               <NavLink

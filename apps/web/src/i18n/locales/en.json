@@ -89,7 +89,8 @@
     "docs": "Docs",
     "logout": "Logout",
     "profile": "Profile",
-    "language": "语言"
+    "language": "语言",
+    "aiAccess": "AI Access"
   },
   "auth": {
     "title": "CRM System",
@@ -864,7 +865,6 @@
     "tabs": {
       "basic": "Profile",
       "password": "Password",
-      "api": "API Access",
       "notifications": "Notifications"
     },
     "basic": {
@@ -899,7 +899,7 @@
       "revoke": "Revoke",
       "revokeConfirm": "Revoke \"{{name}}",
       "docs": {
-        "title": "API Reference",
+        "title": "Lead push API (website forms, ad platforms and other external systems)",
         "submit": "Submit a New Lead",
         "headers": "Headers",
         "body": "Request Body (JSON)",
@@ -1477,5 +1477,10 @@
     "completedOn": "Completed on",
     "expectedOn": "Expected",
     "notesHint": "Notes (optional)"
+  },
+  "aiAccess": {
+    "title": "AI Access",
+    "subtitle": "Connect AI agents (Claude Code, Cursor, etc.) or external systems to the CRM. Keys act as you and never exceed your role.",
+    "auditLink": "View audit log →"
   }
 }

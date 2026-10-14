@@ -22,6 +22,7 @@ const SystemSettingsPage = lazy(() => import('@/app/settings/SystemSettingsPage'
 const WorkflowEditorPage = lazy(() => import('@/app/settings/workflows/WorkflowEditorPage'))
 const DocsPage = lazy(() => import('@/app/docs/DocsPage'))
 const ProfilePage = lazy(() => import('@/app/profile/ProfilePage'))
+const AiAccessPage = lazy(() => import('@/app/ai-access/AiAccessPage'))
 
 // 客户门户页面（懒加载）
 const PortalLogin = lazy(() => import('@/portal/auth/LoginPage'))
@@ -69,6 +70,7 @@ export default function App() {
                     <Route path="docs" element={<DocsPage />} />
                     <Route path="settings/options" element={<Navigate to="/app/settings" replace />} />
                     <Route path="profile" element={<ProfilePage />} />
+                    <Route path="ai-access" element={<AiAccessPage />} />
                     <Route index element={<Navigate to="leads" replace />} />
                   </Route>
                 </Routes>
