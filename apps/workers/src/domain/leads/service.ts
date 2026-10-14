@@ -357,19 +357,30 @@ export async function transitionLeadStatus(deps: Deps, actor: Actor, id: string,
 
 // ─── 删除（软删除） ──────────────────────────────────────────────────────────
 
+/** 按实际数据重新统计某人负责的进行中线索数（幂等，可纠正历史偏差） */
+export async function recountLeads(db: D1Database, userId: string): Promise<void> {
+  await db.prepare(
+    `UPDATE users SET current_leads_count = (
+       SELECT COUNT(*) FROM leads l
+       WHERE l.assigned_to_userId = users.id AND l.deleted_at IS NULL AND l.status NOT IN ('Converted', 'Lost'))
+     WHERE id = ?`,
+  ).bind(userId).run()
+}
+
 export async function softDeleteLead(db: D1Database, actor: Actor, id: string): Promise<void> {
   if (actor.role !== 'admin') throw forbidden('权限不足')
   const lead = await findActiveLead(db, id)
-  await db.prepare('UPDATE leads SET deleted_at = CURRENT_TIMESTAMP WHERE id = ?').bind(id).run()
-  // 进行中的线索被删除：负责人线索数 -1
-  if (!TERMINAL.includes(lead.status) && lead.assigned_to_userId) await adjustLeadsCount(db, lead.assigned_to_userId, -1)
+  await db.prepare('UPDATE leads SET deleted_at = CURRENT_TIMESTAMP WHERE id = ? AND deleted_at IS NULL').bind(id).run()
+  // 重新统计而不是 -1：重复请求、历史上未同步的删除都不会让计数出错
+  if (lead.assigned_to_userId) await recountLeads(db, lead.assigned_to_userId)
 }
 
-/** 从回收站恢复线索：进行中的线索恢复后，负责人线索数 +1 */
+/** 从回收站恢复线索，并重新统计负责人线索数 */
 export async function restoreLead(db: D1Database, actor: Actor, id: string): Promise<void> {
   if (actor.role !== 'admin') throw forbidden('权限不足')
   const lead = await db.prepare('SELECT * FROM leads WHERE id = ? AND deleted_at IS NOT NULL').bind(id).first<LeadRow>()
   if (!lead) throw notFound('记录不存在或未被删除')
-  await db.prepare('UPDATE leads SET deleted_at = NULL WHERE id = ?').bind(id).run()
-  if (!TERMINAL.includes(lead.status) && lead.assigned_to_userId) await adjustLeadsCount(db, lead.assigned_to_userId, 1)
+  await db.prepare('UPDATE leads SET deleted_at = NULL WHERE id = ? AND deleted_at IS NOT NULL').bind(id).run()
+  // 重新统计而不是 +1：同时点两次恢复、在旧版本中删除的线索，计数都保持正确
+  if (lead.assigned_to_userId) await recountLeads(db, lead.assigned_to_userId)
 }

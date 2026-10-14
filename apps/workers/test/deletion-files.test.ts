@@ -14,24 +14,46 @@ beforeAll(async () => {
   other = await createUser('sales', team, 0)
 })
 
-describe('删除与恢复线索', () => {
+describe('删除与恢复线索（按实际数据重新统计负责人线索数）', () => {
   it('删除进行中的线索：负责人线索数 -1；恢复后 +1', async () => {
-    const owner = await createUser('sales', team, 3)
+    const owner = await createUser('sales', team, 0)
     const id = await insertLead({ createdBy: admin.id, assignedTo: owner.id, teamId: team })
+    await insertLead({ createdBy: admin.id, assignedTo: owner.id, teamId: team })
     expect((await api(admin, 'DELETE', `/api/leads/${id}`)).status).toBe(200)
-    expect(await leadsCount(owner.id)).toBe(2)
+    expect(await leadsCount(owner.id)).toBe(1)
     expect((await api(admin, 'POST', `/api/admin/recycle-bin/lead/${id}/restore`)).status).toBe(200)
-    expect(await leadsCount(owner.id)).toBe(3)
+    expect(await leadsCount(owner.id)).toBe(2)
     expect((await api(admin, 'GET', `/api/leads/${id}`)).status).toBe(200)
   })
 
   it('删除或恢复已丢失的线索：线索数不变', async () => {
-    const owner = await createUser('sales', team, 3)
+    const owner = await createUser('sales', team, 0)
+    await insertLead({ createdBy: admin.id, assignedTo: owner.id, teamId: team })
     const id = await insertLead({ createdBy: admin.id, assignedTo: owner.id, teamId: team, status: 'Lost' })
     await api(admin, 'DELETE', `/api/leads/${id}`)
-    expect(await leadsCount(owner.id)).toBe(3)
+    expect(await leadsCount(owner.id)).toBe(1)
     await api(admin, 'POST', `/api/admin/recycle-bin/lead/${id}/restore`)
-    expect(await leadsCount(owner.id)).toBe(3)
+    expect(await leadsCount(owner.id)).toBe(1)
+  })
+
+  it('旧版本删除（当时未减计数）的线索恢复后，线索数仍然正确', async () => {
+    const owner = await createUser('sales', team, 1)
+    const id = await insertLead({ createdBy: admin.id, assignedTo: owner.id, teamId: team })
+    // 模拟旧版本的删除：只打删除标记，没有减计数
+    await env.DB.prepare('UPDATE leads SET deleted_at = CURRENT_TIMESTAMP WHERE id = ?').bind(id).run()
+    await api(admin, 'POST', `/api/admin/recycle-bin/lead/${id}/restore`)
+    expect(await leadsCount(owner.id)).toBe(1)
+  })
+
+  it('同时发两次恢复请求，线索数只算一次', async () => {
+    const owner = await createUser('sales', team, 0)
+    const id = await insertLead({ createdBy: admin.id, assignedTo: owner.id, teamId: team })
+    await env.DB.prepare('UPDATE leads SET deleted_at = CURRENT_TIMESTAMP WHERE id = ?').bind(id).run()
+    await Promise.all([
+      api(admin, 'POST', `/api/admin/recycle-bin/lead/${id}/restore`),
+      api(admin, 'POST', `/api/admin/recycle-bin/lead/${id}/restore`),
+    ])
+    expect(await leadsCount(owner.id)).toBe(1)
   })
 
   it('恢复未删除的线索 404', async () => {
