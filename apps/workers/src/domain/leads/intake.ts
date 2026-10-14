@@ -12,6 +12,18 @@ const AD_FIELD_ALIASES: Record<string, string> = {
   ad: '广告', '广告': '广告',
 }
 
+// 兜底服务的常见叫法；不同部署的服务名可能是中文或英文
+const FALLBACK_SERVICE_ALIASES = ['其他', '其它', 'other', 'others']
+
+/** 未收录的意向服务改记为哪个服务：优先用系统里已有的「其他 / Other」，都没有时用「其他」 */
+export function pickFallbackService(serviceNames: string[]): string {
+  for (const alias of FALLBACK_SERVICE_ALIASES) {
+    const hit = serviceNames.find((n) => n.trim().toLowerCase() === alias)
+    if (hit) return hit
+  }
+  return '其他'
+}
+
 /** 外部接口可用的意向服务名（未删除的服务，按名称排序） */
 export async function listIntakeServiceNames(db: D1Database): Promise<string[]> {
   const rows = await db.prepare('SELECT name FROM services WHERE deleted_at IS NULL ORDER BY name').all<{ name: string }>()
@@ -20,22 +32,24 @@ export async function listIntakeServiceNames(db: D1Database): Promise<string[]> 
 
 /**
  * 把外部推送的原始请求体整理成新建线索的参数：
- * - 系统未收录的意向服务替换为「其他」，原值写入备注
+ * - 系统未收录的意向服务替换为兜底服务（「其他」或 Other），原值写入备注
  * - 广告字段优先取 adInfo 对象，再合并顶层别名字段
  * - 其余未知字段拼到备注，不丢信息
  */
 export async function normalizeExternalLead(db: D1Database, body: Record<string, unknown>): Promise<CreateLeadInput> {
-  const validServices = new Set(await listIntakeServiceNames(db))
+  const serviceNames = await listIntakeServiceNames(db)
+  const validServices = new Set(serviceNames)
+  const fallback = pickFallbackService(serviceNames)
 
   const notes: string[] = []
   if (body.notes) notes.push(String(body.notes))
 
   const submitted = Array.isArray(body.intendedServices) && body.intendedServices.length > 0
     ? (body.intendedServices as unknown[]).map(String)
-    : ['其他']
+    : [fallback]
   const unknown = submitted.filter((s) => !validServices.has(s))
   if (unknown.length > 0) notes.push(`意向服务（系统未收录）：${unknown.join('、')}`)
-  const intendedServices = [...new Set(submitted.map((s) => validServices.has(s) ? s : '其他'))]
+  const intendedServices = [...new Set(submitted.map((s) => validServices.has(s) ? s : fallback))]
 
   const adInfo: Record<string, string> = {}
   if (body.adInfo && typeof body.adInfo === 'object') {
