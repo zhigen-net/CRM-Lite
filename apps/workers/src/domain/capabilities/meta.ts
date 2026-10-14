@@ -47,3 +47,20 @@ export const queryUsers: Capability = {
     return { users: rows.results }
   },
 }
+
+export const whoami: Capability = {
+  name: 'whoami',
+  description: '查看当前身份：用户名、角色、所属团队，以及本次授权可用的权限范围。角色决定可见数据（销售只能看到自己负责的线索和客户）。',
+  scope: null,
+  readOnly: true,
+  inputSchema: { type: 'object', properties: {} },
+  async run({ db }, actor, _input, { scopes }) {
+    const user = await db.prepare(
+      'SELECT u.name, u.email, t.name AS team_name FROM users u LEFT JOIN teams t ON u.team_id = t.id WHERE u.id = ?',
+    ).bind(actor.userId).first<{ name: string; email: string; team_name: string | null }>()
+    return {
+      userId: actor.userId, name: user?.name ?? null, email: user?.email ?? null, role: actor.role,
+      team: user?.team_name ?? null, via: actor.via, scopes: scopes ?? 'all',
+    }
+  },
+}

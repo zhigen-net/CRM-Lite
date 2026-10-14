@@ -25,7 +25,7 @@ describe('能力定义', () => {
     const names = CAPABILITIES.map((c) => c.name)
     expect(new Set(names).size).toBe(names.length)
     for (const c of CAPABILITIES) {
-      expect(SCOPES).toContain(c.scope)
+      if (c.scope !== null) expect(SCOPES).toContain(c.scope)
       for (const r of c.inputSchema.required ?? []) expect(Object.keys(c.inputSchema.properties)).toContain(r)
     }
   })

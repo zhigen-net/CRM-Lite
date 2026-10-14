@@ -25,7 +25,9 @@ export function parseScopes(raw: string | null | undefined): Scope[] {
 }
 
 export const requireApiKey = createMiddleware<{ Bindings: Env }>(async (c, next) => {
-  const apiKey = c.req.header('X-API-Key')
+  // 也接受 Authorization: Bearer crm_...（部分 MCP 客户端只支持配置 Bearer Token）
+  const bearer = c.req.header('Authorization')?.match(/^Bearer\s+(crm_\S+)$/)?.[1]
+  const apiKey = c.req.header('X-API-Key') ?? bearer
   if (!apiKey?.startsWith('crm_')) {
     throw new HTTPException(401, { message: '缺少有效的 X-API-Key 请求头' })
   }

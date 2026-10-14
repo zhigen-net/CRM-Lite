@@ -7,6 +7,8 @@ export const SCOPES = [
   'clients:read', 'clients:write',
   'activities:read', 'activities:write',
   'meta:read',
+  // 查看完整联系方式；没有此权限时，通过 API Key / MCP 返回的手机号、邮箱会打码
+  'contacts:read',
 ] as const
 export type Scope = typeof SCOPES[number]
 
@@ -30,8 +32,15 @@ export interface Capability {
   name: string
   description: string
   inputSchema: InputSchema
-  scope: Scope
+  /** 所需权限；null 表示任何授权都可调用（如 whoami） */
+  scope: Scope | null
   /** 只读能力不修改任何数据（MCP 的 readOnlyHint） */
   readOnly: boolean
-  run(deps: Deps, actor: Actor, input: CapabilityInput): Promise<unknown>
+  run(deps: Deps, actor: Actor, input: CapabilityInput, ctx: CapabilityContext): Promise<unknown>
+}
+
+/** 调用时的附加信息 */
+export interface CapabilityContext {
+  /** 授权的 scope；不限制时为 undefined（AI 助手以用户本人身份调用） */
+  scopes?: readonly Scope[] | undefined
 }

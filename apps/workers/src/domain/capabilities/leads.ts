@@ -2,6 +2,7 @@
 import * as leads from '../leads/service'
 import { recentActivities } from '../activities/service'
 import { badRequest } from '../errors'
+import { normalizeExternalLead } from '../leads/intake'
 import type { Capability } from './types'
 
 const NEXT_CONTACT = { type: 'string', enum: ['overdue', 'today', 'week'], description: 'overdue=已逾期 today=今天到期 week=未来7天' } as const
@@ -85,5 +86,28 @@ export const updateLead: Capability = {
 
     await leads.updateLead(deps, actor, input.id as string, patch)
     return { success: true, message: '线索已更新' }
+  },
+}
+
+export const createLead: Capability = {
+  name: 'create_lead',
+  description: '新建线索。新线索会按系统的分配规则自动分配负责人，并触发「新建线索」工作流。意向服务不在系统列表中时会记为「其他」，原值写入备注。新建前建议先用 query_leads 按联系方式查重。',
+  scope: 'leads:create',
+  readOnly: false,
+  inputSchema: {
+    type: 'object',
+    properties: {
+      source:           { type: 'string', description: '线索来源，如「转介绍」「电话咨询」' },
+      name:             { type: 'string', description: '客户姓名或称呼' },
+      contactInfo:      { type: 'string', description: '电话、微信或邮箱' },
+      intendedServices: { type: 'array', items: { type: 'string' }, description: '意向服务名称列表，可用值见 llms.txt 或界面「服务管理」' },
+      notes:            { type: 'string', description: '备注' },
+    },
+    required: ['source', 'name', 'contactInfo'],
+  },
+  async run(deps, actor, input) {
+    const normalized = await normalizeExternalLead(deps.db, input)
+    const id = await leads.createLead(deps, actor, { ...normalized, linkCreatorTeam: true })
+    return { success: true, leadId: id, intendedServices: normalized.intendedServices, message: '线索已创建' }
   },
 }

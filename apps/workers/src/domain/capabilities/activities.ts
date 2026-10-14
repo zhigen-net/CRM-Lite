@@ -32,3 +32,39 @@ export const createActivity: Capability = {
     return { success: true, activityId: id, message: '跟进记录已创建' }
   },
 }
+
+export const listActivities: Capability = {
+  name: 'list_activities',
+  description: '查询跟进记录，可按线索、客户、跟进类型、下次联系时间筛选，按创建时间倒序。查看单个线索/客户的最近记录也可用 get_lead / get_client。',
+  scope: 'activities:read',
+  readOnly: true,
+  inputSchema: {
+    type: 'object',
+    properties: {
+      leadId:       { type: 'string', description: '只看此线索的记录' },
+      clientId:     { type: 'string', description: '只看此客户的记录' },
+      activityType: { type: 'string', description: '跟进类型值，先用 get_options(activity_type) 获取' },
+      nextContact:  { type: 'string', enum: ['overdue', 'today', 'week'], description: '按下次联系时间：overdue=已逾期 today=今天 week=未来7天' },
+      search:       { type: 'string', description: '搜索内容、跟进人、线索或客户姓名' },
+      pageSize:     { type: 'number', description: '返回条数，默认20，最多50' },
+    },
+  },
+  async run({ db }, actor, input) {
+    const result = await activities.listActivities(db, actor, {
+      leadId: input.leadId as string | undefined,
+      clientId: input.clientId as string | undefined,
+      activityType: input.activityType as string | undefined,
+      nextContact: input.nextContact as string | undefined,
+      search: input.search as string | undefined,
+      pageSize: Math.min(50, Number(input.pageSize ?? 20)),
+    })
+    return {
+      total: result.total,
+      activities: result.data.map((a) => ({
+        id: a.id, activityType: a.activityType, description: a.description, activityDate: a.activityDate,
+        nextContactDate: a.nextContactDate, userName: a.userName, leadId: a.leadId, leadName: a.leadName,
+        clientId: a.clientId, clientName: a.clientName,
+      })),
+    }
+  },
+}

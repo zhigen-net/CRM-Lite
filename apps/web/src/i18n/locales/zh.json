@@ -981,9 +981,24 @@
           "clients_write": "修改客户",
           "activities_read": "查看跟进记录",
           "activities_write": "新增跟进记录",
-          "meta_read": "查看选项和用户"
+          "meta_read": "查看选项和用户",
+          "contacts_read": "查看完整联系方式"
         },
         "hint": "密钥以你的身份操作，同时受你的角色权限限制（例如销售只能看到自己的线索）。"
+      },
+      "mcp": {
+        "modes": {
+          "mcp": "MCP（AI 直接操作 CRM）",
+          "push": "推送线索"
+        },
+        "intro": "在 Claude Code、Cursor、Claude Desktop 等支持 MCP 的 AI 工具里添加下面的配置，AI 就能按这把密钥的权限查询和维护 CRM 数据。所有调用都记录在「系统管理 → 审计日志」。",
+        "url": "MCP 地址",
+        "claudeCode": "Claude Code 命令",
+        "json": "JSON 配置（Cursor、Claude Desktop 等）",
+        "maskedHint": "这把密钥没有「查看完整联系方式」权限，AI 看到的手机号、邮箱会打码。",
+        "webHint": "claude.ai、ChatGPT 网页版的连接器需要 OAuth 授权，暂不支持。",
+        "pushOnlyHint": "这把密钥只能推送线索。要让 AI 查询或修改 CRM 数据，请新建「只读」或「读写」权限的密钥，再使用 MCP 配置。",
+        "keyPlaceholder": "<你的 API Key>"
       }
     },
     "notifications": {

@@ -72,6 +72,23 @@ export function buildCurlCommand(t: TFunction, endpoint: string, apiKey: string 
   return `curl -X POST '${endpoint}?dryRun=1' \\\n  -H "Content-Type: application/json" \\\n  -H "X-API-Key: ${key}" \\\n  -d '${body}'`
 }
 
+/** MCP 服务地址（与线索接口同源） */
+export function mcpUrlOf(endpoint: string): string {
+  return endpoint.replace(/\/v1\/leads$/, '/mcp')
+}
+
+/** Claude Code 添加 MCP 服务的命令 */
+export function buildClaudeMcpCommand(mcpUrl: string, apiKey: string | null): string {
+  return `claude mcp add --transport http crm ${mcpUrl} --header "X-API-Key: ${apiKey ?? '$CRM_API_KEY'}"`
+}
+
+/** Cursor、Claude Desktop 等客户端的 JSON 配置 */
+export function buildMcpJsonConfig(t: TFunction, mcpUrl: string, apiKey: string | null): string {
+  return JSON.stringify({
+    mcpServers: { crm: { type: 'http', url: mcpUrl, headers: { 'X-API-Key': apiKey ?? t('profile.api.mcp.keyPlaceholder') } } },
+  }, null, 2)
+}
+
 function useCopy() {
   const [copied, setCopied] = useState<string | null>(null)
   const copy = (id: string, text: string) => {
@@ -89,14 +106,23 @@ interface Props {
   /** 刚生成时传入完整密钥；从列表打开时为空 */
   apiKey: string | null
   keyName: string
+  /** 密钥的权限范围，决定展示推送线索提示词还是 MCP 配置 */
+  scopes: readonly string[]
   onClose: () => void
 }
 
 /** 生成密钥后（或从密钥列表）打开：一键复制给 AI 的接入提示词 */
-export function ApiIntegrationDialog({ endpoint, services, apiKey, keyName, onClose }: Props) {
+export function ApiIntegrationDialog({ endpoint, services, apiKey, keyName, scopes, onClose }: Props) {
   const { t } = useTranslation()
   const [scenario, setScenario] = useState<IntegrationScenario>('website')
   const { copied, copy } = useCopy()
+  // 只能推送线索的密钥只展示推送提示词；有其它权限的密钥默认展示 MCP 配置
+  const canPush = scopes.includes('leads:create')
+  const canMcp = scopes.some((s) => s !== 'leads:create')
+  const [mode, setMode] = useState<'push' | 'mcp'>(canMcp ? 'mcp' : 'push')
+  const mcpUrl = mcpUrlOf(endpoint)
+  const mcpCommand = buildClaudeMcpCommand(mcpUrl, apiKey)
+  const mcpJson = buildMcpJsonConfig(t, mcpUrl, apiKey)
 
   const prompt = buildIntegrationPrompt(t, { scenario, endpoint, apiKey, services })
   const shortPrompt = buildShortPrompt(t, { scenario, endpoint, apiKey })
@@ -125,6 +151,57 @@ export function ApiIntegrationDialog({ endpoint, services, apiKey, keyName, onCl
           <p className="rounded bg-gray-50 border px-3 py-2 text-xs text-gray-500">{t('profile.api.prompt.keyHiddenHint')}</p>
         )}
 
+        {canPush && canMcp && (
+          <div className="grid grid-cols-2 gap-1.5 rounded-lg bg-gray-100 p-1">
+            {(['mcp', 'push'] as const).map((m) => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => setMode(m)}
+                className={`rounded px-2 py-1.5 text-xs ${mode === m ? 'bg-white shadow-sm font-medium text-gray-900' : 'text-gray-500'}`}
+              >
+                {t(`profile.api.mcp.modes.${m}`)}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {mode === 'mcp' ? (
+          <div className="space-y-3">
+            <p className="text-xs text-gray-500">{t('profile.api.mcp.intro')}</p>
+            <div>
+              <p className="text-gray-700 font-medium mb-1">{t('profile.api.mcp.url')}</p>
+              <div className="flex items-center gap-2">
+                <code className="flex-1 break-all rounded bg-gray-50 border px-2 py-1.5 text-xs font-mono text-gray-700">{mcpUrl}</code>
+                <Button size="sm" variant="secondary" onClick={() => copy('mcpUrl', mcpUrl)}>
+                  {copied === 'mcpUrl' ? t('profile.api.copied') : t('profile.api.copy')}
+                </Button>
+              </div>
+            </div>
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <p className="text-gray-700 font-medium">{t('profile.api.mcp.claudeCode')}</p>
+                <Button size="sm" variant="secondary" onClick={() => copy('mcpCmd', mcpCommand)}>
+                  {copied === 'mcpCmd' ? t('profile.api.copied') : t('profile.api.copy')}
+                </Button>
+              </div>
+              <pre className="whitespace-pre-wrap break-all rounded bg-gray-50 border px-2 py-1.5 text-xs font-mono text-gray-700">{mcpCommand}</pre>
+            </div>
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <p className="text-gray-700 font-medium">{t('profile.api.mcp.json')}</p>
+                <Button size="sm" variant="secondary" onClick={() => copy('mcpJson', mcpJson)}>
+                  {copied === 'mcpJson' ? t('profile.api.copied') : t('profile.api.copy')}
+                </Button>
+              </div>
+              <pre className="max-h-40 overflow-auto whitespace-pre rounded bg-gray-50 border px-2 py-1.5 text-xs font-mono text-gray-700">{mcpJson}</pre>
+            </div>
+            {!scopes.includes('contacts:read') && <p className="text-xs text-gray-400">{t('profile.api.mcp.maskedHint')}</p>}
+            <p className="text-xs text-gray-400">{t('profile.api.mcp.webHint')}</p>
+          </div>
+        ) : (
+        <>
+        {!canMcp && <p className="text-xs text-gray-400">{t('profile.api.mcp.pushOnlyHint')}</p>}
         <div>
           <p className="text-gray-700 font-medium mb-1.5">{t('profile.api.prompt.scenarioLabel')}</p>
           <div className="grid grid-cols-3 gap-1.5">
@@ -160,6 +237,8 @@ export function ApiIntegrationDialog({ endpoint, services, apiKey, keyName, onCl
           <summary className="cursor-pointer px-3 py-2 text-xs text-gray-500">{t('profile.api.prompt.preview')}</summary>
           <pre className="max-h-60 overflow-auto whitespace-pre-wrap break-all border-t bg-gray-50 px-3 py-2 text-xs text-gray-700">{prompt}</pre>
         </details>
+        </>
+        )}
 
         <p className="text-xs text-gray-400">{t('profile.api.prompt.securityTip')}</p>
       </div>

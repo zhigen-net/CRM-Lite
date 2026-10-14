@@ -13,10 +13,10 @@ export interface AuditEntry {
 
 const INPUT_LIMIT = 1000
 
-/** 是否需要记录：写操作在所有非界面入口都记录；读操作只在外部入口（API Key 调用）记录 */
+/** 是否需要记录：写操作在所有非界面入口都记录；读操作只在外部入口（API Key、MCP）记录 */
 export function shouldAudit(actor: Actor, readOnly: boolean): boolean {
   if (actor.via === 'web' || actor.via === 'workflow') return false
-  return !readOnly || actor.via === 'api'
+  return !readOnly || actor.via === 'api' || actor.via === 'mcp'
 }
 
 /** 后台写入，不阻塞响应；写入失败只打日志 */

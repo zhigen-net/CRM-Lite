@@ -66,6 +66,11 @@ curl -X POST '${endpoint}?dryRun=1' \\
   -d '${JSON.stringify({ source: '接入测试', name: '测试', contactInfo: '13800000000', intendedServices: [services[0] ?? fallback] })}'
 \`\`\`
 
+## MCP（让 AI 直接查询和维护 CRM）
+- 地址：${origin}/api/mcp（无状态 Streamable HTTP，鉴权同上，也接受 \`Authorization: Bearer crm_...\`）
+- 可用工具由密钥权限决定（只读 / 读写 / 自定义）；没有「查看完整联系方式」权限时，联系方式会打码
+- Claude Code：\`claude mcp add --transport http crm ${origin}/api/mcp --header "X-API-Key: $CRM_API_KEY"\`
+
 ## 其它
 - OpenAPI 描述：${origin}/api/v1/openapi.json
 `

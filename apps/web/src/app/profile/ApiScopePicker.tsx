@@ -6,13 +6,15 @@ export const API_SCOPES = [
   'clients:read', 'clients:write',
   'activities:read', 'activities:write',
   'meta:read',
+  'contacts:read',
 ] as const
 export type ApiScope = typeof API_SCOPES[number]
 
 export const SCOPE_PRESETS = {
   push: ['leads:create'],
   readonly: ['leads:read', 'clients:read', 'activities:read', 'meta:read'],
-  readwrite: [...API_SCOPES],
+  // 完整联系方式默认不开放，需要时用自定义勾选
+  readwrite: ['leads:read', 'leads:create', 'leads:write', 'clients:read', 'clients:write', 'activities:read', 'activities:write', 'meta:read'],
 } as const satisfies Record<string, readonly ApiScope[]>
 export type ScopePreset = keyof typeof SCOPE_PRESETS | 'custom'
 
