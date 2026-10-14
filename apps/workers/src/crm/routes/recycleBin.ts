@@ -2,6 +2,8 @@ import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { requireAuth, requireAdmin } from '../middleware/auth'
 import { toCamel } from '../../shared/db'
+import { actorFromJwt } from '../../domain/actor'
+import { restoreLead } from '../../domain/leads/service'
 
 export const recycleBinRoutes = new Hono<{ Bindings: Env }>()
 
@@ -40,6 +42,12 @@ recycleBinRoutes.post('/:type/:id/restore', async (c) => {
   const id = c.req.param('id')
   const cfg = ENTITY_CONFIG[type]
   if (!cfg) throw new HTTPException(400, { message: '无效的实体类型' })
+
+  // 线索恢复需要同步负责人线索数，走业务服务层
+  if (type === 'lead') {
+    await restoreLead(c.env.DB, actorFromJwt(c.get('jwtPayload'), 'web'), id)
+    return c.json({ data: { id, type, restored: true } })
+  }
 
   const row = await c.env.DB.prepare(
     `SELECT id FROM ${cfg.table} WHERE id = ? AND deleted_at IS NOT NULL`,

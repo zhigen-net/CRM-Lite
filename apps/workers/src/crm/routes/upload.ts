@@ -5,6 +5,8 @@ import { v4 as uuidv4 } from 'uuid'
 import { HTTPException } from 'hono/http-exception'
 import { requireAuth } from '../middleware/auth'
 import { toCamelList } from '../../shared/db'
+import { actorFromJwt } from '../../domain/actor'
+import { assertCanDownloadFile } from '../../domain/files'
 
 export const uploadRoutes = new Hono<{ Bindings: Env }>()
 
@@ -93,6 +95,7 @@ uploadRoutes.get(
   zValidator('query', z.object({ key: z.string().min(1) })),
   async (c) => {
     const { key } = c.req.valid('query')
+    await assertCanDownloadFile(c.env.DB, actorFromJwt(c.get('jwtPayload'), 'web'), key)
     const obj = await c.env.STORAGE.get(key)
     if (!obj) return c.json({ message: '文件不存在' }, 404)
     const fileName = key.split('/').pop() ?? 'file'

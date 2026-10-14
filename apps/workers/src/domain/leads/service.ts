@@ -359,6 +359,17 @@ export async function transitionLeadStatus(deps: Deps, actor: Actor, id: string,
 
 export async function softDeleteLead(db: D1Database, actor: Actor, id: string): Promise<void> {
   if (actor.role !== 'admin') throw forbidden('权限不足')
-  await findActiveLead(db, id)
+  const lead = await findActiveLead(db, id)
   await db.prepare('UPDATE leads SET deleted_at = CURRENT_TIMESTAMP WHERE id = ?').bind(id).run()
+  // 进行中的线索被删除：负责人线索数 -1
+  if (!TERMINAL.includes(lead.status) && lead.assigned_to_userId) await adjustLeadsCount(db, lead.assigned_to_userId, -1)
+}
+
+/** 从回收站恢复线索：进行中的线索恢复后，负责人线索数 +1 */
+export async function restoreLead(db: D1Database, actor: Actor, id: string): Promise<void> {
+  if (actor.role !== 'admin') throw forbidden('权限不足')
+  const lead = await db.prepare('SELECT * FROM leads WHERE id = ? AND deleted_at IS NOT NULL').bind(id).first<LeadRow>()
+  if (!lead) throw notFound('记录不存在或未被删除')
+  await db.prepare('UPDATE leads SET deleted_at = NULL WHERE id = ?').bind(id).run()
+  if (!TERMINAL.includes(lead.status) && lead.assigned_to_userId) await adjustLeadsCount(db, lead.assigned_to_userId, 1)
 }
