@@ -60,7 +60,7 @@ export const getLead: Capability = {
 
 export const updateLead: Capability = {
   name: 'update_lead',
-  description: '更新线索字段，包括状态、负责人、意向服务、备注、下次联系时间。重要：状态变更请同时用 create_activity 留下操作记录。',
+  description: '更新线索字段：状态、丢失原因、来源、联系方式、负责人、所属团队、意向服务、备注、下次联系时间。只传需要修改的字段。状态改为 Lost 时请同时填写 lostReason；重要变更请同时用 create_activity 留下操作记录。',
   scope: 'leads:write',
   readOnly: false,
   inputSchema: {
@@ -68,7 +68,11 @@ export const updateLead: Capability = {
     properties: {
       id:               { type: 'string', description: '线索ID' },
       status:           { type: 'string', description: '新状态值，先用 get_options(lead_status) 确认可用值' },
-      assignedToUserId: { type: ['string', 'null'], description: '负责人用户ID，传 null 取消分配' },
+      lostReason:       { type: ['string', 'null'], description: '丢失原因，先用 get_options(lost_reason) 确认可用值' },
+      source:           { type: 'string', description: '线索来源' },
+      contactInfo:      { type: 'string', description: '联系方式（电话、微信或邮箱）' },
+      assignedToUserId: { type: ['string', 'null'], description: '负责人用户ID（用 query_users 查询），传 null 取消分配' },
+      assignedToTeamId: { type: ['string', 'null'], description: '所属团队ID（用 query_teams 查询），仅管理员可修改' },
       intendedServices: { type: 'array', items: { type: 'string' }, description: '意向服务名称列表' },
       notes:            { type: 'string', description: '备注内容' },
       nextContactDate:  { type: 'string', description: '下次联系日期 YYYY-MM-DD' },
@@ -78,6 +82,10 @@ export const updateLead: Capability = {
   async run(deps, actor, input) {
     const patch: leads.UpdateLeadPatch = {}
     if (input.status !== undefined) patch.status = input.status as string
+    if (input.lostReason !== undefined) patch.lostReason = input.lostReason as string | null
+    if (input.source !== undefined) patch.source = input.source as string
+    if (input.contactInfo !== undefined) patch.contactInfo = input.contactInfo as string
+    if (input.assignedToTeamId !== undefined) patch.assignedToTeamId = input.assignedToTeamId as string | null
     if (input.notes !== undefined) patch.notes = input.notes as string | null
     if (input.assignedToUserId !== undefined) patch.assignedToUserId = input.assignedToUserId as string | null
     if (input.nextContactDate !== undefined) patch.nextContactDate = input.nextContactDate as string | null

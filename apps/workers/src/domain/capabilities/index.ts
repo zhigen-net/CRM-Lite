@@ -4,9 +4,9 @@ import type { Actor, Deps } from '../actor'
 import { recordAudit, shouldAudit } from '../audit'
 import { DomainError, forbidden, notFound } from '../errors'
 import { createActivity, listActivities } from './activities'
-import { getClient, queryClients, updateClient } from './clients'
+import { convertLead, getClient, queryClients, updateClient } from './clients'
 import { createLead, getLead, queryLeads, updateLead } from './leads'
-import { getOptions, queryUsers, whoami } from './meta'
+import { getOptions, queryTeams, queryUsers, whoami } from './meta'
 import type { Capability, CapabilityInput, Scope } from './types'
 import { validateInput } from './validate'
 import { redactContacts } from './redact'
@@ -19,6 +19,7 @@ export const CAPABILITIES: readonly Capability[] = [
   createActivity, updateLead, updateClient,
   getOptions, queryUsers,
   createLead, listActivities, whoami,
+  convertLead, queryTeams,
 ]
 
 const BY_NAME = new Map(CAPABILITIES.map((c) => [c.name, c]))
@@ -34,8 +35,11 @@ export function capabilitiesFor(scopes?: readonly Scope[]): Capability[] {
 
 /** 审计用的操作对象：按约定的参数名推断；新建类能力从结果里的 leadId 取 */
 function targetOf(cap: Capability, input: CapabilityInput, result?: unknown) {
-  const created = (result as { leadId?: unknown } | undefined)?.leadId
-  if (typeof created === 'string') return { targetType: 'lead' as const, targetId: created }
+  const created = result as { leadId?: unknown; clientId?: unknown } | undefined
+  if (typeof created?.clientId === 'string') return { targetType: 'client' as const, targetId: created.clientId }
+  if (typeof created?.leadId === 'string') return { targetType: 'lead' as const, targetId: created.leadId }
+  if (typeof input.leadId === 'string') return { targetType: 'lead' as const, targetId: input.leadId }
+  if (typeof input.clientId === 'string') return { targetType: 'client' as const, targetId: input.clientId }
   if (typeof input.entityId === 'string') {
     return { targetType: input.entityType === 'client' ? 'client' as const : 'lead' as const, targetId: input.entityId }
   }

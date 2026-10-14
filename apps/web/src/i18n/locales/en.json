@@ -969,8 +969,8 @@
         },
         "presetDesc": {
           "push": "Website forms and ad platforms pushing leads (default)",
-          "readonly": "AI can read leads, clients and activities, but not change them",
-          "readwrite": "AI can read and update leads and clients, and add activities",
+          "readonly": "Read leads, clients and activities only; contact details are masked",
+          "readwrite": "Read and maintain leads, clients and activities, including full contact details (choose this for admins and customer service using MCP)",
           "custom": "Choose each permission"
         },
         "names": {
@@ -1002,10 +1002,10 @@
       },
       "mcpCard": {
         "title": "MCP: let AI work in the CRM",
-        "desc": "Connect from AI tools such as Claude Code, Cursor or Claude Desktop to let the AI read leads and clients, add activities and update statuses. The AI acts within the key's permissions and your role, and every call is recorded in the audit log.",
+        "desc": "For admins and customer service maintaining clients and leads: connect from AI tools such as Claude Code, Cursor or Claude Desktop to let the AI read and update leads and clients, add activities and convert leads. The AI acts within the key's permissions and your role, and every call is recorded in the audit log.",
         "create": "Create MCP key",
         "defaultName": "MCP (AI tool)",
-        "steps": "Steps: create a key (Read only or Read & write) → copy the Claude Code command or JSON config from the dialog → paste it into your AI tool. For existing keys, click \"AI setup\" in the list."
+        "steps": "Steps: click \"Create MCP key\" (Read & write by default) → copy the Claude Code command or JSON config from the dialog → paste it into your AI tool. For existing keys, click \"AI setup\" in the list."
       }
     },
     "notifications": {

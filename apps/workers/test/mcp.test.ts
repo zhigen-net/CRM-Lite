@@ -1,9 +1,9 @@
 // MCP 服务：协议握手、按 scope 过滤工具、权限与可见范围、联系方式打码、审计
 import { env, exports } from 'cloudflare:workers'
 import { beforeAll, describe, expect, it } from 'vitest'
-import { createTeam, createUser, insertLead, leadRow, type TestUser } from './helpers'
+import { clientRow, createTeam, createUser, insertClient, insertLead, leadRow, leadsCount, systemActivities, type TestUser } from './helpers'
 
-let admin: TestUser, salesA: TestUser, salesB: TestUser
+let admin: TestUser, salesA: TestUser, salesB: TestUser, teamId: string
 const keys: Record<string, string> = {}
 
 async function makeKey(user: TestUser, scopes: string[]): Promise<string> {
@@ -40,6 +40,7 @@ async function tool(key: string, name: string, args: Record<string, unknown> = {
 
 beforeAll(async () => {
   const team = await createTeam()
+  teamId = team
   admin = await createUser('admin')
   salesA = await createUser('sales', team)
   salesB = await createUser('sales', team)
@@ -142,5 +143,60 @@ describe('工具与权限', () => {
       if (!audit) await new Promise((r) => setTimeout(r, 25))
     }
     expect(audit).toMatchObject({ via: 'mcp', action: 'create_lead' })
+  })
+})
+
+describe('维护线索与客户（管理员、客服日常使用）', () => {
+  it('update_lead 可改联系方式、来源、团队、丢失原因，并写变更记录', async () => {
+    const id = await insertLead({ createdBy: admin.id })
+    const out = await tool(keys.adminWrite!, 'update_lead', {
+      id, contactInfo: '13811112222', source: '转介绍', assignedToTeamId: teamId, status: 'Lost', lostReason: '其他',
+    })
+    expect(out.isError).toBe(false)
+    const row = await leadRow(id)
+    expect(row).toMatchObject({ contact_info: '13811112222', source: '转介绍', assigned_to_teamId: teamId, status: 'Lost', lost_reason: '其他' })
+    expect((await systemActivities(id)).length).toBeGreaterThan(0)
+  })
+
+  it('销售不能修改团队（与界面一致）', async () => {
+    const id = await insertLead({ createdBy: salesA.id, assignedTo: salesA.id })
+    expect((await tool(keys.salesA!, 'update_lead', { id, assignedToTeamId: teamId })).isError).toBe(true)
+    expect((await leadRow(id))?.assigned_to_teamId).toBeNull()
+  })
+
+  it('update_client 可改姓名、负责销售；备注合并进资料，不丢失来源', async () => {
+    const id = await insertClient({ createdBy: admin.id, name: 'mcp-客户' })
+    await env.DB.prepare("UPDATE clients SET detailed_profile = ? WHERE id = ?").bind(JSON.stringify({ source: '官网', notes: '旧备注' }), id).run()
+    const out = await tool(keys.adminWrite!, 'update_client', { id, name: 'mcp-客户-改', assignedSalesUserId: salesA.id, notes: '新备注' })
+    expect(out.isError).toBe(false)
+    const row = await clientRow(id)
+    expect(row).toMatchObject({ name: 'mcp-客户-改', assigned_sales_userId: salesA.id })
+    expect(JSON.parse(String(row?.detailed_profile))).toEqual({ source: '官网', notes: '新备注' })
+  })
+
+  it('convert_lead：线索转客户，默认带上姓名电话和负责人，计数 -1，不能重复转化', async () => {
+    const before = await leadsCount(salesA.id)
+    const id = await insertLead({ createdBy: salesA.id, assignedTo: salesA.id, name: 'mcp-转化' })
+    await env.DB.prepare('UPDATE users SET current_leads_count = current_leads_count + 1 WHERE id = ?').bind(salesA.id).run()
+    const out = await tool(keys.salesA!, 'convert_lead', { leadId: id })
+    expect(out.isError).toBe(false)
+    const clientId = out.data?.clientId as string
+    expect(await clientRow(clientId)).toMatchObject({ name: 'mcp-转化', phone: '13800000000', assigned_sales_userId: salesA.id, lead_id: id })
+    expect((await leadRow(id))?.status).toBe('Converted')
+    expect(await leadsCount(salesA.id)).toBe(before)
+    expect((await tool(keys.salesA!, 'convert_lead', { leadId: id })).isError).toBe(true)
+  })
+
+  it('销售不能转化别人的线索；只读密钥看不到维护工具', async () => {
+    const others = await insertLead({ createdBy: salesB.id, assignedTo: salesB.id })
+    expect((await tool(keys.salesA!, 'convert_lead', { leadId: others })).isError).toBe(true)
+    const names = (await call(keys.adminRead!, 'tools/list')).result!.tools!.map((t) => t.name)
+    expect(names).not.toContain('convert_lead')
+    expect(names).toContain('query_teams')
+  })
+
+  it('query_teams 返回团队', async () => {
+    const out = await tool(keys.adminRead!, 'query_teams')
+    expect((out.data?.teams as { id: string }[]).map((t) => t.id)).toContain(teamId)
   })
 })
