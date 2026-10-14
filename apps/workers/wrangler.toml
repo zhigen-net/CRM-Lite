@@ -12,6 +12,10 @@ directory = "../web/dist"
 not_found_handling = "single-page-application"
 run_worker_first = ["/api/*"]
 
+# 持久化 Worker 日志（console.log、异常、请求记录），可在控制台 Observability 或 API 中查询
+[observability]
+enabled = true
+
 [vars]
 ENVIRONMENT = "production"
 

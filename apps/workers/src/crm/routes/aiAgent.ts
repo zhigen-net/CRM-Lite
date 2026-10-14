@@ -175,7 +175,7 @@ aiAgentRoutes.post(
   })),
   async (c) => {
     const { messages } = c.req.valid('json')
-    const { userId, role } = c.get('jwtPayload')
+    const { userId, role, teamId } = c.get('jwtPayload')
 
     const modelRow = await c.env.DB.prepare(`
       SELECT m.model_id, m.display_name, p.provider_type, p.api_key, p.base_url
@@ -186,7 +186,10 @@ aiAgentRoutes.post(
 
     if (!modelRow) throw new HTTPException(400, { message: '未配置可用的 AI 模型' })
 
-    const agentCtx: AgentContext = { db: c.env.DB, userId, role }
+    const agentCtx: AgentContext = {
+      db: c.env.DB, env: c.env, userId, role, teamId: teamId ?? null,
+      waitUntil: (p) => c.executionCtx.waitUntil(p),
+    }
 
     try {
       let finalText: string

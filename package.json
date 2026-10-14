@@ -13,6 +13,7 @@
     "build:web": "pnpm --filter web build",
     "cf:deploy": "bash scripts/cf-deploy.sh",
     "db:migrate:local": "pnpm --filter workers db:migrate:local",
-    "typecheck": "pnpm -r typecheck"
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm --filter workers test"
   }
 }

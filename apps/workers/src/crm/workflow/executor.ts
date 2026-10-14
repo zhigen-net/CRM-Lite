@@ -1,6 +1,7 @@
 import { toCamel } from '../../shared/db'
 import { sendEmail } from '../../shared/email'
 import { runAnalysis } from '../routes/aiAnalysis'
+import { applyWorkflowFieldUpdate } from '../../domain/workflowWrites'
 
 // ── 类型 ──────────────────────────────────────────────────────────────────────
 
@@ -226,8 +227,6 @@ export async function executeWorkflowsForTrigger(
   // 4. 构建模板上下文（实体数据 + 时间变量）
   const ctx = buildContext(entityData, buildTimeVars(timezone))
 
-  const fieldMap = FIELD_TO_COLUMN[entityType] ?? {}
-  const table    = entityType === 'lead' ? 'leads' : 'clients'
 
   // 5. 依次执行各工作流的动作
   for (const row of matched) {
@@ -235,11 +234,8 @@ export async function executeWorkflowsForTrigger(
     for (const action of actions) {
       try {
         if (action.type === 'set_field') {
-          const col = fieldMap[action.field]
-          if (!col) continue
           const value = interpolate(action.value, ctx)
-          await db.prepare(`UPDATE ${table} SET ${col} = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`)
-            .bind(value, entityId).run()
+          if (!(await applyWorkflowFieldUpdate(db, env, entityType, entityId, action.field, value))) continue
           // 同步更新内存副本，后续动作插值可读到最新值
           ctx[action.field] = value
 
@@ -265,15 +261,12 @@ export async function executeWorkflowsForTrigger(
           if (action.autoExecute?.length && Array.isArray(result.actions)) {
             for (const act of result.actions as { type: string; value: string }[]) {
               if (!action.autoExecute.includes(act.type)) continue
-              const table = entityType === 'lead' ? 'leads' : 'clients'
-              const fieldMap = FIELD_TO_COLUMN[entityType] ?? {}
               if (act.type === 'set_next_contact_date') {
-                const col = fieldMap['nextContactDate'] ?? 'next_contact_date'
-                await db.prepare(`UPDATE ${table} SET ${col} = ? WHERE id = ?`).bind(act.value, entityId).run()
+                await applyWorkflowFieldUpdate(db, env, entityType, entityId, 'nextContactDate', act.value)
               } else if (act.type === 'update_lead_status' && entityType === 'lead') {
-                await db.prepare('UPDATE leads SET status = ? WHERE id = ?').bind(act.value, entityId).run()
+                await applyWorkflowFieldUpdate(db, env, entityType, entityId, 'status', act.value)
               } else if (act.type === 'update_contract_status' && entityType === 'client') {
-                await db.prepare('UPDATE clients SET contract_status = ? WHERE id = ?').bind(act.value, entityId).run()
+                await applyWorkflowFieldUpdate(db, env, entityType, entityId, 'contractStatus', act.value)
               }
             }
           }
@@ -405,11 +398,8 @@ export async function executeScheduledWorkflows(db: D1Database, env: Env): Promi
           for (const action of actions) {
             try {
               if (action.type === 'set_field') {
-                const col = fieldMap[action.field]
-                if (!col) continue
                 const value = interpolate(action.value, ctx)
-                await db.prepare(`UPDATE ${table} SET ${col} = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`)
-                  .bind(value, entityId).run()
+                if (!(await applyWorkflowFieldUpdate(db, env, entityType, entityId, action.field, value))) continue
                 ctx[action.field] = value
               } else if (action.type === 'webhook') {
                 const url  = interpolate(action.url,  ctx)
