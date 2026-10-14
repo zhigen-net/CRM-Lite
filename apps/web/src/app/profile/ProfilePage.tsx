@@ -12,6 +12,7 @@ import { Button } from '@/shared/components/Button'
 import { Modal } from '@/shared/components/Modal'
 import { formatDate } from '@/shared/utils/format'
 import { ApiIntegrationDialog } from './ApiIntegrationDialog'
+import { ApiScopePicker, ScopeSummary, SCOPE_PRESETS, type ApiScope } from './ApiScopePicker'
 
 const TAB_KEYS = ['info', 'password', 'api', 'notify'] as const
 type TabKey = typeof TAB_KEYS[number]
@@ -40,6 +41,7 @@ interface ApiKey {
   keyPrefix: string
   createdAt: string
   lastUsedAt: string | null
+  scopes: string[]
 }
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? ''
@@ -145,14 +147,15 @@ function ApiTab() {
   })
 
   const form = useForm<ApiKeyForm>({ resolver: zodResolver(apiKeySchema) })
+  const [scopes, setScopes] = useState<ApiScope[]>([...SCOPE_PRESETS.push])
+  const closeCreate = () => { setShowCreate(false); form.reset(); setScopes([...SCOPE_PRESETS.push]) }
 
   const createMutation = useMutation({
     mutationFn: (body: ApiKeyForm) =>
-      crmApi.post<{ data: { id: string; name: string; keyPrefix: string; key: string } }>('/auth/api-keys', body),
+      crmApi.post<{ data: { id: string; name: string; keyPrefix: string; key: string } }>('/auth/api-keys', { ...body, scopes }),
     onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: ['api-keys'] })
-      setShowCreate(false)
-      form.reset()
+      closeCreate()
       setIntegration({ name: res.data.data.name, key: res.data.data.key })
     },
   })
@@ -183,6 +186,7 @@ function ApiTab() {
               <tr>
                 <th className="px-4 py-2 text-left font-medium text-gray-700">{t('profile.api.cols.usage')}</th>
                 <th className="px-4 py-2 text-left font-medium text-gray-700">{t('profile.api.cols.prefix')}</th>
+                <th className="px-4 py-2 text-left font-medium text-gray-700">{t('profile.api.cols.scopes')}</th>
                 <th className="px-4 py-2 text-left font-medium text-gray-700">{t('profile.api.cols.createdAt')}</th>
                 <th className="px-4 py-2 text-left font-medium text-gray-700">{t('profile.api.cols.lastUsed')}</th>
                 <th className="px-4 py-2"></th>
@@ -193,6 +197,7 @@ function ApiTab() {
                 <tr key={k.id}>
                   <td className="px-4 py-2.5 font-medium text-gray-900">{k.name}</td>
                   <td className="px-4 py-2.5 font-mono text-xs text-gray-500">{k.keyPrefix}...</td>
+                  <td className="px-4 py-2.5"><ScopeSummary scopes={k.scopes ?? []} /></td>
                   <td className="px-4 py-2.5 text-gray-500">{formatDate(k.createdAt)}</td>
                   <td className="px-4 py-2.5 text-gray-500">{k.lastUsedAt ? formatDate(k.lastUsedAt) : t('profile.api.cols.never')}</td>
                   <td className="px-4 py-2.5 text-right whitespace-nowrap">
@@ -271,11 +276,11 @@ function ApiTab() {
       {showCreate && (
         <Modal
           title={t('profile.api.generate')}
-          onClose={() => { setShowCreate(false); form.reset() }}
+          onClose={closeCreate}
           footer={
             <>
-              <Button variant="secondary" onClick={() => { setShowCreate(false); form.reset() }}>{t('common.cancel')}</Button>
-              <Button loading={createMutation.isPending} onClick={form.handleSubmit((d) => createMutation.mutate(d))}>
+              <Button variant="secondary" onClick={closeCreate}>{t('common.cancel')}</Button>
+              <Button loading={createMutation.isPending} disabled={scopes.length === 0} onClick={form.handleSubmit((d) => createMutation.mutate(d))}>
                 {t('profile.api.generate')}
               </Button>
             </>
@@ -287,6 +292,9 @@ function ApiTab() {
             error={form.formState.errors.name?.message}
             {...form.register('name')}
           />
+          <div className="mt-4">
+            <ApiScopePicker value={scopes} onChange={setScopes} />
+          </div>
         </Modal>
       )}
     </div>

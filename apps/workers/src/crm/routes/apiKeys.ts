@@ -5,6 +5,8 @@ import { HTTPException } from 'hono/http-exception'
 import { v4 as uuidv4 } from 'uuid'
 import { requireAuth } from '../middleware/auth'
 import { toCamelList } from '../../shared/db'
+import { SCOPES } from '../../domain/capabilities'
+import { parseScopes } from '../middleware/apiKeyAuth'
 
 export const apiKeysRoutes = new Hono<{ Bindings: Env }>()
 
@@ -19,18 +21,24 @@ async function sha256Hex(text: string): Promise<string> {
 apiKeysRoutes.get('/', async (c) => {
   const { userId } = c.get('jwtPayload')
   const results = await c.env.DB.prepare(
-    'SELECT id, name, key_prefix, created_at, last_used_at FROM api_keys WHERE user_id = ? ORDER BY created_at DESC',
-  ).bind(userId).all()
-  return c.json({ data: toCamelList(results.results as Record<string, unknown>[]) })
+    'SELECT id, name, key_prefix, scopes, created_at, last_used_at FROM api_keys WHERE user_id = ? ORDER BY created_at DESC',
+  ).bind(userId).all<Record<string, unknown>>()
+  const data = toCamelList(results.results).map((k) => ({ ...k, scopes: parseScopes(k.scopes as string | null) }))
+  return c.json({ data })
 })
 
 // POST /api/auth/api-keys - 生成新 API Key（明文只返回一次）
 apiKeysRoutes.post(
   '/',
-  zValidator('json', z.object({ name: z.string().min(1, '请填写名称').max(50) })),
+  zValidator('json', z.object({
+    name: z.string().min(1, '请填写名称').max(50),
+    // 不传时只授予推送线索，与旧版行为一致
+    scopes: z.array(z.enum(SCOPES)).min(1, '请至少选择一项权限').optional(),
+  })),
   async (c) => {
     const { userId } = c.get('jwtPayload')
-    const { name } = c.req.valid('json')
+    const { name, scopes: requested } = c.req.valid('json')
+    const scopes = [...new Set(requested ?? ['leads:create'])]
 
     // 生成 crm_ 前缀的随机 key
     const randomBytes = new Uint8Array(20)
@@ -43,10 +51,10 @@ apiKeysRoutes.post(
     const id = uuidv4()
 
     await c.env.DB.prepare(
-      'INSERT INTO api_keys (id, user_id, key_hash, key_prefix, name) VALUES (?, ?, ?, ?, ?)',
-    ).bind(id, userId, keyHash, keyPrefix, name).run()
+      'INSERT INTO api_keys (id, user_id, key_hash, key_prefix, name, scopes) VALUES (?, ?, ?, ?, ?, ?)',
+    ).bind(id, userId, keyHash, keyPrefix, name, JSON.stringify(scopes)).run()
 
-    return c.json({ data: { id, name, keyPrefix, key: apiKey } }, 201)
+    return c.json({ data: { id, name, keyPrefix, scopes, key: apiKey } }, 201)
   },
 )
 

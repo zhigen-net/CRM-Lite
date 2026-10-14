@@ -417,7 +417,8 @@
       "options": "Options",
       "workflow": "Workflows",
       "trash": "Trash",
-      "apiFailures": "API Failures"
+      "apiFailures": "API Failures",
+      "auditLog": "Audit Log"
     },
     "basic": {
       "title": "Basic Info",
@@ -826,6 +827,35 @@
         "servicePlans": "Service plans",
         "assignedSalesName": "Assigned sales"
       }
+    },
+    "auditLog": {
+      "title": "Audit Log",
+      "subtitle": "Calls made through the external API (API keys), the AI assistant and MCP. Click a row to see the parameters.",
+      "allVia": "All channels",
+      "allStatus": "All results",
+      "empty": "No records yet",
+      "via": {
+        "api": "API key",
+        "assistant": "AI assistant",
+        "mcp": "MCP"
+      },
+      "status": {
+        "ok": "Success",
+        "error": "Failed"
+      },
+      "cols": {
+        "time": "Time",
+        "user": "User",
+        "via": "Channel",
+        "action": "Action",
+        "target": "Target",
+        "result": "Result"
+      },
+      "target": {
+        "lead": "Lead",
+        "client": "Client"
+      },
+      "input": "Parameters"
     }
   },
   "profile": {
@@ -863,7 +893,8 @@
         "prefix": "Key Prefix",
         "createdAt": "Created",
         "lastUsed": "Last Used",
-        "never": "Never"
+        "never": "Never",
+        "scopes": "Scopes"
       },
       "revoke": "Revoke",
       "revokeConfirm": "Revoke \"{{name}}",
@@ -927,6 +958,32 @@
           "webhook": "forward lead pushes from our ad platforms to the CRM through a relay service.",
           "generic": "integrate our system with the CRM lead API; tell me your plan first."
         }
+      },
+      "scopes": {
+        "label": "Permissions",
+        "presets": {
+          "push": "Push leads only",
+          "readonly": "Read only",
+          "readwrite": "Read & write",
+          "custom": "Custom"
+        },
+        "presetDesc": {
+          "push": "Website forms and ad platforms pushing leads (default)",
+          "readonly": "AI can read leads, clients and activities, but not change them",
+          "readwrite": "AI can read and update leads and clients, and add activities",
+          "custom": "Choose each permission"
+        },
+        "names": {
+          "leads_read": "Read leads",
+          "leads_create": "Create leads",
+          "leads_write": "Update leads",
+          "clients_read": "Read clients",
+          "clients_write": "Update clients",
+          "activities_read": "Read activities",
+          "activities_write": "Add activities",
+          "meta_read": "Read options & users"
+        },
+        "hint": "The key acts as you and is also limited by your role (e.g. sales only see their own leads)."
       }
     },
     "notifications": {
