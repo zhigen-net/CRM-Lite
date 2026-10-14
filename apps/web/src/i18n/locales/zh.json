@@ -417,7 +417,8 @@
       "options": "选项配置",
       "workflow": "工作流",
       "trash": "回收站",
-      "apiFailures": "API 失败记录"
+      "apiFailures": "API 失败记录",
+      "auditLog": "审计日志"
     },
     "basic": {
       "title": "基本信息",
@@ -826,6 +827,35 @@
         "servicePlans": "服务套餐",
         "assignedSalesName": "负责销售"
       }
+    },
+    "auditLog": {
+      "title": "审计日志",
+      "subtitle": "通过对外接口（API Key）、AI 助手、MCP 发生的调用。点击一行查看参数。",
+      "allVia": "全部入口",
+      "allStatus": "全部结果",
+      "empty": "暂无记录",
+      "via": {
+        "api": "API Key",
+        "assistant": "AI 助手",
+        "mcp": "MCP"
+      },
+      "status": {
+        "ok": "成功",
+        "error": "失败"
+      },
+      "cols": {
+        "time": "时间",
+        "user": "用户",
+        "via": "入口",
+        "action": "操作",
+        "target": "对象",
+        "result": "结果"
+      },
+      "target": {
+        "lead": "线索",
+        "client": "客户"
+      },
+      "input": "参数"
     }
   },
   "profile": {
@@ -863,7 +893,8 @@
         "prefix": "Key 前缀",
         "createdAt": "创建时间",
         "lastUsed": "最后使用",
-        "never": "从未"
+        "never": "从未",
+        "scopes": "权限"
       },
       "revoke": "吊销",
       "revokeConfirm": "确认吊销「{{name}}",
@@ -927,6 +958,32 @@
           "webhook": "把广告平台的线索推送通过中转服务转发到 CRM。",
           "generic": "把我们的系统接入 CRM 的线索接口，先告诉我你的方案。"
         }
+      },
+      "scopes": {
+        "label": "权限",
+        "presets": {
+          "push": "仅推送线索",
+          "readonly": "只读",
+          "readwrite": "读写",
+          "custom": "自定义"
+        },
+        "presetDesc": {
+          "push": "网站表单、广告平台推送线索（默认）",
+          "readonly": "AI 查询线索、客户和跟进记录，不能修改",
+          "readwrite": "AI 查询并修改线索、客户，新增跟进记录",
+          "custom": "逐项选择"
+        },
+        "names": {
+          "leads_read": "查看线索",
+          "leads_create": "新建线索",
+          "leads_write": "修改线索",
+          "clients_read": "查看客户",
+          "clients_write": "修改客户",
+          "activities_read": "查看跟进记录",
+          "activities_write": "新增跟进记录",
+          "meta_read": "查看选项和用户"
+        },
+        "hint": "密钥以你的身份操作，同时受你的角色权限限制（例如销售只能看到自己的线索）。"
       }
     },
     "notifications": {

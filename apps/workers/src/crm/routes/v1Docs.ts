@@ -26,6 +26,7 @@ export function buildLlmsTxt(origin: string, services: string[]): string {
 - 请求头 \`X-API-Key: crm_...\`，密钥在 CRM「个人设置 → API 接入」生成，只在生成时显示一次。
 - 密钥只能放在服务端（环境变量 CRM_API_KEY），不要写进浏览器能看到的前端代码，也不要提交到代码仓库。
 - 新建的线索记在密钥所属用户名下，并按 CRM 的分配规则自动分配。
+- 密钥需要「新建线索」权限（leads:create，创建密钥时选择「仅推送线索」即可）。
 
 ## 新建线索
 POST ${endpoint}
@@ -49,6 +50,7 @@ ${JSON.stringify(example, null, 2)}
 - 201：\`{"data":{"id":"线索ID","status":"New"}}\`
 - 400：参数错误（缺少必填字段、类型不对），返回体说明是哪个字段
 - 401：缺少或无效的 X-API-Key，返回 \`{"message":"..."}\`
+- 403：密钥没有 leads:create 权限
 - 接口允许跨域请求，但密钥不能暴露在浏览器中
 
 ## 试运行（调试用）
@@ -122,6 +124,7 @@ export function buildOpenApi(origin: string, services: string[]) {
             200: { description: '试运行结果（dryRun=1），未创建线索' },
             400: { description: '参数错误' },
             401: { description: '缺少或无效的 X-API-Key' },
+            403: { description: '密钥没有 leads:create 权限' },
           },
         },
       },

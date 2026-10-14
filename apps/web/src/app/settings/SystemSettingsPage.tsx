@@ -15,6 +15,7 @@ import type { Team } from '@/shared/types'
 import type { OptionItem, ActivityMeta, ActivityMetaField, MilestoneMapping } from '@/shared/hooks/useOptions'
 import { useOptions, parseActivityMeta } from '@/shared/hooks/useOptions'
 import type { Workflow } from '@/shared/hooks/useWorkflows'
+import { AuditLogPanel } from './AuditLogPanel'
 
 // ─── 选项配置相关常量和组件 ───────────────────────────────────────────────────
 
@@ -1966,6 +1967,7 @@ const TAB_KEYS = [
   { key: 'policies',    labelKey: 'settings.tabs.workflow' },
   { key: 'trash',       labelKey: 'settings.tabs.trash' },
   { key: 'apiFailures', labelKey: 'settings.tabs.apiFailures' },
+  { key: 'auditLog',    labelKey: 'settings.tabs.auditLog' },
 ] as const
 type TabKey = typeof TAB_KEYS[number]['key']
 
@@ -2360,6 +2362,9 @@ export default function SystemSettingsPage() {
 
       {/* API 失败记录 */}
       {activeTab === 'apiFailures' && <ApiFailuresPanel />}
+
+      {/* 审计日志 */}
+      {activeTab === 'auditLog' && <AuditLogPanel />}
 
       {/* AI 配置 */}
       {activeTab === 'ai' && (

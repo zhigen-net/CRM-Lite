@@ -11,10 +11,14 @@ export interface Actor {
   role: Role
   teamId: string | null
   via: Channel
+  /** 通过 API Key 调用时的密钥 ID，用于审计 */
+  apiKeyId?: string | undefined
 }
 
-export function actorFromJwt(payload: Pick<CrmJwtPayload, 'userId' | 'role' | 'teamId'>, via: Channel): Actor {
-  return { userId: payload.userId, role: payload.role, teamId: payload.teamId ?? null, via }
+export function actorFromJwt(
+  payload: Pick<CrmJwtPayload, 'userId' | 'role' | 'teamId'>, via: Channel, apiKeyId?: string,
+): Actor {
+  return { userId: payload.userId, role: payload.role, teamId: payload.teamId ?? null, via, apiKeyId }
 }
 
 /** 业务服务需要的运行时依赖；waitUntil 用于不阻塞响应的后台任务（如工作流） */
