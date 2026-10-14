@@ -89,7 +89,8 @@
     "docs": "文档",
     "logout": "退出登录",
     "profile": "个人资料",
-    "language": "Language"
+    "language": "Language",
+    "aiAccess": "AI 接入"
   },
   "auth": {
     "title": "内部管理系统",
@@ -864,7 +865,6 @@
     "tabs": {
       "basic": "基本信息",
       "password": "修改密码",
-      "api": "API 接入",
       "notifications": "提醒"
     },
     "basic": {
@@ -899,7 +899,7 @@
       "revoke": "吊销",
       "revokeConfirm": "确认吊销「{{name}}",
       "docs": {
-        "title": "接口说明",
+        "title": "推送线索接口（网站表单、广告平台等外部系统）",
         "submit": "提交新线索",
         "headers": "请求头",
         "body": "请求体（JSON）",
@@ -1477,5 +1477,10 @@
     "completedOn": "完成于",
     "expectedOn": "预计",
     "notesHint": "备注（可选）"
+  },
+  "aiAccess": {
+    "title": "AI 接入",
+    "subtitle": "把 AI Agent（Claude Code、Cursor 等）或外部系统接入 CRM。密钥以你的身份操作，权限不超过你的角色。",
+    "auditLink": "查看审计日志 →"
   }
 }
