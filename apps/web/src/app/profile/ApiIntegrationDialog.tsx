@@ -15,16 +15,24 @@ interface PromptInput {
   services: string[]
 }
 
+/** 接口地址对应的 AI 可读说明地址（/api/v1/llms.txt） */
+export function docsUrlOf(endpoint: string): string {
+  return endpoint.replace(/\/leads$/, '/llms.txt')
+}
+
+function keyLineOf(t: TFunction, apiKey: string | null): string {
+  return apiKey ? t('profile.api.prompt.keyInline', { key: apiKey }) : t('profile.api.prompt.keyEnv')
+}
+
 /** 拼接交给 AI 的完整接入提示词（接口地址、密钥、字段、当前服务列表、场景要求） */
 export function buildIntegrationPrompt(t: TFunction, input: PromptInput): string {
   const p = 'profile.api.prompt'
-  const keyLine = input.apiKey
-    ? t(`${p}.keyInline`, { key: input.apiKey })
-    : t(`${p}.keyEnv`)
+  const keyLine = keyLineOf(t, input.apiKey)
   return [
     t(`${p}.task.${input.scenario}`),
     t(`${p}.spec`, {
       endpoint: input.endpoint,
+      docsUrl: docsUrlOf(input.endpoint),
       keyLine,
       services: input.services.length > 0 ? input.services.join('、') : t(`${p}.noServices`),
     }),
@@ -33,7 +41,16 @@ export function buildIntegrationPrompt(t: TFunction, input: PromptInput): string
   ].join('\n\n')
 }
 
-/** 带真实密钥（或环境变量占位）的 cURL 测试命令 */
+/** 简短版：让 AI 自己读取 llms.txt，适合能联网的 AI */
+export function buildShortPrompt(t: TFunction, input: Omit<PromptInput, 'services'>): string {
+  return t('profile.api.prompt.short', {
+    docsUrl: docsUrlOf(input.endpoint),
+    task: t(`profile.api.prompt.shortTask.${input.scenario}`),
+    keyLine: keyLineOf(t, input.apiKey),
+  })
+}
+
+/** 带真实密钥（或环境变量占位）的 cURL 试运行命令（dryRun，不会创建线索） */
 export function buildCurlCommand(t: TFunction, endpoint: string, apiKey: string | null, services: string[]): string {
   const key = apiKey ?? '$CRM_API_KEY'
   const body = JSON.stringify({
@@ -42,7 +59,7 @@ export function buildCurlCommand(t: TFunction, endpoint: string, apiKey: string 
     contactInfo: '13800000000',
     intendedServices: [services[0] ?? t('profile.api.prompt.testService')],
   })
-  return `curl -X POST ${endpoint} \\\n  -H "Content-Type: application/json" \\\n  -H "X-API-Key: ${key}" \\\n  -d '${body}'`
+  return `curl -X POST '${endpoint}?dryRun=1' \\\n  -H "Content-Type: application/json" \\\n  -H "X-API-Key: ${key}" \\\n  -d '${body}'`
 }
 
 function useCopy() {
@@ -72,6 +89,7 @@ export function ApiIntegrationDialog({ endpoint, services, apiKey, keyName, onCl
   const { copied, copy } = useCopy()
 
   const prompt = buildIntegrationPrompt(t, { scenario, endpoint, apiKey, services })
+  const shortPrompt = buildShortPrompt(t, { scenario, endpoint, apiKey })
   const curl = buildCurlCommand(t, endpoint, apiKey, services)
 
   return (
@@ -119,6 +137,9 @@ export function ApiIntegrationDialog({ endpoint, services, apiKey, keyName, onCl
         <div className="flex flex-wrap gap-2">
           <Button size="sm" onClick={() => copy('prompt', prompt)}>
             {copied === 'prompt' ? t('profile.api.copied') : t('profile.api.prompt.copyPrompt')}
+          </Button>
+          <Button size="sm" variant="secondary" onClick={() => copy('short', shortPrompt)}>
+            {copied === 'short' ? t('profile.api.copied') : t('profile.api.prompt.copyShort')}
           </Button>
           <Button size="sm" variant="secondary" onClick={() => copy('curl', curl)}>
             {copied === 'curl' ? t('profile.api.copied') : t('profile.api.prompt.copyCurl')}

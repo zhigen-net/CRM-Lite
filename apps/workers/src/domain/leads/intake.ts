@@ -12,6 +12,12 @@ const AD_FIELD_ALIASES: Record<string, string> = {
   ad: '广告', '广告': '广告',
 }
 
+/** 外部接口可用的意向服务名（未删除的服务，按名称排序） */
+export async function listIntakeServiceNames(db: D1Database): Promise<string[]> {
+  const rows = await db.prepare('SELECT name FROM services WHERE deleted_at IS NULL ORDER BY name').all<{ name: string }>()
+  return rows.results.map((r) => r.name)
+}
+
 /**
  * 把外部推送的原始请求体整理成新建线索的参数：
  * - 系统未收录的意向服务替换为「其他」，原值写入备注
@@ -19,8 +25,7 @@ const AD_FIELD_ALIASES: Record<string, string> = {
  * - 其余未知字段拼到备注，不丢信息
  */
 export async function normalizeExternalLead(db: D1Database, body: Record<string, unknown>): Promise<CreateLeadInput> {
-  const serviceRows = await db.prepare('SELECT name FROM services WHERE deleted_at IS NULL').all<{ name: string }>()
-  const validServices = new Set(serviceRows.results.map((r) => r.name))
+  const validServices = new Set(await listIntakeServiceNames(db))
 
   const notes: string[] = []
   if (body.notes) notes.push(String(body.notes))
