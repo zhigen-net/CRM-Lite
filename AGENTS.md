@@ -48,6 +48,11 @@
 - 代码、界面文案、默认值、示例中**不要写死某个行业**（如辅助生殖的服务名、术语）。行业相关内容只通过 `domain/templates.ts` 的行业模板在初始化时写入，或由用户在系统中配置；AI 需要的行业信息放在「业务背景」设置（`industry_context`）中。
 - 早期迁移已内置辅助生殖示例数据，且不能修改；「通用」模板在初始化时清除它们。新增行业示例数据时写进模板，不要写进迁移。
 
+## 访客统计
+
+- 网站只通过同域 `/_t/*` 接入，由网站的 Pages Function / Worker 在服务器端带站点密钥转发到 CRM 的 `/api/t/*`（模板见 `domain/tracking/integration.ts`）。**采集脚本和网站前端里不能出现 CRM 地址或任何密钥**；`/api/t/*` 不开放跨域。
+- 不存原始 IP（只存 HMAC 哈希与地区、运营商）；浏览器上报的字段一律截断、校验，视为不可信。
+
 ## Workers 运行时
 
 - Worker 有 CPU 时间限制：不要引入重 CPU 的纯 JS 库（例如已因此把 bcryptjs 换成 Web Crypto PBKDF2，见 `apps/workers/src/shared/password.ts`）。优先用 Web Crypto 等平台原生 API。

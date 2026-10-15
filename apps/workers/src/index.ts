@@ -33,6 +33,7 @@ import { milestonesRoutes } from './crm/routes/milestones'
 import { v1DocsRoutes } from './crm/routes/v1Docs'
 import { auditLogRoutes } from './crm/routes/auditLog'
 import { mcpRoutes } from './crm/routes/mcp'
+import { trackingCollectRoutes, trackingRoutes, trackingSitesAdminRoutes } from './crm/routes/tracking'
 import { requireApiKey, requireScope } from './crm/middleware/apiKeyAuth'
 import { executeScheduledWorkflows } from './crm/workflow/executor'
 import { hashPassword } from './shared/password'
@@ -138,6 +139,9 @@ app.route('/api/v1', v1DocsRoutes)
 // MCP 服务（API Key 鉴权）
 app.route('/api/mcp', mcpRoutes)
 
+// 访客统计采集（网站服务器端转发，站点密钥鉴权）
+app.route('/api/t', trackingCollectRoutes)
+
 const v1LeadSchema = z.object({
   source: z.string().min(1, '请填写来源'),
   name: z.string().min(1, '请填写姓名'),
@@ -219,6 +223,8 @@ app.route('/api/admin/entity-schema', entitySchemaRoutes)
 app.route('/api/admin/recycle-bin', recycleBinRoutes)
 app.route('/api/admin/api-failures', apiFailuresRoutes)
 app.route('/api/admin/audit-log', auditLogRoutes)
+app.route('/api/admin/tracking-sites', trackingSitesAdminRoutes)
+app.route('/api/tracking', trackingRoutes)
 app.route('/api/milestones', milestonesRoutes)
 
 // 客户门户 API（/api/client/*）
