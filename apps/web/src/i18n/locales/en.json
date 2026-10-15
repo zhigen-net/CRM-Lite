@@ -93,7 +93,8 @@
     "logout": "Logout",
     "profile": "Profile",
     "language": "语言",
-    "aiAccess": "AI Access"
+    "aiAccess": "AI Access",
+    "analytics": "Analytics"
   },
   "auth": {
     "title": "CRM System",
@@ -1529,6 +1530,99 @@
       "lastUsed": "Last used {{time}}",
       "neverUsed": "Never used",
       "view": "View config"
+    }
+  },
+  "analytics": {
+    "title": "Visitor Analytics",
+    "subtitle": "Where website visitors come from, what they view and do, and whether they have become leads.",
+    "tabs": {
+      "visitors": "Visitors",
+      "sites": "Sites"
+    },
+    "channels": {
+      "paid": "Paid",
+      "search": "Search",
+      "social": "Social",
+      "referral": "Referral",
+      "direct": "Direct"
+    },
+    "devices": {
+      "mobile": "Mobile",
+      "tablet": "Tablet",
+      "desktop": "Desktop"
+    },
+    "events": {
+      "pageview": "View",
+      "leave": "Leave",
+      "tel": "Phone click",
+      "wechat": "WeChat copy",
+      "form": "Form submit",
+      "custom": "Custom"
+    },
+    "visitors": {
+      "allChannels": "All sources",
+      "allVisitors": "All visitors",
+      "withLead": "Became leads",
+      "withoutLead": "Not yet leads",
+      "total": "Visitors: {{count}}",
+      "empty": "No visitor data yet. Once a website is connected, visits will appear here.",
+      "noSites": "No websites connected yet. An admin can add a site under Sites and deploy the integration code.",
+      "cols": {
+        "lastSeen": "Last visit",
+        "source": "First source",
+        "visits": "Visits / views",
+        "device": "Device",
+        "location": "Location / ISP",
+        "actions": "Key actions",
+        "lead": "Lead"
+      }
+    },
+    "journey": {
+      "title": "Visitor journey",
+      "firstSource": "First source",
+      "firstLanding": "First landing page",
+      "visits": "Visits / page views",
+      "lead": "Linked lead",
+      "viewLead": "View lead",
+      "noLead": "Not a lead yet",
+      "visitSummary": "{{pages}} pages · {{time}}",
+      "referrer": "Referrer"
+    },
+    "sites": {
+      "title": "Sites",
+      "subtitle": "Each tracked website gets its own site key, stored only as an encrypted environment variable on the website's server side.",
+      "create": "Add site",
+      "empty": "No sites yet",
+      "name": "Site name",
+      "namePlaceholder": "e.g. Main website, campaign landing page",
+      "domain": "Domain (optional)",
+      "disabled": "Disabled",
+      "visitors": "Visitors: {{count}}",
+      "lastSeen": "Last data {{time}}",
+      "noData": "No data received yet",
+      "viewCode": "Integration code",
+      "rotate": "Rotate key",
+      "rotateConfirm": "Rotate the site key for \"{{name}}\"? The old key stops working immediately; update the website's CRM_SITE_KEY.",
+      "disable": "Disable",
+      "enable": "Enable",
+      "integrationTitle": "Connect \"{{name}}\"",
+      "keyNotice": "Copy the site key now; it will not be shown again. Save it as the website's encrypted environment variable CRM_SITE_KEY (Secret).",
+      "keyHidden": "The site key is shown only when created or rotated. If you lost it, rotate the key and set it again.",
+      "step1": "In the website's Cloudflare project, set the encrypted variable CRM_SITE_KEY. If the website and the CRM are in the same account, add a service binding CRM pointing to the CRM Worker; otherwise also set the encrypted variable CRM_URL (the CRM address).",
+      "step2": "Add the forwarding code below to the website: for Pages, create functions/_t/[[path]].js; for a Worker, add it to the entry file.",
+      "step3": "Add the script tag before </head> on every page and redeploy. Data will then appear under Visitors.",
+      "modes": {
+        "pages": "Pages site",
+        "worker": "Worker site"
+      },
+      "codeLabel": {
+        "pages": "Forwarding code (functions/_t/[[path]].js)",
+        "worker": "Forwarding code (add to the Worker entry)"
+      },
+      "scriptLabel": "Script tag (before </head> on every page)",
+      "aiPromptLabel": "Setup prompt for an AI",
+      "aiPrompt": "Please connect this {{mode}} to the CRM visitor analytics:\n1. Add the forwarding code below so that same-origin /_t/* requests are forwarded to the CRM on the server side. Do not change the forwarding logic.\n2. Add this before </head> on every page: {{scriptTag}}\n3. Never put the CRM address or any key in front-end code. Use the encrypted environment variable CRM_SITE_KEY for the site key; use a service binding named CRM if the website and the CRM are in the same Cloudflare account, otherwise the encrypted variable CRM_URL.\n4. When done, tell me which environment variables or bindings I need to set in the Cloudflare dashboard.\n\nForwarding code:\n{{code}}",
+      "bindingHint": "Browsers only request the website's own /_t/ path and never see the CRM address; the CRM accepts only server requests with a valid site key and does not store raw IPs."
     }
   }
 }
