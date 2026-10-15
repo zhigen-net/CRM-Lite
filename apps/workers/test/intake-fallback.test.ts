@@ -38,4 +38,10 @@ describe('外部线索整理使用实际存在的兜底服务', () => {
     const doc = buildOpenApi('https://crm.example', ['IVF', 'Other'])
     expect(doc.components.schemas.LeadInput.properties.intendedServices.description).toContain('记为「Other」')
   })
+  it('访客统计脚本加的 crm_vid 字段不写入备注', async () => {
+    const input = await normalizeExternalLead(dbWithServices(['IVF']), {
+      source: 'x', name: 'x', contactInfo: 'x', intendedServices: ['IVF'], crm_vid: 'b1c2', pageTitle: '落地页',
+    })
+    expect(input.notes).toBe('附加信息：pageTitle：落地页')
+  })
 })
