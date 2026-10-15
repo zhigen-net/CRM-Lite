@@ -17,16 +17,23 @@ function toDate(date: string | Date): Date {
   return new Date(date)
 }
 
+const isValid = (d: Date) => !Number.isNaN(d.getTime())
+
+/** 格式化日期时间；无法解析的值（历史脏数据等）原样显示，不让整个页面崩溃 */
 export function formatDate(date: string | Date) {
+  const d = toDate(date)
+  if (!isValid(d)) return String(date)
   return new Intl.DateTimeFormat('zh-CN', {
     timeZone: _timezone,
     year: 'numeric', month: '2-digit', day: '2-digit',
     hour: '2-digit', minute: '2-digit', hour12: false,
-  }).format(toDate(date)).replace(/\//g, '-')
+  }).format(d).replace(/\//g, '-')
 }
 
 export function formatRelativeTime(date: string | Date) {
-  return formatDistanceToNow(toDate(date), { locale: zhCN, addSuffix: true })
+  const d = toDate(date)
+  if (!isValid(d)) return String(date)
+  return formatDistanceToNow(d, { locale: zhCN, addSuffix: true })
 }
 
 // 返回当前时间在 app 时区下的 datetime-local 输入值（yyyy-MM-ddTHH:mm）
