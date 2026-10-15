@@ -2,6 +2,8 @@
 import type { CreateLeadInput } from './service'
 
 const KNOWN_FIELDS = new Set(['source', 'name', 'contactInfo', 'intendedServices', 'notes', 'adInfo'])
+// 访客统计脚本自动加到表单里的访客 ID（以后用于关联访客轨迹），不写入备注
+const IGNORED_FIELDS = new Set(['crm_vid', 'visitorId'])
 
 // 顶层广告字段别名（兼容旧格式，统一映射为中文 key）
 const AD_FIELD_ALIASES: Record<string, string> = {
@@ -60,7 +62,7 @@ export async function normalizeExternalLead(db: D1Database, body: Record<string,
   }
   const extra: string[] = []
   for (const [k, v] of Object.entries(body)) {
-    if (KNOWN_FIELDS.has(k) || k === 'contact_info') continue
+    if (KNOWN_FIELDS.has(k) || IGNORED_FIELDS.has(k) || k === 'contact_info') continue
     const adKey = AD_FIELD_ALIASES[k]
     if (adKey) {
       if (!adInfo[adKey]) adInfo[adKey] = String(v)
