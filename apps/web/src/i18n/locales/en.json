@@ -1695,7 +1695,7 @@
         "reasons": {
           "ok": "OK",
           "unreachable": "Could not reach the website. Check that the domain is correct and the site is deployed. If both the website and the CRM use workers.dev domains, Cloudflare may block the request; use Live data below instead.",
-          "not_found": "404: the proxy code is not deployed. For Pages, check the location and name of functions/_t/[[path]].js (double brackets); for Workers, check the /_t/ condition in the entry.",
+          "not_found": "HTTP {{status}}: the proxy code is not deployed. For Pages, check the location and name of functions/_t/[[path]].js (double brackets); for Workers, check the /_t/ condition in the entry.",
           "html": "Returned a web page instead of the expected content: the request did not reach the proxy code. For Pages, check _routes.json and advanced mode; for Workers, check run_worker_first and that the /_t/ condition is at the top of the entry.",
           "redirect": "Redirected (HTTP {{status}}): enter the domain the site finally serves from, e.g. with www.",
           "bad_key": "The CRM rejected the key: CRM_SITE_KEY is wrong, the site is disabled, the variable is only set for Preview, or the site was not redeployed. Also make sure the key comes from this CRM environment.",

@@ -1695,7 +1695,7 @@
         "reasons": {
           "ok": "正常",
           "unreachable": "无法访问网站。请确认域名正确且网站已部署。如果网站和 CRM 都使用 workers.dev 域名，Cloudflare 可能不允许互相访问，请用下方「实时数据」验证。",
-          "not_found": "返回 404：转发代码没有部署。Pages 网站检查 functions/_t/[[path]].js 的位置和文件名（两层方括号）；Worker 网站检查入口是否加了 /_t/ 判断。",
+          "not_found": "返回 HTTP {{status}}：转发代码没有部署。Pages 网站检查 functions/_t/[[path]].js 的位置和文件名（两层方括号）；Worker 网站检查入口是否加了 /_t/ 判断。",
           "html": "返回了网页而不是预期内容：请求没有进入转发代码。Pages 网站检查 _routes.json 和是否为高级模式；Worker 网站检查 run_worker_first 以及 /_t/ 判断是否在入口最前面。",
           "redirect": "被重定向（HTTP {{status}}）：请填写网站最终访问的域名，例如带 www 的域名。",
           "bad_key": "CRM 拒绝了密钥：CRM_SITE_KEY 不正确、站点已停用、变量只配置在 Preview，或配置后没有重新部署。另请确认密钥来自当前这个 CRM 环境。",

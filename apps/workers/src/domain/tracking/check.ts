@@ -31,7 +31,8 @@ async function tryFetch(fetcher: typeof fetch, url: string, init: RequestInit): 
 
 function statusReason(status: number): CheckReason {
   if (status >= 300 && status < 400) return 'redirect'
-  if (status === 404) return 'not_found'
+  // 静态托管对未部署的路径返回 404，对 POST 常返回 405
+  if (status === 404 || status === 405) return 'not_found'
   if (status >= 500) return 'server_error'
   return 'unexpected'
 }
