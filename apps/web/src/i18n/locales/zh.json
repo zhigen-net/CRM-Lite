@@ -1592,7 +1592,7 @@
       "title": "站点",
       "subtitle": "每个接入统计的网站一把站点密钥，只放在网站服务器端的加密环境变量中。",
       "create": "添加站点",
-      "empty": "还没有站点",
+      "empty": "还没有站点。添加站点后，按接入向导一步步完成网站接入。",
       "name": "站点名称",
       "namePlaceholder": "如：官网、活动落地页",
       "domain": "域名（可选）",
@@ -1600,29 +1600,120 @@
       "visitors": "访客 {{count}}",
       "lastSeen": "最近数据 {{time}}",
       "noData": "尚未收到数据",
-      "viewCode": "接入代码",
+      "viewCode": "接入向导",
       "rotate": "更换密钥",
       "rotateConfirm": "更换「{{name}}」的站点密钥？旧密钥会立即失效，需要同步更新网站的 CRM_SITE_KEY。",
       "disable": "停用",
-      "enable": "启用",
-      "integrationTitle": "接入「{{name}}」",
-      "keyNotice": "请立即复制站点密钥，此后不再显示。把它保存为网站的加密环境变量 CRM_SITE_KEY（Secret）。",
-      "keyHidden": "站点密钥只在创建或更换时显示一次。如果找不到了，可以「更换密钥」后重新设置。",
-      "step1": "在网站的 Cloudflare 项目里设置加密环境变量 CRM_SITE_KEY；网站与 CRM 在同一账号时添加服务绑定 CRM（指向 CRM 的 Worker），否则再设置加密变量 CRM_URL（CRM 地址）。",
-      "step2": "把下面的转发代码加进网站：Pages 网站新建文件 functions/_t/[[path]].js；Worker 网站把代码放进入口文件。",
-      "step3": "在网站所有页面的 </head> 前加上脚本标签，重新部署后即可在「访客」中看到数据。",
-      "modes": {
+      "enable": "启用"
+    },
+    "guide": {
+      "title": "接入「{{name}}」",
+      "steps": {
+        "prepare": "准备",
+        "secrets": "配置变量",
+        "code": "转发代码",
+        "script": "页面脚本",
+        "verify": "检测"
+      },
+      "prev": "上一步",
+      "next": "下一步",
+      "done": "完成",
+      "siteTypes": {
         "pages": "Pages 网站",
         "worker": "Worker 网站"
       },
-      "codeLabel": {
-        "pages": "转发代码（functions/_t/[[path]].js）",
-        "worker": "转发代码（加进 Worker 入口）"
+      "prepare": {
+        "intro": "按向导完成 5 步，网站访客就会出现在「访客」中。浏览器只访问网站自己的 /_t/ 路径，看不到 CRM 地址和密钥。",
+        "siteType": "网站部署在哪里？",
+        "siteTypeHint": {
+          "pages": "Cloudflare Pages 项目，静态站点或使用 functions/ 目录",
+          "worker": "Cloudflare Workers 项目（含带静态资源的 Worker），或 Pages 高级模式（_worker.js）"
+        },
+        "account": "网站与本 CRM 在同一个 Cloudflare 账号下吗？",
+        "connect": {
+          "binding": "同一账号（推荐）",
+          "url": "不同账号"
+        },
+        "connectHint": {
+          "binding": "使用服务绑定，请求走 Cloudflare 内部，不经过公网",
+          "url": "通过 CRM 地址访问；地址保存在网站的加密变量中，浏览器看不到"
+        },
+        "envNotice": "当前 CRM：{{origin}}。测试环境和生产环境的站点与密钥互不通用：要接入哪个环境，就在哪个 CRM 中添加站点并运行本向导。"
       },
-      "scriptLabel": "脚本标签（加在每个页面的 </head> 前）",
-      "aiPromptLabel": "交给 AI 的接入提示词",
-      "aiPrompt": "请帮我给这个{{mode}}接入 CRM 访客统计：\n1. 按网站类型加入下面的转发代码，把同域 /_t/* 请求在服务器端转发给 CRM。不要修改代码里的转发逻辑。\n2. 在所有页面的 </head> 前加上：{{scriptTag}}\n3. 不要把 CRM 地址或密钥写进前端代码。站点密钥使用加密环境变量 CRM_SITE_KEY；网站与 CRM 在同一个 Cloudflare 账号时使用服务绑定 CRM，否则使用加密环境变量 CRM_URL。\n4. 完成后告诉我需要在 Cloudflare 控制台设置哪些环境变量或绑定。\n\n转发代码：\n{{code}}",
-      "bindingHint": "浏览器只会请求网站自己的 /_t/ 路径，看不到 CRM 地址；CRM 只接受带正确站点密钥的服务器请求，不存原始 IP。"
+      "secrets": {
+        "path": "打开网站所在的 Cloudflare 项目（不是 CRM 的 Worker）：Workers & Pages → 网站项目 → Settings。",
+        "keyTitle": "① Variables and Secrets → Add，类型选 Secret，名称 CRM_SITE_KEY，值为站点密钥：",
+        "keyNotice": "请立即复制，关闭后不再显示。",
+        "keyHidden": "站点密钥只在创建或更换时显示一次。如果已经配置在网站中，跳过这一项；如果找不到了，可以更换密钥（旧密钥立即失效）。",
+        "rotate": "更换密钥并显示",
+        "bindingTitle": "② Bindings → Add → Service binding：",
+        "bindingName": "Variable name 填",
+        "bindingService": "Service 选择本 CRM 的 Worker：",
+        "bindingServiceUnknown": "（即当前这个 CRM 对应的 Worker）",
+        "urlTitle": "② 再添加一个 Secret，名称 CRM_URL，值为本 CRM 地址（末尾不要加 /）：",
+        "pagesEnv": "Pages 项目的变量和绑定分 Production 和 Preview 两套，至少要配置在 Production。",
+        "redeploy": "变量和绑定要重新部署后才生效，完成后面的代码改动后统一部署一次即可。"
+      },
+      "code": {
+        "pagesPlace": "在网站项目根目录（与 package.json 同级，不要放进 dist/ 或 public/）新建文件 functions/_t/[[path]].js，粘贴以下代码：",
+        "pagesRoutes": "如果项目有自定义的 _routes.json，确认 /_t/* 在 include 中、不在 exclude 中。",
+        "pagesAdvanced": "如果构建输出中有 _worker.js（高级模式，Next.js 等框架常见），functions/ 不会生效，请回到第 1 步改选「Worker 网站」。",
+        "workerPlace": "在 Worker 入口的 fetch 函数最前面加上这一行，再把 forwardToCrm 函数加进同一个文件：",
+        "workerEntry": "加在 fetch 入口最前面",
+        "workerAssets": "如果 Worker 带静态资源（配置中有 [assets]），还要让 /_t/* 先进入 Worker，否则 t.js 会返回网页：",
+        "workerBinding": "服务绑定也可以写在网站的 wrangler 配置里，与控制台设置等效：",
+        "workerNamePlaceholder": "<CRM 的 Worker 名>",
+        "noModify": "请原样使用，不要修改转发逻辑。",
+        "aiTitle": "让 AI 来改代码",
+        "aiHint": "把提示词交给编码 AI（Claude Code、Cursor 等），在网站仓库中执行。密钥请自己在 Cloudflare 控制台填写，不要发给 AI，也不要提交到代码仓库。"
+      },
+      "aiConnect": {
+        "binding": "网站与 CRM 在同一个 Cloudflare 账号：使用服务绑定 CRM（变量名大写）。",
+        "url": "网站与 CRM 不在同一个 Cloudflare 账号：使用加密环境变量 CRM_URL（CRM 地址，末尾不带 /）。"
+      },
+      "aiPlace": {
+        "pages": "新建文件 functions/_t/[[path]].js（项目根目录）；如果有自定义 _routes.json，确保 /_t/* 被包含。",
+        "worker": "把 forwardToCrm 加进 Worker 入口，并在 fetch 最前面判断 /_t/ 开头的路径交给它；如果配置了 [assets]，加上 run_worker_first = [\"/_t/*\"]。"
+      },
+      "aiPrompt": "请帮我给这个{{mode}}接入 CRM 访客统计：\n1. {{place}}不要修改转发逻辑。\n2. 在所有页面的 </head> 前加上：{{scriptTag}}\n3. 不要把 CRM 地址或密钥写进前端代码或仓库。站点密钥使用加密环境变量 CRM_SITE_KEY。{{connect}}\n4. 完成后告诉我需要在 Cloudflare 控制台设置哪些变量或绑定。\n\n转发代码：\n{{code}}",
+      "script": {
+        "place": "在网站每个页面的 </head> 前加上这一行（公共布局或模板中加一次即可；单页应用加在 index.html）：",
+        "spa": "单页应用的路由切换会自动记为新的浏览。",
+        "form": "提交表单时会自动带上隐藏字段 crm_vid（访客 ID），CRM 的线索接口会忽略它；第三方表单后端校验严格时请放行该字段。",
+        "csp": "脚本和上报都是同源请求，网站有 CSP 时 'self' 即可，不需要放行 CRM 域名。",
+        "deploy": "完成后推送代码或在控制台重新部署网站，然后进入下一步检测。"
+      },
+      "verify": {
+        "disabled": "该站点已停用，启用后才能接收数据。",
+        "checkTitle": "自动检测",
+        "check": "检测接入",
+        "checkHint": "CRM 会从服务器端访问该网站的 /_t/t.js 和 /_t/collect，检查转发代码和站点密钥，不会产生访客数据。填写的域名会保存到站点。",
+        "rows": {
+          "script": "采集脚本 /_t/t.js",
+          "collect": "转发与站点密钥 /_t/collect"
+        },
+        "reasons": {
+          "ok": "正常",
+          "unreachable": "无法访问网站。请确认域名正确且网站已部署。如果网站和 CRM 都使用 workers.dev 域名，Cloudflare 可能不允许互相访问，请用下方「实时数据」验证。",
+          "not_found": "返回 404：转发代码没有部署。Pages 网站检查 functions/_t/[[path]].js 的位置和文件名（两层方括号）；Worker 网站检查入口是否加了 /_t/ 判断。",
+          "html": "返回了网页而不是预期内容：请求没有进入转发代码。Pages 网站检查 _routes.json 和是否为高级模式；Worker 网站检查 run_worker_first 以及 /_t/ 判断是否在入口最前面。",
+          "redirect": "被重定向（HTTP {{status}}）：请填写网站最终访问的域名，例如带 www 的域名。",
+          "bad_key": "CRM 拒绝了密钥：CRM_SITE_KEY 不正确、站点已停用、变量只配置在 Preview，或配置后没有重新部署。另请确认密钥来自当前这个 CRM 环境。",
+          "wrong_site": "网站使用的是另一个站点的密钥，请换成本站点的密钥。",
+          "server_error": "网站返回 HTTP {{status}}：通常是没有配置服务绑定 CRM 或 CRM_URL，或 CRM_URL 写错（末尾多了 / 或缺少 https://）。可在网站项目的 Workers Logs 查看具体错误。",
+          "unexpected": "返回了意外的响应（HTTP {{status}}），请检查转发代码是否被修改。"
+        },
+        "allOk": "接入正常。用浏览器打开网站浏览几个页面，数据会出现在下方。",
+        "liveTitle": "实时数据",
+        "liveWaiting": "等待数据……请用正常浏览器（关闭广告拦截插件）打开网站任意页面。",
+        "liveReceived": "已收到数据：最近 {{time}}，共 {{count}} 位访客。",
+        "manualTitle": "在浏览器中手动检查",
+        "manual1": "打开网站，按 F12 打开开发者工具的 Network（网络）面板，刷新页面。",
+        "manual2": "/_t/t.js 应返回 200，内容是 JavaScript 而不是网页。",
+        "manual3": "/_t/collect 应返回 204。",
+        "manual4": "测试来源识别：在网址后加 ?utm_source=test&utm_medium=cpc，用无痕窗口访问，「首次来源」应显示为广告。",
+        "multi": "还有其它网站？完成后再「添加站点」，每个网站使用自己的密钥，重复本向导即可。同一域名下的多个页面属于同一个站点。"
+      }
     }
   }
 }

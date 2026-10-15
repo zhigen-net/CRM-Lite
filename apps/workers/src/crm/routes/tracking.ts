@@ -7,10 +7,11 @@ import { zValidator } from '@hono/zod-validator'
 import { z } from 'zod'
 import { requireAdmin, requireAuth, requireNotSales } from '../middleware/auth'
 import { TRACKER_SCRIPT } from '../../domain/tracking/script'
-import { findSiteByKey, listSites, createSite, updateSite, rotateSiteKey } from '../../domain/tracking/sites'
+import { findSiteByKey, getSite, listSites, createSite, updateSite, rotateSiteKey } from '../../domain/tracking/sites'
 import { ingestEvents, parseGeoHeader, type CollectPayload } from '../../domain/tracking/ingest'
 import { getVisitorJourney, listVisitors } from '../../domain/tracking/queries'
 import { integrationTemplates } from '../../domain/tracking/integration'
+import { checkSiteIntegration, normalizeHost } from '../../domain/tracking/check'
 
 const MAX_BODY_BYTES = 16 * 1024
 
@@ -28,6 +29,8 @@ trackingCollectRoutes.post('/collect', async (c) => {
   if (text.length > MAX_BODY_BYTES) return c.json({ message: '请求过大' }, 413)
   let payload: CollectPayload
   try { payload = JSON.parse(text) as CollectPayload } catch { return c.json({ message: '请求格式错误' }, 400) }
+  // 接入检测的探测请求：只回报密钥对应的站点，不写入数据
+  if (payload && typeof payload === 'object' && 'ping' in payload) return c.json({ data: { siteId: site.id } })
 
   const ctx = {
     userAgent: c.req.header('User-Agent') ?? '',
@@ -62,6 +65,18 @@ trackingSitesAdminRoutes.patch('/:id', zValidator('json', z.object({
 })), async (c) => {
   await updateSite(c.env.DB, c.req.param('id'), c.req.valid('json'))
   return c.json({ data: { success: true } })
+})
+
+// 接入检测：从服务器端访问网站的 /_t/*；首次填写的域名会保存到站点
+trackingSitesAdminRoutes.post('/:id/check', zValidator('json', z.object({
+  domain: z.string().max(200).optional(),
+})), async (c) => {
+  const site = await getSite(c.env.DB, c.req.param('id'))
+  const input = c.req.valid('json').domain || site.domain
+  if (!input) return c.json({ message: '请填写网站域名' }, 400)
+  const host = normalizeHost(input)
+  if (host !== site.domain) await updateSite(c.env.DB, site.id, { domain: host })
+  return c.json({ data: await checkSiteIntegration(site, host) })
 })
 
 trackingSitesAdminRoutes.post('/:id/rotate-key', async (c) => c.json({ data: await rotateSiteKey(c.env.DB, c.req.param('id')) }))
