@@ -51,11 +51,11 @@ describe('客户：可见范围与修改权限', () => {
   it('AI 助手：update_client 写系统变更记录，并触发字段变化工作流', async () => {
     const wf = `wf-client-${Date.now()}`
     await env.DB.prepare('INSERT INTO workflows (id, name, entity_type, trigger, actions, is_active) VALUES (?, ?, ?, ?, ?, 1)')
-      .bind(wf, 't', 'client', JSON.stringify({ type: 'field_change', field: 'contractStatus', to: 'Paid' }),
+      .bind(wf, 't', 'client', JSON.stringify({ type: 'field_change', field: 'contractStatus', to: 'Signed' }),
         JSON.stringify([{ type: 'set_field', field: 'email', value: 'wf@x.test' }])).run()
     const id = await insertClient({ createdBy: admin.id, assignedTo: sales.id })
     const { ctx, settle } = agentCtx(sales)
-    const out = await executeTool(ctx as never, 'update_client', { id, contractStatus: 'Paid' }) as { error?: string }
+    const out = await executeTool(ctx as never, 'update_client', { id, contractStatus: 'Signed' }) as { error?: string }
     await settle()
     await env.DB.prepare('DELETE FROM workflows WHERE id = ?').bind(wf).run()
     expect(out.error).toBeUndefined()

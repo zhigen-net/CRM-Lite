@@ -47,7 +47,8 @@ export async function normalizeExternalLead(db: D1Database, body: Record<string,
   const submitted = Array.isArray(body.intendedServices) && body.intendedServices.length > 0
     ? (body.intendedServices as unknown[]).map(String)
     : [fallback]
-  const unknown = submitted.filter((s) => !validServices.has(s))
+  // 兜底服务本身（例如系统里没有配置「其他」时的「其他」）不算未收录，避免备注里出现无意义的提示
+  const unknown = submitted.filter((s) => !validServices.has(s) && s !== fallback)
   if (unknown.length > 0) notes.push(`意向服务（系统未收录）：${unknown.join('、')}`)
   const intendedServices = [...new Set(submitted.map((s) => validServices.has(s) ? s : fallback))]
 

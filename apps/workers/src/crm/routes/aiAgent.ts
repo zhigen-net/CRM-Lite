@@ -5,6 +5,7 @@ import { HTTPException } from 'hono/http-exception'
 import { requireAuth } from '../middleware/auth'
 import { CRM_TOOLS, ToolDef } from '../agent/tools'
 import { executeTool, AgentContext } from '../agent/executor'
+import { getIndustryContext, industryContextBlock } from '../../domain/templates'
 
 export const aiAgentRoutes = new Hono<{ Bindings: Env }>()
 
@@ -16,7 +17,8 @@ const messageSchema = z.object({
   content: z.union([z.string(), z.array(z.record(z.unknown()))]),
 })
 
-const SYSTEM_PROMPT = `你是一个 CRM 智能助手，帮助用户管理线索和客户。
+// 系统提示词：每次请求生成，带上当天日期和业务背景（系统设置中配置）
+const buildSystemPrompt = (industryContext: string) => `你是一个 CRM 智能助手，帮助用户管理线索和客户。
 
 你的能力：
 - 查询、筛选线索和客户（支持按状态、下次联系时间、姓名等）
@@ -35,13 +37,13 @@ const SYSTEM_PROMPT = `你是一个 CRM 智能助手，帮助用户管理线索�
 
 日期参考：今天是 ${new Date().toLocaleDateString('zh-CN', { timeZone: 'Asia/Shanghai' })}
 
-回复语言：中文，简洁直接。`
+回复语言：中文，简洁直接。${industryContextBlock(industryContext)}`
 
 // ─── Anthropic tool-use 循环 ──────────────────────────────────────────────────
 
 async function runAnthropicAgent(
   apiKey: string, modelId: string,
-  messages: unknown[], agentCtx: AgentContext,
+  messages: unknown[], agentCtx: AgentContext, systemPrompt: string,
 ): Promise<string> {
   const msgList = [...messages]
 
@@ -55,7 +57,7 @@ async function runAnthropicAgent(
       },
       body: JSON.stringify({
         model: modelId, max_tokens: 2048,
-        system: SYSTEM_PROMPT, tools: CRM_TOOLS, messages: msgList,
+        system: systemPrompt, tools: CRM_TOOLS, messages: msgList,
       }),
     })
     if (!res.ok) throw new Error(`Anthropic 调用失败：${(await res.text()).slice(0, 200)}`)
@@ -96,7 +98,7 @@ function toOpenAiTools(tools: ToolDef[]) {
 
 async function runOpenAiAgent(
   apiKey: string, baseUrl: string | null, modelId: string,
-  messages: unknown[], agentCtx: AgentContext,
+  messages: unknown[], agentCtx: AgentContext, systemPrompt: string,
 ): Promise<string> {
   const base = (baseUrl ?? '').replace(/\/$/, '') || 'https://api.openai.com/v1'
 
@@ -116,7 +118,7 @@ async function runOpenAiAgent(
   }).flat()
 
   const msgList: unknown[] = [
-    { role: 'system', content: SYSTEM_PROMPT },
+    { role: 'system', content: systemPrompt },
     ...messages,
   ]
 
@@ -190,6 +192,7 @@ aiAgentRoutes.post(
       db: c.env.DB, env: c.env, userId, role, teamId: teamId ?? null,
       waitUntil: (p) => c.executionCtx.waitUntil(p),
     }
+    const systemPrompt = buildSystemPrompt(await getIndustryContext(c.env.DB))
 
     try {
       let finalText: string
@@ -201,7 +204,7 @@ aiAgentRoutes.post(
           modelRow.model_id as Parameters<typeof c.env.AI.run>[0],
           {
             messages: [
-              { role: 'system', content: SYSTEM_PROMPT },
+              { role: 'system', content: systemPrompt },
               { role: 'user', content: userText },
             ],
           },
@@ -210,9 +213,9 @@ aiAgentRoutes.post(
           ? String((result as { response?: unknown }).response ?? '')
           : ''
       } else if (modelRow.provider_type === 'anthropic') {
-        finalText = await runAnthropicAgent(modelRow.api_key, modelRow.model_id, messages, agentCtx)
+        finalText = await runAnthropicAgent(modelRow.api_key, modelRow.model_id, messages, agentCtx, systemPrompt)
       } else {
-        finalText = await runOpenAiAgent(modelRow.api_key, modelRow.base_url, modelRow.model_id, messages, agentCtx)
+        finalText = await runOpenAiAgent(modelRow.api_key, modelRow.base_url, modelRow.model_id, messages, agentCtx, systemPrompt)
       }
       return c.json({ data: { message: finalText, model: modelRow.display_name } })
     } catch (err) {

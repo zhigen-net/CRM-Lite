@@ -22,7 +22,10 @@
     "partner_type": {
       "FertilityCenter": "Fertility Center",
       "SurrogacyAgency": "Surrogacy Agency",
-      "EggDonationAgency": "Egg Donation Agency"
+      "EggDonationAgency": "Egg Donation Agency",
+      "Supplier": "Supplier",
+      "Agency": "Agency",
+      "Channel": "Channel partner"
     }
   },
   "common": {
@@ -89,7 +92,8 @@
     "docs": "Docs",
     "logout": "Logout",
     "profile": "Profile",
-    "language": "语言"
+    "language": "语言",
+    "aiAccess": "AI Access"
   },
   "auth": {
     "title": "CRM System",
@@ -109,7 +113,19 @@
     "confirmPassword": "Confirm password",
     "confirmPasswordPlaceholder": "Enter password again",
     "passwordMismatch": "Passwords do not match",
-    "nameRequired": "Name is required"
+    "nameRequired": "Name is required",
+    "templateLabel": "Industry template",
+    "templateHint": "The template is applied only at setup; services, options and business background can be changed later in Settings.",
+    "templates": {
+      "blank": {
+        "name": "General",
+        "desc": "Start blank and add your own services and options"
+      },
+      "fertility": {
+        "name": "Assisted reproduction",
+        "desc": "Preset IVF, egg donation, sperm donation and surrogacy service flows and partner types"
+      }
+    }
   },
   "leads": {
     "title": "Leads",
@@ -340,7 +356,7 @@
       "contactInfo": "Contact Info",
       "contactInfoHint": "Phone, email, etc.",
       "services": "Service Scope",
-      "servicesHint": "Comma-separated, e.g.: IVF USA, Surrogacy"
+      "servicesHint": "Comma-separated, e.g.: Basic plan, Premium plan"
     },
     "detail": {
       "info": "Partner Info",
@@ -417,7 +433,8 @@
       "options": "Options",
       "workflow": "Workflows",
       "trash": "Trash",
-      "apiFailures": "API Failures"
+      "apiFailures": "API Failures",
+      "auditLog": "Audit Log"
     },
     "basic": {
       "title": "Basic Info",
@@ -425,7 +442,10 @@
       "timezone": "Timezone",
       "timezoneHint": "Affects how all times are displayed",
       "save": "Save Settings",
-      "saved": "Saved"
+      "saved": "Saved",
+      "industryContext": "Business background",
+      "industryContextPlaceholder": "e.g. Study-abroad consultancy; most clients are parents of high-school students; decisions take 1–3 months",
+      "industryContextHint": "Briefly describe your industry, clients and business. AI analysis, the AI assistant and MCP use it as context."
     },
     "features": {
       "title": "Feature Flags",
@@ -826,6 +846,35 @@
         "servicePlans": "Service plans",
         "assignedSalesName": "Assigned sales"
       }
+    },
+    "auditLog": {
+      "title": "Audit Log",
+      "subtitle": "Calls made through the external API (API keys), the AI assistant and MCP. Click a row to see the parameters.",
+      "allVia": "All channels",
+      "allStatus": "All results",
+      "empty": "No records yet",
+      "via": {
+        "api": "API key",
+        "assistant": "AI assistant",
+        "mcp": "MCP"
+      },
+      "status": {
+        "ok": "Success",
+        "error": "Failed"
+      },
+      "cols": {
+        "time": "Time",
+        "user": "User",
+        "via": "Channel",
+        "action": "Action",
+        "target": "Target",
+        "result": "Result"
+      },
+      "target": {
+        "lead": "Lead",
+        "client": "Client"
+      },
+      "input": "Parameters"
     }
   },
   "profile": {
@@ -834,7 +883,6 @@
     "tabs": {
       "basic": "Profile",
       "password": "Password",
-      "api": "API Access",
       "notifications": "Notifications"
     },
     "basic": {
@@ -855,35 +903,24 @@
       "copied": "Copied",
       "copy": "Copy",
       "dismiss": "I've saved it, close this",
-      "keys": "API Keys",
       "generate": "Generate New Key",
-      "empty": "No API keys. Click the button above to generate one.",
       "cols": {
-        "usage": "Usage",
-        "prefix": "Key Prefix",
-        "createdAt": "Created",
-        "lastUsed": "Last Used",
-        "never": "Never"
+        "usage": "Usage"
       },
       "revoke": "Revoke",
       "revokeConfirm": "Revoke \"{{name}}",
       "docs": {
-        "title": "API Reference",
-        "submit": "Submit a New Lead",
         "headers": "Headers",
         "body": "Request Body (JSON)",
         "services": "Available Services (intendedServices field)",
         "servicesHint": "Unknown service names will be recorded as \"Other\"",
         "adInfo": "Optional fields for ad tracking (ip, url, account, campaign, ad group, ad). Viewable in lead details.",
-        "curl": "cURL Example",
         "response": "Success Response (201)",
         "yourApiKey": "your API Key",
-        "bodyExample": "{\n  \"source\": \"website-form\",\n  \"name\": \"Jane Smith\",\n  \"contactInfo\": \"+1-555-0100\",\n  \"intendedServices\": [\"IVF Abroad\"],\n  \"notes\": \"notes (optional)\",\n  \"adInfo\": {\n    \"ip\": \"1.2.3.4\",\n    \"url\": \"https://landing.example.com\",\n    \"account\": \"Google Ads Account A\",\n    \"campaign\": \"IVF-Global\",\n    \"adGroup\": \"Women 25-35\",\n    \"ad\": \"Creative Copy 01\"\n  }\n}",
-        "curlExample": "curl -X POST {{endpoint}} \\\n  -H \"Content-Type: application/json\" \\\n  -H \"X-API-Key: crm_your_key_here\" \\\n  -d '{\"source\":\"website\",\"name\":\"Jane Smith\",\"contactInfo\":\"+1-555-0100\",\"intendedServices\":[\"IVF Abroad\"],\"adInfo\":{\"ip\":\"1.2.3.4\",\"campaign\":\"IVF-Global\"}}'"
+        "bodyExample": "{\n  \"source\": \"website-form\",\n  \"name\": \"Jane Smith\",\n  \"contactInfo\": \"+1-555-0100\",\n  \"intendedServices\": [\"Consulting\"],\n  \"notes\": \"notes (optional)\",\n  \"adInfo\": {\n    \"ip\": \"1.2.3.4\",\n    \"url\": \"https://landing.example.com\",\n    \"account\": \"Google Ads Account A\",\n    \"campaign\": \"Brand-Global\",\n    \"adGroup\": \"Women 25-35\",\n    \"ad\": \"Creative Copy 01\"\n  }\n}"
       },
       "namePlaceholder": "e.g. Website Form, Mini Program",
       "prompt": {
-        "open": "AI setup",
         "createdTitle": "API key created",
         "title": "AI setup: {{name}}",
         "keyHiddenHint": "The full key is shown only once, when it is created. The prompt below reads the key from the CRM_API_KEY environment variable; give the key you saved to the AI or whoever deploys the integration.",
@@ -927,6 +964,47 @@
           "webhook": "forward lead pushes from our ad platforms to the CRM through a relay service.",
           "generic": "integrate our system with the CRM lead API; tell me your plan first."
         }
+      },
+      "scopes": {
+        "label": "Permissions",
+        "presets": {
+          "push": "Push leads only",
+          "readonly": "Read only",
+          "readwrite": "Read & write",
+          "custom": "Custom"
+        },
+        "presetDesc": {
+          "push": "Website forms and ad platforms pushing leads (default)",
+          "readonly": "Read leads, clients and activities only; contact details are masked",
+          "readwrite": "Read and maintain leads, clients and activities, including full contact details (choose this for admins and customer service using MCP)",
+          "custom": "Choose each permission"
+        },
+        "names": {
+          "leads_read": "Read leads",
+          "leads_create": "Create leads",
+          "leads_write": "Update leads",
+          "clients_read": "Read clients",
+          "clients_write": "Update clients",
+          "activities_read": "Read activities",
+          "activities_write": "Add activities",
+          "meta_read": "Read options & users",
+          "contacts_read": "View full contact details"
+        },
+        "hint": "The key acts as you and is also limited by your role (e.g. sales only see their own leads)."
+      },
+      "mcp": {
+        "modes": {
+          "mcp": "MCP (AI works in the CRM)",
+          "push": "Push leads"
+        },
+        "intro": "Add the configuration below to an MCP-capable AI tool such as Claude Code, Cursor or Claude Desktop, and the AI can read and update CRM data within this key's permissions. Every call is recorded in Settings → Audit Log.",
+        "url": "MCP URL",
+        "claudeCode": "Claude Code command",
+        "json": "JSON config (Cursor, Claude Desktop, etc.)",
+        "maskedHint": "This key does not have the \"View full contact details\" permission, so phone numbers and emails are masked for the AI.",
+        "webHint": "Connectors in claude.ai and ChatGPT on the web require OAuth, which is not supported yet.",
+        "pushOnlyHint": "This key can only push leads. To let an AI read or update CRM data, create a key with Read only or Read & write permissions and use the MCP configuration.",
+        "keyPlaceholder": "<your API key>"
       }
     },
     "notifications": {
@@ -1281,7 +1359,7 @@
         "items": [
           "Uses SendGrid for sending; configure SENDGRID_API_KEY in Cloudflare Workers environment variables",
           "If SENDGRID_API_KEY is not set, send-email actions are silently skipped without error",
-          "Sender is fixed as noreply@irfc.cn (Fertility CRM)"
+          "The sender address is configured by the Worker variable EMAIL_FROM"
         ]
       },
       "unmatched": {
@@ -1398,5 +1476,59 @@
     "completedOn": "Completed on",
     "expectedOn": "Expected",
     "notesHint": "Notes (optional)"
+  },
+  "aiAccess": {
+    "title": "AI Access",
+    "subtitle": "Connect AI agents (Claude Code, Cursor, etc.) or external systems to the CRM. Keys act as you and never exceed your role.",
+    "auditLink": "View audit log →",
+    "sections": {
+      "mcp": {
+        "title": "AI tools (MCP)",
+        "desc": "Use natural language in AI tools such as Claude Code, Cursor or Claude Desktop to read and maintain clients and leads. Made for admins and customer service."
+      },
+      "push": {
+        "title": "Push leads from external systems",
+        "desc": "Website forms, ad platforms and other external systems push new leads into the CRM automatically."
+      },
+      "keyCount": "Keys: {{count}}"
+    },
+    "mcp": {
+      "stepsTitle": "Set up in three steps",
+      "create": "Create MCP key",
+      "defaultName": "MCP (AI tool)",
+      "step1": {
+        "title": "Create a key",
+        "desc": "Read & write by default, with full contact details; you can switch to read only."
+      },
+      "step2": {
+        "title": "Copy the config",
+        "desc": "Copy the Claude Code command or the Cursor / Claude Desktop JSON config from the dialog and paste it into your AI tool."
+      },
+      "step3": {
+        "title": "Just ask",
+        "desc": "The AI works in the CRM within your permissions and role, and every step is recorded in the audit log."
+      },
+      "examplesTitle": "Things you can ask:",
+      "example1": "Which clients need a follow-up today?",
+      "example2": "Mark Zhang San as contacted and log the phone call we just had",
+      "example3": "Convert lead 1024 to a client and assign it to Li Si",
+      "example4": "List last week's new leads that are still unassigned",
+      "keysTitle": "MCP keys",
+      "empty": "No MCP keys yet. Click \"Create MCP key\" to get started"
+    },
+    "push": {
+      "keysTitle": "Push keys",
+      "intro": "Use one key per connected system so each can be disabled on its own. After creating a key you can copy a setup prompt for an AI to write the integration code.",
+      "create": "Create push key",
+      "defaultName": "Website form",
+      "empty": "No push keys yet",
+      "docsToggle": "API reference",
+      "llmsHint": "AIs with web access can read the live API reference directly:"
+    },
+    "keys": {
+      "lastUsed": "Last used {{time}}",
+      "neverUsed": "Never used",
+      "view": "View config"
+    }
   }
 }

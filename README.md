@@ -1,18 +1,30 @@
 # CRM-Lite
 
-面向辅助生殖行业的轻量级 CRM 系统，完全运行在 Cloudflare 上（Workers + D1 + R2 + Queues），无需服务器。包含内部 CRM 后台和面向客户的自助门户。
+**开源、运行在 Cloudflare 上、AI 优先的 HubSpot 替代方案**，覆盖获客到服务的全流程：
+
+```
+访客 ──留资──▶ 线索 ──转化──▶ 客户 ──签约──▶ 服务交付
+```
+
+- **无需服务器**：完全运行在 Cloudflare（Workers + D1 + R2 + Queues），fork 后连接 Workers Builds 即可部署，GitHub 中不需要配置任何 Secret，小团队几乎零成本。
+- **AI 优先**：内置 AI 助手；提供 MCP 服务，Claude Code、Cursor、Claude Desktop 等 AI 工具可以直接查询和维护线索、客户，权限与界面一致，所有调用记入审计日志。
+- **通用核心 + 行业模板**：核心功能与行业无关，首次初始化时可选择「通用」或行业模板（目前提供「辅助生殖」），预置服务流程、选项和 AI 业务背景。
+- **数据自有**：所有数据在你自己的 Cloudflare 账号中。
+
+[English](./README.en.md)
 
 ## 功能
 
 **内部 CRM（`/app`）**
 - 线索管理：录入、分配、跟进、转化为客户；支持按规则自动分配
 - 客户档案：客户详情、服务进度里程碑、下次联系提醒、附件
-- 产品库：服务项目与合作伙伴产品
+- 产品库：服务项目（含交付流程）与合作伙伴产品
 - 销售活动：跟进记录、附件
 - 工作流：可视化编辑，支持定时执行
-- AI 分析与助手：支持 OpenAI、Anthropic、Cloudflare Workers AI 及自定义兼容接口
+- AI 分析与助手：支持 OpenAI、Anthropic、Cloudflare Workers AI 及自定义兼容接口；可配置业务背景
+- AI 接入：MCP 服务（`/api/mcp`）、API Key 权限范围、审计日志
 - 用户、团队与权限，字段级策略，回收站
-- 对外 API：通过 API Key 推送线索（`POST /api/v1/leads`），接口文档见后台 `/app/docs`
+- 对外 API：通过 API Key 推送线索（`POST /api/v1/leads`），机器可读说明见 `/api/v1/llms.txt`
 
 **客户门户（`/portal`）**
 - 客户登录，查看个人资料、服务、资源文件和进度
@@ -20,6 +32,8 @@
 **其它**
 - 中英文界面
 - 邮件通知（Resend / SendGrid，可选）
+
+**规划中**：访客统计与渠道归因、自定义字段、线索打分、统一时间线。
 
 ## 技术栈
 
@@ -104,6 +118,10 @@ pnpm db:migrate:local
 
 - `v1.0.0`：Worker + Pages + GitHub Actions 部署架构的最后版本
 - 当前：单 Worker + Workers Builds 自动部署
+
+## 许可证
+
+[AGPL-3.0](./LICENSE)。修改后以网络服务形式提供给他人使用时，需要按许可证公开修改后的源代码。
 
 ## 相关文档
 

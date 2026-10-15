@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next'
 import { crmApi } from '@/shared/utils/request'
 import { formatDate } from '@/shared/utils/format'
 import { Input } from '@/shared/components/Input'
+import { Textarea } from '@/shared/components/Textarea'
 import { Button } from '@/shared/components/Button'
 import { Modal } from '@/shared/components/Modal'
 import { Badge } from '@/shared/components/Badge'
@@ -15,6 +16,7 @@ import type { Team } from '@/shared/types'
 import type { OptionItem, ActivityMeta, ActivityMetaField, MilestoneMapping } from '@/shared/hooks/useOptions'
 import { useOptions, parseActivityMeta } from '@/shared/hooks/useOptions'
 import type { Workflow } from '@/shared/hooks/useWorkflows'
+import { AuditLogPanel } from './AuditLogPanel'
 
 // ─── 选项配置相关常量和组件 ───────────────────────────────────────────────────
 
@@ -1954,6 +1956,8 @@ function ApiFailuresPanel() {
 const schema = z.object({
   system_name: z.string().min(1),
   timezone:    z.string(),
+  // 业务背景：供 AI 分析、AI 助手、MCP 了解业务（行业模板初始化时写入）
+  industry_context: z.string().max(2000).optional(),
 })
 type SettingsForm = z.infer<typeof schema>
 
@@ -1966,6 +1970,7 @@ const TAB_KEYS = [
   { key: 'policies',    labelKey: 'settings.tabs.workflow' },
   { key: 'trash',       labelKey: 'settings.tabs.trash' },
   { key: 'apiFailures', labelKey: 'settings.tabs.apiFailures' },
+  { key: 'auditLog',    labelKey: 'settings.tabs.auditLog' },
 ] as const
 type TabKey = typeof TAB_KEYS[number]['key']
 
@@ -2184,6 +2189,17 @@ export default function SystemSettingsPage() {
                     </select>
                     <p className="mt-1 text-xs text-gray-400">{t('settings.basic.timezoneHint')}</p>
                   </div>
+                  <div>
+                    <Textarea
+                      id="industry-context"
+                      label={t('settings.basic.industryContext')}
+                      rows={3}
+                      placeholder={t('settings.basic.industryContextPlaceholder')}
+                      error={errors.industry_context?.message}
+                      {...register('industry_context')}
+                    />
+                    <p className="mt-1 text-xs text-gray-400">{t('settings.basic.industryContextHint')}</p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -2360,6 +2376,9 @@ export default function SystemSettingsPage() {
 
       {/* API 失败记录 */}
       {activeTab === 'apiFailures' && <ApiFailuresPanel />}
+
+      {/* 审计日志 */}
+      {activeTab === 'auditLog' && <AuditLogPanel />}
 
       {/* AI 配置 */}
       {activeTab === 'ai' && (

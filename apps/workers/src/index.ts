@@ -31,13 +31,17 @@ import { recycleBinRoutes } from './crm/routes/recycleBin'
 import { apiFailuresRoutes } from './crm/routes/apiFailures'
 import { milestonesRoutes } from './crm/routes/milestones'
 import { v1DocsRoutes } from './crm/routes/v1Docs'
-import { requireApiKey } from './crm/middleware/apiKeyAuth'
+import { auditLogRoutes } from './crm/routes/auditLog'
+import { mcpRoutes } from './crm/routes/mcp'
+import { requireApiKey, requireScope } from './crm/middleware/apiKeyAuth'
 import { executeScheduledWorkflows } from './crm/workflow/executor'
 import { hashPassword } from './shared/password'
 import { actorFromJwt } from './domain/actor'
 import { DomainError } from './domain/errors'
+import { recordAudit } from './domain/audit'
 import { createLead } from './domain/leads/service'
 import { normalizeExternalLead } from './domain/leads/intake'
+import { applyIndustryTemplate, INDUSTRY_TEMPLATES } from './domain/templates'
 
 // 客户门户路由
 import { portalAuthRoutes } from './portal/routes/auth'
@@ -96,12 +100,16 @@ app.post('/api/public/setup', zValidator('json', z.object({
   name: z.string().min(1),
   email: z.string().email(),
   password: z.string().min(8),
+  // 行业模板：blank = 通用（清除内置的行业示例数据），fertility = 辅助生殖
+  template: z.enum(INDUSTRY_TEMPLATES).default('blank'),
 })), async (c) => {
   const row = await c.env.DB.prepare('SELECT COUNT(*) as cnt FROM users').first<{ cnt: number }>()
   if ((row?.cnt ?? 0) > 0) {
     return c.json({ message: '系统已完成初始化' }, 403)
   }
-  const { name, email, password } = c.req.valid('json')
+  const { name, email, password, template } = c.req.valid('json')
+  // 先应用模板再建管理员：模板失败时可以重新初始化
+  await applyIndustryTemplate(c.env.DB, template)
   const passwordHash = await hashPassword(password)
   const id = uuidv4()
   await c.env.DB.prepare(
@@ -117,7 +125,7 @@ app.get('/api/public/settings', async (c) => {
   const map = Object.fromEntries(rows.results.map((r) => [r.key, r.value]))
   return c.json({
     data: {
-      systemName: map['system_name'] ?? '辅助生殖 CRM',
+      systemName: map['system_name'] ?? 'CRM',
       timezone: map['timezone'] ?? 'Asia/Shanghai',
       aiAgentEnabled: map['ai_agent_enabled'] !== 'false',
     },
@@ -126,6 +134,9 @@ app.get('/api/public/settings', async (c) => {
 
 // 对外接口说明（无需鉴权）
 app.route('/api/v1', v1DocsRoutes)
+
+// MCP 服务（API Key 鉴权）
+app.route('/api/mcp', mcpRoutes)
 
 const v1LeadSchema = z.object({
   source: z.string().min(1, '请填写来源'),
@@ -146,10 +157,11 @@ const v1LeadSchema = z.object({
 app.post(
   '/api/v1/leads',
   requireApiKey,
+  requireScope('leads:create'),
   zValidator('json', v1LeadSchema),
   async (c) => {
     const body = c.req.valid('json') as Record<string, unknown>
-    const actor = actorFromJwt(c.get('jwtPayload'), 'api')
+    const actor = actorFromJwt(c.get('jwtPayload'), 'api', c.get('apiKey').id)
     const deps = { db: c.env.DB, env: c.env, waitUntil: (p: Promise<unknown>) => c.executionCtx.waitUntil(p) }
 
     // 试运行：只返回整理后的结果，不建线索、不记失败
@@ -161,8 +173,12 @@ app.post(
     try {
       const input = await normalizeExternalLead(c.env.DB, body)
       const id = await createLead(deps, actor, input)
+      recordAudit(deps, actor, { action: 'create_lead', status: 'ok', targetType: 'lead', targetId: id, input: body })
       return c.json({ data: { id, status: 'New' } }, 201)
     } catch (err) {
+      recordAudit(deps, actor, {
+        action: 'create_lead', status: 'error', input: body, error: err instanceof Error ? err.message : String(err),
+      })
       // 异步保存失败记录，不阻塞响应，也不抛出新错误
       void c.env.DB.prepare(
         `INSERT INTO api_lead_failures (id, request_body, error_message, api_key_prefix)
@@ -202,6 +218,7 @@ app.route('/api/admin/action-templates', actionTemplatesAdminRoutes)
 app.route('/api/admin/entity-schema', entitySchemaRoutes)
 app.route('/api/admin/recycle-bin', recycleBinRoutes)
 app.route('/api/admin/api-failures', apiFailuresRoutes)
+app.route('/api/admin/audit-log', auditLogRoutes)
 app.route('/api/milestones', milestonesRoutes)
 
 // 客户门户 API（/api/client/*）
