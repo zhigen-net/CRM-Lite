@@ -20,10 +20,11 @@ Visitor ──form──▶ Lead ──convert──▶ Client ──sign──�
 - AI analysis and assistant (OpenAI, Anthropic, Workers AI or any compatible API) with a configurable business background
 - AI access: MCP server (`/api/mcp`), scoped API keys, audit log
 - Public API for pushing leads (`POST /api/v1/leads`), with a machine-readable reference at `/api/v1/llms.txt`
+- Visitor analytics: websites connect through a same-origin `/_t/*` proxy (the CRM URL is never exposed), recording channels, journeys and key actions; see [docs/TRACKING.md](./docs/TRACKING.md) (Chinese)
 - Client portal (`/portal`) for profiles, services, resources and progress
 - Chinese and English UI
 
-**Planned**: visitor analytics and attribution, custom fields, lead scoring, unified timeline.
+**Planned**: visitor-to-lead linking, channel reports, custom fields, lead scoring, unified timeline.
 
 ## Deploy
 
