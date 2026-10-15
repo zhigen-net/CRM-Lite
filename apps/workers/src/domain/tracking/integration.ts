@@ -34,8 +34,23 @@ ${FORWARD_BODY}
 }
 `
 
+export const WORKER_ENTRY_LINE = "if (new URL(request.url).pathname.startsWith('/_t/')) return forwardToCrm(request, env)"
+
+/** 带静态资源的 Worker 网站：让 /_t/* 先进入 Worker，否则会返回静态页面 */
+export const ASSETS_CONFIG = `[assets]
+# ……原有配置保持不变
+run_worker_first = ["/_t/*"]`
+
+/** 服务绑定也可以写在网站的 wrangler 配置里；<crm-worker-name> 由界面替换为 CRM 的 Worker 名 */
+export const SERVICE_BINDING_CONFIG = `[[services]]
+binding = "CRM"
+service = "<crm-worker-name>"`
+
 export const SCRIPT_TAG = '<script src="/_t/t.js" defer></script>'
 
 export function integrationTemplates() {
-  return { pagesFunction: PAGES_FUNCTION, workerSnippet: WORKER_SNIPPET, scriptTag: SCRIPT_TAG }
+  return {
+    pagesFunction: PAGES_FUNCTION, workerSnippet: WORKER_SNIPPET, workerEntryLine: WORKER_ENTRY_LINE,
+    assetsConfig: ASSETS_CONFIG, serviceBindingConfig: SERVICE_BINDING_CONFIG, scriptTag: SCRIPT_TAG,
+  }
 }

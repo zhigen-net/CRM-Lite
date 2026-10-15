@@ -27,6 +27,14 @@ export async function findSiteByKey(db: D1Database, key: string | undefined): Pr
   return row && row.is_active ? { id: row.id, name: row.name, isActive: true } : null
 }
 
+/** 按 ID 读取站点（含停用的）；不存在时抛错 */
+export async function getSite(db: D1Database, id: string) {
+  const row = await db.prepare('SELECT id, name, domain, is_active FROM tracking_sites WHERE id = ?')
+    .bind(id).first<{ id: string; name: string; domain: string | null; is_active: number }>()
+  if (!row) throw notFound('站点不存在')
+  return { id: row.id, name: row.name, domain: row.domain, isActive: !!row.is_active }
+}
+
 export async function listSites(db: D1Database) {
   const rows = await db.prepare(`
     SELECT s.id, s.name, s.domain, s.key_prefix, s.is_active, s.created_at, s.last_seen_at,
