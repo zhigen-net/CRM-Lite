@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next'
 import { crmApi } from '@/shared/utils/request'
 import { formatDate } from '@/shared/utils/format'
 import { Input } from '@/shared/components/Input'
+import { Textarea } from '@/shared/components/Textarea'
 import { Button } from '@/shared/components/Button'
 import { Modal } from '@/shared/components/Modal'
 import { Badge } from '@/shared/components/Badge'
@@ -1955,6 +1956,8 @@ function ApiFailuresPanel() {
 const schema = z.object({
   system_name: z.string().min(1),
   timezone:    z.string(),
+  // 业务背景：供 AI 分析、AI 助手、MCP 了解业务（行业模板初始化时写入）
+  industry_context: z.string().max(2000).optional(),
 })
 type SettingsForm = z.infer<typeof schema>
 
@@ -2185,6 +2188,17 @@ export default function SystemSettingsPage() {
                       ))}
                     </select>
                     <p className="mt-1 text-xs text-gray-400">{t('settings.basic.timezoneHint')}</p>
+                  </div>
+                  <div>
+                    <Textarea
+                      id="industry-context"
+                      label={t('settings.basic.industryContext')}
+                      rows={3}
+                      placeholder={t('settings.basic.industryContextPlaceholder')}
+                      error={errors.industry_context?.message}
+                      {...register('industry_context')}
+                    />
+                    <p className="mt-1 text-xs text-gray-400">{t('settings.basic.industryContextHint')}</p>
                   </div>
                 </div>
               </div>

@@ -33,6 +33,7 @@ settingsRoutes.put(
       auto_assign_enabled:  z.string().optional(),
       ai_agent_enabled:     z.string().optional(),
       timezone:             z.string().optional(),
+      industry_context:     z.string().max(2000).optional(),
     }),
   ),
   async (c) => {

@@ -1,4 +1,5 @@
 import { Hono } from 'hono'
+import { getIndustryContext, industryContextBlock } from '../../domain/templates'
 import { zValidator } from '@hono/zod-validator'
 import { z } from 'zod'
 import { HTTPException } from 'hono/http-exception'
@@ -144,7 +145,9 @@ async function runAnalysis(
   const userPrompt = promptRow.user_prompt_template.replace(/\{\{(\w+)\}\}/g, (_, k) => vars[k] ?? '')
 
   // 调用 AI
-  const { content, modelDisplayName } = await callAiModel(env, promptRow.model_id, promptRow.system_prompt, userPrompt)
+  // 系统提示词末尾附上业务背景（系统设置中配置，行业模板初始化时写入）
+  const systemPrompt = promptRow.system_prompt + industryContextBlock(await getIndustryContext(env.DB))
+  const { content, modelDisplayName } = await callAiModel(env, promptRow.model_id, systemPrompt, userPrompt)
 
   // 解析 JSON
   let parsed: Record<string, unknown> = {}

@@ -41,6 +41,7 @@ import { DomainError } from './domain/errors'
 import { recordAudit } from './domain/audit'
 import { createLead } from './domain/leads/service'
 import { normalizeExternalLead } from './domain/leads/intake'
+import { applyIndustryTemplate, INDUSTRY_TEMPLATES } from './domain/templates'
 
 // 客户门户路由
 import { portalAuthRoutes } from './portal/routes/auth'
@@ -99,12 +100,16 @@ app.post('/api/public/setup', zValidator('json', z.object({
   name: z.string().min(1),
   email: z.string().email(),
   password: z.string().min(8),
+  // 行业模板：blank = 通用（清除内置的行业示例数据），fertility = 辅助生殖
+  template: z.enum(INDUSTRY_TEMPLATES).default('blank'),
 })), async (c) => {
   const row = await c.env.DB.prepare('SELECT COUNT(*) as cnt FROM users').first<{ cnt: number }>()
   if ((row?.cnt ?? 0) > 0) {
     return c.json({ message: '系统已完成初始化' }, 403)
   }
-  const { name, email, password } = c.req.valid('json')
+  const { name, email, password, template } = c.req.valid('json')
+  // 先应用模板再建管理员：模板失败时可以重新初始化
+  await applyIndustryTemplate(c.env.DB, template)
   const passwordHash = await hashPassword(password)
   const id = uuidv4()
   await c.env.DB.prepare(
@@ -120,7 +125,7 @@ app.get('/api/public/settings', async (c) => {
   const map = Object.fromEntries(rows.results.map((r) => [r.key, r.value]))
   return c.json({
     data: {
-      systemName: map['system_name'] ?? '辅助生殖 CRM',
+      systemName: map['system_name'] ?? 'CRM',
       timezone: map['timezone'] ?? 'Asia/Shanghai',
       aiAgentEnabled: map['ai_agent_enabled'] !== 'false',
     },
