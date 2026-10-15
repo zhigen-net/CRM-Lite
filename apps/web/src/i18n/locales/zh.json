@@ -93,7 +93,8 @@
     "logout": "退出登录",
     "profile": "个人资料",
     "language": "Language",
-    "aiAccess": "AI 接入"
+    "aiAccess": "AI 接入",
+    "analytics": "访客分析"
   },
   "auth": {
     "title": "内部管理系统",
@@ -1529,6 +1530,99 @@
       "lastUsed": "最后使用 {{time}}",
       "neverUsed": "从未使用",
       "view": "查看配置"
+    }
+  },
+  "analytics": {
+    "title": "访客分析",
+    "subtitle": "网站访客从哪里来、看了什么、做了什么，以及是否已经留资。",
+    "tabs": {
+      "visitors": "访客",
+      "sites": "站点管理"
+    },
+    "channels": {
+      "paid": "广告",
+      "search": "搜索",
+      "social": "社交",
+      "referral": "外链",
+      "direct": "直接访问"
+    },
+    "devices": {
+      "mobile": "手机",
+      "tablet": "平板",
+      "desktop": "电脑"
+    },
+    "events": {
+      "pageview": "浏览",
+      "leave": "离开",
+      "tel": "点击电话",
+      "wechat": "复制微信",
+      "form": "提交表单",
+      "custom": "自定义"
+    },
+    "visitors": {
+      "allChannels": "全部来源",
+      "allVisitors": "全部访客",
+      "withLead": "已留资",
+      "withoutLead": "未留资",
+      "total": "共 {{count}} 位访客",
+      "empty": "暂无访客数据。网站接入后，有人访问就会出现在这里。",
+      "noSites": "还没有接入网站。请管理员在「站点管理」中添加站点并部署接入代码。",
+      "cols": {
+        "lastSeen": "最近访问",
+        "source": "首次来源",
+        "visits": "访问 / 浏览",
+        "device": "设备",
+        "location": "地区 / 运营商",
+        "actions": "关键行为",
+        "lead": "线索"
+      }
+    },
+    "journey": {
+      "title": "访问轨迹",
+      "firstSource": "首次来源",
+      "firstLanding": "首次落地页",
+      "visits": "访问次数 / 浏览量",
+      "lead": "关联线索",
+      "viewLead": "查看线索",
+      "noLead": "未留资",
+      "visitSummary": "{{pages}} 页 · 停留 {{time}}",
+      "referrer": "来源网址"
+    },
+    "sites": {
+      "title": "站点",
+      "subtitle": "每个接入统计的网站一把站点密钥，只放在网站服务器端的加密环境变量中。",
+      "create": "添加站点",
+      "empty": "还没有站点",
+      "name": "站点名称",
+      "namePlaceholder": "如：官网、活动落地页",
+      "domain": "域名（可选）",
+      "disabled": "已停用",
+      "visitors": "访客 {{count}}",
+      "lastSeen": "最近数据 {{time}}",
+      "noData": "尚未收到数据",
+      "viewCode": "接入代码",
+      "rotate": "更换密钥",
+      "rotateConfirm": "更换「{{name}}」的站点密钥？旧密钥会立即失效，需要同步更新网站的 CRM_SITE_KEY。",
+      "disable": "停用",
+      "enable": "启用",
+      "integrationTitle": "接入「{{name}}」",
+      "keyNotice": "请立即复制站点密钥，此后不再显示。把它保存为网站的加密环境变量 CRM_SITE_KEY（Secret）。",
+      "keyHidden": "站点密钥只在创建或更换时显示一次。如果找不到了，可以「更换密钥」后重新设置。",
+      "step1": "在网站的 Cloudflare 项目里设置加密环境变量 CRM_SITE_KEY；网站与 CRM 在同一账号时添加服务绑定 CRM（指向 CRM 的 Worker），否则再设置加密变量 CRM_URL（CRM 地址）。",
+      "step2": "把下面的转发代码加进网站：Pages 网站新建文件 functions/_t/[[path]].js；Worker 网站把代码放进入口文件。",
+      "step3": "在网站所有页面的 </head> 前加上脚本标签，重新部署后即可在「访客」中看到数据。",
+      "modes": {
+        "pages": "Pages 网站",
+        "worker": "Worker 网站"
+      },
+      "codeLabel": {
+        "pages": "转发代码（functions/_t/[[path]].js）",
+        "worker": "转发代码（加进 Worker 入口）"
+      },
+      "scriptLabel": "脚本标签（加在每个页面的 </head> 前）",
+      "aiPromptLabel": "交给 AI 的接入提示词",
+      "aiPrompt": "请帮我给这个{{mode}}接入 CRM 访客统计：\n1. 按网站类型加入下面的转发代码，把同域 /_t/* 请求在服务器端转发给 CRM。不要修改代码里的转发逻辑。\n2. 在所有页面的 </head> 前加上：{{scriptTag}}\n3. 不要把 CRM 地址或密钥写进前端代码。站点密钥使用加密环境变量 CRM_SITE_KEY；网站与 CRM 在同一个 Cloudflare 账号时使用服务绑定 CRM，否则使用加密环境变量 CRM_URL。\n4. 完成后告诉我需要在 Cloudflare 控制台设置哪些环境变量或绑定。\n\n转发代码：\n{{code}}",
+      "bindingHint": "浏览器只会请求网站自己的 /_t/ 路径，看不到 CRM 地址；CRM 只接受带正确站点密钥的服务器请求，不存原始 IP。"
     }
   }
 }

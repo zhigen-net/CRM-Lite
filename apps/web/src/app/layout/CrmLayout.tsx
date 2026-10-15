@@ -20,6 +20,8 @@ export default function CrmLayout() {
     { to: '/app/clients', label: t('nav.clients') },
     { to: '/app/activities', label: t('nav.activities') },
     { to: '/app/products', label: t('nav.products'), roles: ['admin', 'operations'] },
+    // 访客统计：管理员、运营
+    { to: '/app/analytics', label: t('nav.analytics'), roles: ['admin', 'operations'] },
     // 所有角色可用：用户通过 AI Agent（MCP）或外部系统接入 CRM
     { to: '/app/ai-access', label: t('nav.aiAccess') },
   ]
