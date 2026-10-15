@@ -135,6 +135,10 @@
 
 ---
 
+## 网站接入访客统计
+
+网站（Pages / Workers）接入「访客分析」的步骤、多站点配置与排错见 [docs/TRACKING.md](./docs/TRACKING.md)。
+
 ## 自定义域名
 
 控制台 → 对应 Worker → **Settings** → **Domains & Routes** 添加。前端和 API 共用这一个域名，无需其它配置。
