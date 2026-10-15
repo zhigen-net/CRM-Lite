@@ -6,13 +6,14 @@ import { requireApiKey } from '../middleware/apiKeyAuth'
 import { actorFromJwt } from '../../domain/actor'
 import { capabilitiesFor, invokeCapability, type Capability, type Scope } from '../../domain/capabilities'
 import { DomainError } from '../../domain/errors'
+import { getIndustryContext, industryContextBlock } from '../../domain/templates'
 
 export const mcpRoutes = new Hono<{ Bindings: Env }>()
 
 const SUPPORTED_VERSIONS = ['2025-06-18', '2025-03-26', '2024-11-05']
 const SERVER_INFO = { name: 'crm', title: 'CRM', version: '1.0.0' }
 
-const INSTRUCTIONS = `这是辅助生殖 CRM 的 MCP 服务，可以查询和维护线索、客户与跟进记录。
+const INSTRUCTIONS = `这是 CRM 系统的 MCP 服务，可以查询和维护线索、客户与跟进记录。
 使用规范：
 1. 先调用 whoami 了解当前身份和可用权限；销售只能看到自己负责的数据。
 2. 修改状态、合同状态、跟进类型前，先用 get_options 确认有效值。
@@ -59,7 +60,7 @@ async function handleMessage(ctx: McpContext, msg: JsonRpcRequest): Promise<unkn
         protocolVersion,
         capabilities: { tools: { listChanged: false } },
         serverInfo: SERVER_INFO,
-        instructions: INSTRUCTIONS,
+        instructions: INSTRUCTIONS + industryContextBlock(await getIndustryContext(ctx.deps.db)),
       })
     }
     case 'ping':

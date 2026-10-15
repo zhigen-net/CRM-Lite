@@ -15,13 +15,13 @@ X-API-Key: crm_xxxxxxxxxxxxxxxx
   "source": "百度推广",
   "name": "张三",
   "contactInfo": "13800000000",
-  "intendedServices": ["试管婴儿"],
+  "intendedServices": ["咨询服务"],
   "notes": "客户咨询过一次",
   "adInfo": {
     "ip": "1.2.3.4",
     "url": "https://landing.example.com/ivf",
     "账户": "百度账户A",
-    "广告计划": "试管婴儿-全国",
+    "广告计划": "品牌词-全国",
     "广告组": "25-35岁女性",
     "广告": "创意文案01"
   }

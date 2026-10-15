@@ -22,7 +22,10 @@
     "partner_type": {
       "FertilityCenter": "Fertility Center",
       "SurrogacyAgency": "Surrogacy Agency",
-      "EggDonationAgency": "Egg Donation Agency"
+      "EggDonationAgency": "Egg Donation Agency",
+      "Supplier": "Supplier",
+      "Agency": "Agency",
+      "Channel": "Channel partner"
     }
   },
   "common": {
@@ -110,7 +113,19 @@
     "confirmPassword": "Confirm password",
     "confirmPasswordPlaceholder": "Enter password again",
     "passwordMismatch": "Passwords do not match",
-    "nameRequired": "Name is required"
+    "nameRequired": "Name is required",
+    "templateLabel": "Industry template",
+    "templateHint": "The template is applied only at setup; services, options and business background can be changed later in Settings.",
+    "templates": {
+      "blank": {
+        "name": "General",
+        "desc": "Start blank and add your own services and options"
+      },
+      "fertility": {
+        "name": "Assisted reproduction",
+        "desc": "Preset IVF, egg donation, sperm donation and surrogacy service flows and partner types"
+      }
+    }
   },
   "leads": {
     "title": "Leads",
@@ -341,7 +356,7 @@
       "contactInfo": "Contact Info",
       "contactInfoHint": "Phone, email, etc.",
       "services": "Service Scope",
-      "servicesHint": "Comma-separated, e.g.: IVF USA, Surrogacy"
+      "servicesHint": "Comma-separated, e.g.: Basic plan, Premium plan"
     },
     "detail": {
       "info": "Partner Info",
@@ -427,7 +442,10 @@
       "timezone": "Timezone",
       "timezoneHint": "Affects how all times are displayed",
       "save": "Save Settings",
-      "saved": "Saved"
+      "saved": "Saved",
+      "industryContext": "Business background",
+      "industryContextPlaceholder": "e.g. Study-abroad consultancy; most clients are parents of high-school students; decisions take 1–3 months",
+      "industryContextHint": "Briefly describe your industry, clients and business. AI analysis, the AI assistant and MCP use it as context."
     },
     "features": {
       "title": "Feature Flags",
@@ -899,7 +917,7 @@
         "adInfo": "Optional fields for ad tracking (ip, url, account, campaign, ad group, ad). Viewable in lead details.",
         "response": "Success Response (201)",
         "yourApiKey": "your API Key",
-        "bodyExample": "{\n  \"source\": \"website-form\",\n  \"name\": \"Jane Smith\",\n  \"contactInfo\": \"+1-555-0100\",\n  \"intendedServices\": [\"IVF Abroad\"],\n  \"notes\": \"notes (optional)\",\n  \"adInfo\": {\n    \"ip\": \"1.2.3.4\",\n    \"url\": \"https://landing.example.com\",\n    \"account\": \"Google Ads Account A\",\n    \"campaign\": \"IVF-Global\",\n    \"adGroup\": \"Women 25-35\",\n    \"ad\": \"Creative Copy 01\"\n  }\n}"
+        "bodyExample": "{\n  \"source\": \"website-form\",\n  \"name\": \"Jane Smith\",\n  \"contactInfo\": \"+1-555-0100\",\n  \"intendedServices\": [\"Consulting\"],\n  \"notes\": \"notes (optional)\",\n  \"adInfo\": {\n    \"ip\": \"1.2.3.4\",\n    \"url\": \"https://landing.example.com\",\n    \"account\": \"Google Ads Account A\",\n    \"campaign\": \"Brand-Global\",\n    \"adGroup\": \"Women 25-35\",\n    \"ad\": \"Creative Copy 01\"\n  }\n}"
       },
       "namePlaceholder": "e.g. Website Form, Mini Program",
       "prompt": {
@@ -1341,7 +1359,7 @@
         "items": [
           "Uses SendGrid for sending; configure SENDGRID_API_KEY in Cloudflare Workers environment variables",
           "If SENDGRID_API_KEY is not set, send-email actions are silently skipped without error",
-          "Sender is fixed as noreply@irfc.cn (Fertility CRM)"
+          "The sender address is configured by the Worker variable EMAIL_FROM"
         ]
       },
       "unmatched": {

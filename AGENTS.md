@@ -3,6 +3,8 @@
 本文件是所有开发者和编码 agent（Claude Code、Codex、Cursor 等）在本仓库工作时必须遵守的约定。
 只记录"读代码看不出来、做错了会出事"的规则；架构与部署细节见 [README.md](./README.md)、[DEPLOY.md](./DEPLOY.md)。
 
+**定位**：开源（AGPL-3.0）、运行在 Cloudflare 上、AI 优先的 HubSpot 替代方案，覆盖 访客 → 线索 → 客户 → 服务交付。核心功能与行业无关。
+
 > [CRM_Development_Guide.md](./CRM_Development_Guide.md) 是早期设计文档，架构和部署部分已过时，与代码冲突时以代码为准，不要据此实现。
 
 ## 维护本文件
@@ -40,6 +42,11 @@
 - 选项类字段（状态、合同状态、丢失原因等）和日期字段写库前用 `domain/validation.ts` 校验（选项值必须在「选项配置」中启用；日期 `YYYY-MM-DD`），新增此类字段时同步调用。
 - 业务错误抛 `DomainError`（带状态码），由入口转换：HTTP 接口返回对应状态码，AI 助手工具返回 `{ error }`。
 - 对外接口 `/api/v1/*` 的字段或行为变化时，同步更新 `crm/routes/v1Docs.ts`（`llms.txt` / `openapi.json`）和前端接入提示词（`profile.api.prompt.*`），AI 接入依赖它们。
+
+## 通用核心与行业模板
+
+- 代码、界面文案、默认值、示例中**不要写死某个行业**（如辅助生殖的服务名、术语）。行业相关内容只通过 `domain/templates.ts` 的行业模板在初始化时写入，或由用户在系统中配置；AI 需要的行业信息放在「业务背景」设置（`industry_context`）中。
+- 早期迁移已内置辅助生殖示例数据，且不能修改；「通用」模板在初始化时清除它们。新增行业示例数据时写进模板，不要写进迁移。
 
 ## Workers 运行时
 

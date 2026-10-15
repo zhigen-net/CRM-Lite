@@ -56,17 +56,19 @@ export default function CrmLoginPage() {
     email: z.string().email(t('auth.invalidEmail')),
     password: z.string().min(8, t('auth.passwordMin8')),
     confirmPassword: z.string(),
+    // 行业模板：blank = 通用，fertility = 辅助生殖（预置服务项目、合作伙伴类型与业务背景）
+    template: z.enum(['blank', 'fertility']),
   }).refine((d) => d.password === d.confirmPassword, {
     message: t('auth.passwordMismatch'),
     path: ['confirmPassword'],
   })
   type SetupData = z.infer<typeof setupSchema>
 
-  const setupForm = useForm<SetupData>({ resolver: zodResolver(setupSchema) })
+  const setupForm = useForm<SetupData>({ resolver: zodResolver(setupSchema), defaultValues: { template: 'blank' } })
 
   const setupMutation = useMutation({
     mutationFn: (data: SetupData) =>
-      crmApi.post('/public/setup', { name: data.name, email: data.email, password: data.password }),
+      crmApi.post('/public/setup', { name: data.name, email: data.email, password: data.password, template: data.template }),
     onSuccess: async (_, data) => {
       try {
         await login(data.email, data.password)
@@ -127,6 +129,22 @@ export default function CrmLoginPage() {
               error={setupForm.formState.errors.confirmPassword?.message}
               {...setupForm.register('confirmPassword')}
             />
+
+            <fieldset>
+              <legend className="mb-1.5 text-sm font-medium text-gray-700">{t('auth.templateLabel')}</legend>
+              <div className="space-y-1.5">
+                {(['blank', 'fertility'] as const).map((tpl) => (
+                  <label key={tpl} className="flex cursor-pointer items-start gap-2 rounded-md border border-gray-200 px-3 py-2 hover:bg-gray-50">
+                    <input type="radio" value={tpl} className="mt-1" {...setupForm.register('template')} />
+                    <span>
+                      <span className="block text-sm text-gray-800">{t(`auth.templates.${tpl}.name`)}</span>
+                      <span className="block text-xs text-gray-400">{t(`auth.templates.${tpl}.desc`)}</span>
+                    </span>
+                  </label>
+                ))}
+              </div>
+              <p className="mt-1 text-xs text-gray-400">{t('auth.templateHint')}</p>
+            </fieldset>
 
             {serverError && (
               <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-600">{serverError}</p>

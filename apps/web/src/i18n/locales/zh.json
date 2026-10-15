@@ -22,7 +22,10 @@
     "partner_type": {
       "FertilityCenter": "生殖中心",
       "SurrogacyAgency": "代孕机构",
-      "EggDonationAgency": "供卵机构"
+      "EggDonationAgency": "供卵机构",
+      "Supplier": "供应商",
+      "Agency": "服务机构",
+      "Channel": "渠道合作"
     }
   },
   "common": {
@@ -110,7 +113,19 @@
     "confirmPassword": "确认密码",
     "confirmPasswordPlaceholder": "再次输入密码",
     "passwordMismatch": "两次密码不一致",
-    "nameRequired": "请输入姓名"
+    "nameRequired": "请输入姓名",
+    "templateLabel": "行业模板",
+    "templateHint": "模板只在初始化时应用，之后可在「系统管理」中修改服务项目、选项和业务背景。",
+    "templates": {
+      "blank": {
+        "name": "通用",
+        "desc": "空白开始，自行添加服务项目和选项"
+      },
+      "fertility": {
+        "name": "辅助生殖",
+        "desc": "预置试管、供卵、供精、代孕等服务流程和合作伙伴类型"
+      }
+    }
   },
   "leads": {
     "title": "线索管理",
@@ -341,7 +356,7 @@
       "contactInfo": "联系方式",
       "contactInfoHint": "电话、邮箱等",
       "services": "服务范围",
-      "servicesHint": "用逗号或顿号分隔，如：赴美试管、代孕"
+      "servicesHint": "用逗号或顿号分隔，如：基础套餐、高级套餐"
     },
     "detail": {
       "info": "伙伴资料",
@@ -427,7 +442,10 @@
       "timezone": "时区",
       "timezoneHint": "影响系统中所有时间的显示方式",
       "save": "保存设置",
-      "saved": "已保存"
+      "saved": "已保存",
+      "industryContext": "业务背景",
+      "industryContextPlaceholder": "例如：留学咨询机构，客户多为高中生家长，决策周期 1–3 个月",
+      "industryContextHint": "简要描述你的行业、客户和业务特点，AI 分析、AI 助手和 MCP 会参考这段内容。"
     },
     "features": {
       "title": "功能开关",
@@ -899,7 +917,7 @@
         "adInfo": "可选字段，用于记录广告追踪信息（ip、url、账户、广告计划、广告组、广告），提交后可在线索详情页查看。",
         "response": "成功响应（201）",
         "yourApiKey": "你的 API Key",
-        "bodyExample": "{\n  \"source\": \"官网表单\",\n  \"name\": \"张三\",\n  \"contactInfo\": \"13800138000\",\n  \"intendedServices\": [\"赴美试管\"],\n  \"notes\": \"备注（可选）\",\n  \"adInfo\": {\n    \"ip\": \"1.2.3.4\",\n    \"url\": \"https://landing.example.com\",\n    \"账户\": \"百度账户A\",\n    \"广告计划\": \"试管婴儿-全国\",\n    \"广告组\": \"25-35岁女性\",\n    \"广告\": \"创意文案01\"\n  }\n}"
+        "bodyExample": "{\n  \"source\": \"官网表单\",\n  \"name\": \"张三\",\n  \"contactInfo\": \"13800138000\",\n  \"intendedServices\": [\"咨询服务\"],\n  \"notes\": \"备注（可选）\",\n  \"adInfo\": {\n    \"ip\": \"1.2.3.4\",\n    \"url\": \"https://landing.example.com\",\n    \"账户\": \"百度账户A\",\n    \"广告计划\": \"品牌词-全国\",\n    \"广告组\": \"25-35岁女性\",\n    \"广告\": \"创意文案01\"\n  }\n}"
       },
       "namePlaceholder": "如：官网表单、小程序接入",
       "prompt": {
@@ -1341,7 +1359,7 @@
         "items": [
           "发件服务使用 SendGrid，需在 Cloudflare Workers 环境变量中配置 SENDGRID_API_KEY",
           "未配置 SENDGRID_API_KEY 时，发送邮件动作静默跳过，不报错",
-          "发件人固定为 noreply@irfc.cn（辅助生殖 CRM）"
+          "发件人地址由 Worker 环境变量 EMAIL_FROM 配置"
         ]
       },
       "unmatched": {
