@@ -29,7 +29,6 @@ export default function CrmLayout() {
     { to: '/app/ai-access', label: t('nav.aiAccess') },
     { to: '/app/users', label: t('nav.users'), roles: ['admin'] },
     { to: '/app/settings', label: t('nav.settings'), roles: ['admin'] },
-    { to: '/app/docs', label: t('nav.docs') },
   ]
 
   const { data: newLeadsData } = useQuery({

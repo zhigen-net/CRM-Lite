@@ -25,7 +25,6 @@ import { aiConfigRoutes } from './crm/routes/aiConfig'
 import { aiAnalysisRoutes } from './crm/routes/aiAnalysis'
 import { aiAgentRoutes } from './crm/routes/aiAgent'
 import { workflowsRoutes, workflowsAdminRoutes } from './crm/routes/workflows'
-import { actionTemplatesAdminRoutes } from './crm/routes/actionTemplates'
 import { entitySchemaRoutes } from './crm/routes/entitySchema'
 import { recycleBinRoutes } from './crm/routes/recycleBin'
 import { apiFailuresRoutes } from './crm/routes/apiFailures'
@@ -218,7 +217,6 @@ app.route('/api', aiAgentRoutes)
 app.route('/api/auth/api-keys', apiKeysRoutes)
 app.route('/api/workflows', workflowsRoutes)
 app.route('/api/admin/workflows', workflowsAdminRoutes)
-app.route('/api/admin/action-templates', actionTemplatesAdminRoutes)
 app.route('/api/admin/entity-schema', entitySchemaRoutes)
 app.route('/api/admin/recycle-bin', recycleBinRoutes)
 app.route('/api/admin/api-failures', apiFailuresRoutes)

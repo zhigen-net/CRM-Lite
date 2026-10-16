@@ -90,7 +90,6 @@
     "products": "产品与服务",
     "users": "用户",
     "settings": "系统设置",
-    "docs": "文档",
     "logout": "退出登录",
     "profile": "个人资料",
     "language": "Language",
@@ -347,65 +346,15 @@
     "resetPwdBtn": "重置密码"
   },
   "partners": {
-    "title": "合作伙伴",
-    "count": "家",
-    "search": "搜索名称、联系人...",
-    "new": "新建合作伙伴",
-    "empty": "暂无合作伙伴",
-    "form": {
-      "name": "名称",
-      "type": "类型",
-      "contact": "联系人",
-      "contactInfo": "联系方式",
-      "contactInfoHint": "电话、邮箱等",
-      "services": "服务范围",
-      "servicesHint": "用逗号或顿号分隔，如：基础套餐、高级套餐"
-    },
-    "detail": {
-      "info": "伙伴资料",
-      "products": "产品",
-      "noProducts": "暂无产品",
-      "addProduct": "+ 添加产品",
-      "productCount": "共 {{count}} 个，来自 {{partners}} 家合作伙伴",
-      "contact": "联系人",
-      "productInfo": "产品资料"
-    },
-    "product": {
-      "add": "添加产品",
-      "edit": "编辑产品",
-      "name": "产品名称",
-      "description": "描述",
-      "price": "价格",
-      "currency": "货币",
-      "service": "关联服务"
-    },
-    "validation": {
-      "nameRequired": "请填写名称",
-      "typeRequired": "请选择类型",
-      "serviceRequired": "请选择关联服务",
-      "productNameRequired": "请填写产品名称"
-    },
-    "deleteConfirm": "确认删除「{{name}}」？"
+    "title": "合作伙伴"
   },
   "products": {
     "title": "产品与服务",
     "noServices": "暂无服务，点击右上方新建",
-    "noProducts": "暂无产品，点击右上方添加",
-    "docsLabel": "服务资料",
-    "partnerDisabled": "（已禁用）",
     "serviceForm": {
-      "steps": "服务流程（每行一个步骤）",
       "stepsPlaceholder": "初步沟通\n方案确认\n交付验收"
     },
-    "category": "分类",
-    "supplier": "供应商",
-    "categories": "分类管理",
-    "suppliers": "供应商管理",
-    "allSuppliers": "全部供应商",
-    "newSupplier": "新建供应商",
-    "search": "搜索产品名称...",
-    "allCategories": "全部分类",
-    "attachments": "产品附件"
+    "subtitle": "服务项目会出现在线索的「意向服务」和客户的服务套餐中；交付步骤会生成客户的交付进度。"
   },
   "services": {
     "title": "服务管理",
@@ -417,9 +366,6 @@
       "description": "描述",
       "price": "价格（元）",
       "steps": "服务流程（每行一个步骤）",
-      "available": "可选产品",
-      "noProducts": "暂无产品，请在{{link}}页面添加",
-      "partnersLink": "合作伙伴",
       "docs": "服务资料"
     },
     "validation": {
@@ -474,7 +420,6 @@
       "leadStatus": "线索状态",
       "contractStatus": "合同状态",
       "activityTypes": "跟进类型",
-      "partnerTypes": "合作伙伴类型",
       "valueRequired": "请填写值",
       "labelRequired": "请填写标签",
       "addOption": "+ 添加选项",
@@ -658,9 +603,6 @@
         "subtitle": "触发后依次执行以下动作",
         "empty": "暂无动作，请从下方添加",
         "pending": "此动作执行逻辑待开发，配置将被保存但暂不生效",
-        "noTemplates": "动作库暂无可用模板，请先在「动作库」Tab 中创建。",
-        "addFromLib": "从动作库添加",
-        "selectTemplate": "选择动作模板",
         "workflowName": "工作流名称（留空自动生成）",
         "types": {
           "require_activity": "要求跟进记录",
@@ -746,23 +688,6 @@
           "autoActionsDefault": "set_next_contact_date,update_lead_status",
           "autoActionsHint": "留空则只保存分析结果，不自动执行任何操作。可填：set_next_contact_date / update_lead_status / update_contract_status"
         }
-      },
-      "actionLib": {
-        "title": "动作库",
-        "subtitle": "预先定义好的动作配置，新建工作流时可直接加载，无需重复配置。",
-        "new": "+ 新建模板",
-        "empty": "暂无动作模板",
-        "templateName": "模板名称",
-        "templateNamePlaceholder": "如：发送销售通知邮件",
-        "target": "适用对象（影响可选字段）",
-        "actionType": "动作类型",
-        "pending": "待开发",
-        "cols": {
-          "name": "模板名称",
-          "type": "动作类型",
-          "status": "状态"
-        },
-        "deleteConfirm": "确认删除此模板？"
       },
       "createTitle": "新建工作流",
       "editTitle": "编辑工作流",
@@ -1159,300 +1084,6 @@
       "logout": "退出"
     }
   },
-  "docs": {
-    "title": "文档",
-    "copyBtn": "复制",
-    "copied": "已复制",
-    "nav": {
-      "workflow": "工作流自动化",
-      "api": "API 接入"
-    },
-    "sections": {
-      "intro": "概述",
-      "vars": "模板变量",
-      "actions": "动作类型",
-      "tips": "注意事项",
-      "apiOverview": "认证与概述",
-      "apiLeads": "提交线索"
-    },
-    "intro": {
-      "title": "工作流自动化",
-      "subtitle": "了解工作流的运行机制、触发方式与执行流程",
-      "body": "工作流让系统在满足特定条件时自动执行一系列动作，减少手动操作、保证业务流程一致性。你可以在「系统管理 → 工作流」中配置和启用工作流。",
-      "flowTitle": "执行流程",
-      "steps": {
-        "trigger": {
-          "title": "触发",
-          "desc": "新建实体，或字段变更为指定值"
-        },
-        "match": {
-          "title": "匹配",
-          "desc": "查找所有启用的工作流，逐一比对触发条件"
-        },
-        "execute": {
-          "title": "执行",
-          "desc": "按动作列表顺序依次执行，前一动作结果可传递给后续动作"
-        }
-      },
-      "triggerTitle": "触发类型",
-      "triggers": {
-        "onCreate": {
-          "label": "新建时",
-          "badge": "on_create",
-          "desc": "实体（线索/客户）被创建时立即触发。适合发送欢迎通知、初始化字段默认值。"
-        },
-        "fieldChange": {
-          "label": "字段变更",
-          "badge": "field_change",
-          "desc": "指定字段变更为特定值时触发，如「状态 → 已确认」、「负责人变更 → 任意值」。支持选择「任意值」，字段发生任何变化时均触发。"
-        },
-        "scheduled": {
-          "label": "定时触发",
-          "badge": "scheduled",
-          "desc": "每天 09:00（北京时间）自动扫描全量数据，对满足条件的实体执行动作。支持：日期字段 = 今天、日期字段已过期、超过 N 天未跟进。"
-        }
-      },
-      "asyncTitle": "异步执行说明",
-      "asyncDescPre": "所有工作流动作在后台异步执行（fire-and-forget），不阻塞前端操作响应。",
-      "asyncDescPost": "类动作的数据库修改会实时写入，但前端页面需刷新后才能看到更新结果。"
-    },
-    "vars": {
-      "title": "模板变量",
-      "subtitle": "在邮件、Webhook、自动赋值等文本中动态引用实体数据和时间",
-      "syntaxTitle": "语法",
-      "basicUsageLabel": "基础用法",
-      "namespaceUsageLabel": "带命名空间（与上方等效）",
-      "unrecognizedPre": "未识别的变量名会",
-      "unrecognizedHighlight": "原样保留",
-      "unrecognizedPost": "（不替换为空），便于排查配置错误。",
-      "colVar": "变量",
-      "colDesc": "说明",
-      "colExample": "示例值",
-      "tabLead": "线索字段",
-      "tabClient": "客户字段",
-      "tabTime": "时间变量",
-      "timeNote": "时间变量基于系统设置中的时区计算（默认 Asia/Shanghai）。本周以周一为第一天，本月以自然月为准。",
-      "leadNotePost": "来自关联用户表，其余字段直接读取线索记录。",
-      "clientNotePost": "来自关联用户表。",
-      "clientNoteServicePlans": "为数组，多项时以顿号（、）连接。"
-    },
-    "varGroups": {
-      "lead": "线索字段",
-      "client": "客户字段",
-      "activity": "跟进字段",
-      "time": "时间变量"
-    },
-    "varDescs": {
-      "lead": {
-        "name": "线索姓名",
-        "contactInfo": "联系方式",
-        "source": "来源渠道",
-        "status": "当前状态",
-        "intendedServices": "意向服务（多项时以顿号分隔）",
-        "lostReason": "丢失原因",
-        "nextContactDate": "下次联系时间",
-        "notes": "备注",
-        "assignedToName": "负责人姓名",
-        "assignedToEmail": "负责人邮箱",
-        "createdAt": "创建时间"
-      },
-      "client": {
-        "name": "客户姓名",
-        "phone": "电话",
-        "email": "邮箱",
-        "contractStatus": "合同状态",
-        "servicePlans": "服务套餐（多项时以顿号分隔）",
-        "assignedSalesName": "负责销售姓名",
-        "assignedSalesEmail": "负责销售邮箱",
-        "createdAt": "创建时间"
-      },
-      "activity": {
-        "activityType": "跟进类型",
-        "description": "跟进内容",
-        "activityDate": "跟进时间",
-        "nextContactDate": "下次联系时间",
-        "recorderName": "记录人姓名",
-        "recorderEmail": "记录人邮箱",
-        "leadName": "关联线索名",
-        "clientName": "关联客户名"
-      },
-      "time": {
-        "now": "当前时间（精确到分钟）",
-        "today": "今天日期 YYYY-MM-DD",
-        "tomorrow": "明天日期",
-        "yesterday": "昨天日期",
-        "weekStart": "本周一日期",
-        "weekEnd": "本周日日期",
-        "monthStart": "本月第一天",
-        "monthEnd": "本月最后一天"
-      }
-    },
-    "actionsSection": {
-      "title": "动作类型",
-      "subtitle": "工作流触发后可执行的五种动作及配置说明",
-      "configExampleLabel": "配置示例",
-      "notesLabel": "注意"
-    },
-    "actions": {
-      "set_field": {
-        "label": "自动赋值字段",
-        "desc": "满足触发条件时，自动将某个字段设置为指定值。字段值支持模板变量。",
-        "example": "触发：线索状态变为「已确认」\n字段：下次联系日期\n值：{{tomorrow}}",
-        "notes": [
-          "赋值按动作列表顺序依次执行，前一个动作的结果可被后续动作的模板变量读取",
-          "字段值中可以使用模板变量，如 {{today}}、{{name}} 等"
-        ]
-      },
-      "send_email": {
-        "label": "发送邮件",
-        "desc": "触发时向指定邮箱发送通知邮件。收件人、主题、正文均支持模板变量。",
-        "example": "收件人：{{assignedToEmail}}\n主题：新线索提醒：{{name}}\n正文：你好，\n\n线索 {{name}}（{{contactInfo}}）已分配给你。\n来源：{{source}}\n意向服务：{{intendedServices}}\n\n请在 {{tomorrow}} 前完成首次跟进。",
-        "notes": [
-          "邮件通过 SendGrid 发送，需在 Cloudflare Workers 环境变量中配置 SENDGRID_API_KEY",
-          "收件人支持写死邮箱或使用 {{assignedToEmail}} / {{assignedSalesEmail}} 动态获取",
-          "正文为纯文本格式，换行会被保留"
-        ]
-      },
-      "webhook": {
-        "label": "Webhook 通知",
-        "desc": "触发时向外部系统发送 HTTP 请求，URL 和 Body 均支持模板变量。",
-        "example": "URL：https://hooks.example.com/crm\n方法：POST\nBody：{\n  \"event\": \"lead_confirmed\",\n  \"name\": \"{{name}}\",\n  \"phone\": \"{{contactInfo}}\",\n  \"assignee\": \"{{assignedToName}}\",\n  \"date\": \"{{today}}\"\n}",
-        "notes": [
-          "Body 应为合法 JSON，字符串值中可嵌入 {{变量}}",
-          "请求带 Content-Type: application/json 请求头",
-          "GET 请求不发送 Body"
-        ]
-      },
-      "require_activity": {
-        "label": "要求跟进记录",
-        "desc": "在前端拦截用户操作，要求先添加跟进记录才能完成状态变更。",
-        "example": "触发：线索状态变为「丢失」\n要求填写原因：是\n预设选项：客户无意向、价格不合适、已选其他机构",
-        "notes": [
-          "仅在前端生效，后端 API 不做校验",
-          "预设选项用英文逗号分隔"
-        ]
-      },
-      "require_fields": {
-        "label": "强制填写字段",
-        "desc": "要求用户在完成操作前必须填写指定字段，字段为空时无法继续。",
-        "example": "触发：线索状态变为「已确认」\n必填字段：下次联系日期、意向服务",
-        "notes": [
-          "仅在前端生效，后端 API 不做校验"
-        ]
-      }
-    },
-    "tipsSection": {
-      "title": "注意事项",
-      "subtitle": "使用工作流时需要了解的边界行为与安全说明"
-    },
-    "tips": {
-      "actionOrder": {
-        "title": "动作执行顺序",
-        "items": [
-          "同一工作流内的动作按列表顺序串行执行",
-          "set_field 执行后，新值立刻可被后续动作的模板变量读取",
-          "一个动作失败不会阻止后续动作执行（每个动作独立 try-catch）"
-        ]
-      },
-      "emailConfig": {
-        "title": "邮件发送配置",
-        "items": [
-          "发件服务使用 SendGrid，需在 Cloudflare Workers 环境变量中配置 SENDGRID_API_KEY",
-          "未配置 SENDGRID_API_KEY 时，发送邮件动作静默跳过，不报错",
-          "发件人地址由 Worker 环境变量 EMAIL_FROM 配置"
-        ]
-      },
-      "unmatched": {
-        "title": "变量未匹配时的行为",
-        "items": [
-          "使用了不存在的变量名（如 {{xyz}}），系统会原样保留 {{xyz}}，不替换为空字符串",
-          "这样便于排查配置错误，避免静默地发出含空白的错误通知",
-          "字段值为 null 时，该变量不会出现在上下文中，引用它同样会原样保留"
-        ]
-      },
-      "timing": {
-        "title": "触发时机与前端刷新",
-        "items": [
-          "工作流在后台异步执行（fire-and-forget），前端操作不会等待工作流完成",
-          "set_field 写入数据库后，前端页面需手动刷新才能看到最新值",
-          "要求跟进（require_activity）和强制填写（require_fields）仅在前端拦截，后端 API 不校验"
-        ]
-      },
-      "webhookSecurity": {
-        "title": "Webhook 安全",
-        "items": [
-          "Webhook URL 支持模板变量，请确保 URL 来自可信来源，避免 SSRF 风险",
-          "暂不支持请求签名或 HMAC 验证，接收端建议自行校验来源 IP 或添加 token 参数",
-          "Body 中的变量插值发生在发送前，敏感数据（如密码）不应通过变量传递"
-        ]
-      }
-    },
-    "api": {
-      "overview": {
-        "title": "API 接入 — 认证与概述",
-        "subtitle": "通过 REST API 将外部系统（落地页、广告平台等）的线索自动录入 CRM",
-        "authTitle": "认证方式",
-        "authDesc": "所有 API 请求需在请求头中携带",
-        "authDescPost": "进行身份验证。",
-        "keyNote": "API Key 由管理员在「系统管理 → API 密钥」中创建和管理。Key 以",
-        "keyNotePost": "开头，请妥善保管，不要泄露到前端代码或公开仓库。",
-        "endpointsTitle": "接口列表",
-        "submitLeadsLabel": "提交线索",
-        "errorsTitle": "错误码说明",
-        "autoAssignTitle": "自动分配",
-        "autoAssignDesc": "通过 API 提交的线索会自动进入分配队列，根据「系统管理 → 分配规则」中配置的规则自动分配给合适的销售人员。"
-      },
-      "errorCodes": {
-        "401": "缺少或无效的 X-API-Key",
-        "400": "请求参数校验失败，message 字段说明具体原因",
-        "500": "服务器内部错误"
-      },
-      "leads": {
-        "title": "提交线索",
-        "subtitle": "将落地页或广告平台收集的客户信息提交到 CRM",
-        "headerNote": "Content-Type: application/json · 需携带 X-API-Key 请求头",
-        "reqFieldsTitle": "请求字段",
-        "cols": {
-          "field": "字段",
-          "type": "类型",
-          "required": "必填",
-          "desc": "说明"
-        },
-        "requiredLabel": "必填",
-        "optionalLabel": "可选",
-        "adInfoTitle": "adInfo 广告字段说明",
-        "adInfoCols": {
-          "field": "字段名",
-          "desc": "说明"
-        },
-        "adInfoNote": "所有 adInfo 子字段均为可选。提交后可在线索详情页的「广告信息」卡片中查看。",
-        "reqExampleLabel": "请求示例",
-        "successLabel": "成功响应（201）",
-        "fallbackTitle": "意向服务兜底规则",
-        "fallbackItems": [
-          "系统会对照服务列表校验 intendedServices 中的每一项",
-          "未收录的服务名自动替换为「其他」，并将原始名称追加到备注中",
-          "若提交了系统未配置的「其他」服务，请先在「系统管理 → 服务管理」中添加对应服务项"
-        ],
-        "fields": {
-          "source": "线索来源渠道，如「百度」、「抖音」",
-          "name": "线索姓名",
-          "contactInfo": "联系方式（手机号 / 微信 / 邮箱等）",
-          "intendedServices": "意向服务列表，至少一项。系统未收录的服务会兜底替换为「其他」并记入备注",
-          "notes": "备注信息（可选）",
-          "adInfo": "广告追踪信息（可选），详见下方广告字段说明"
-        },
-        "adInfoFields": {
-          "ip": "用户 IP 地址",
-          "url": "落地页或广告链接",
-          "account": "广告账户名称",
-          "plan": "广告计划名称",
-          "group": "广告组名称",
-          "ad": "广告创意名称"
-        }
-      }
-    }
-  },
   "fileManager": {
     "loading": "加载中...",
     "empty": "暂无文件",
@@ -1725,5 +1356,227 @@
       "visits": "访问次数",
       "visitsValue": "{{visits}} 次访问，浏览 {{pages}} 页"
     }
+  },
+  "workflowHelp": {
+    "sections": {
+      "intro": "概述",
+      "vars": "模板变量",
+      "actions": "动作类型",
+      "tips": "注意事项"
+    },
+    "intro": {
+      "title": "工作流自动化",
+      "subtitle": "了解工作流的运行机制、触发方式与执行流程",
+      "body": "工作流让系统在满足特定条件时自动执行一系列动作，减少手动操作、保证业务流程一致性。你可以在「系统设置 → AI 与自动化」中配置和启用工作流。",
+      "flowTitle": "执行流程",
+      "steps": {
+        "trigger": {
+          "title": "触发",
+          "desc": "新建实体，或字段变更为指定值"
+        },
+        "match": {
+          "title": "匹配",
+          "desc": "查找所有启用的工作流，逐一比对触发条件"
+        },
+        "execute": {
+          "title": "执行",
+          "desc": "按动作列表顺序依次执行，前一动作结果可传递给后续动作"
+        }
+      },
+      "triggerTitle": "触发类型",
+      "triggers": {
+        "onCreate": {
+          "label": "新建时",
+          "badge": "on_create",
+          "desc": "实体（线索/客户）被创建时立即触发。适合发送欢迎通知、初始化字段默认值。"
+        },
+        "fieldChange": {
+          "label": "字段变更",
+          "badge": "field_change",
+          "desc": "指定字段变更为特定值时触发，如「状态 → 已确认」、「负责人变更 → 任意值」。支持选择「任意值」，字段发生任何变化时均触发。"
+        },
+        "scheduled": {
+          "label": "定时触发",
+          "badge": "scheduled",
+          "desc": "每天 09:00（北京时间）自动扫描全量数据，对满足条件的实体执行动作。支持：日期字段 = 今天、日期字段已过期、超过 N 天未跟进。"
+        }
+      },
+      "asyncTitle": "异步执行说明",
+      "asyncDescPre": "所有工作流动作在后台异步执行（fire-and-forget），不阻塞前端操作响应。",
+      "asyncDescPost": "类动作的数据库修改会实时写入，但前端页面需刷新后才能看到更新结果。"
+    },
+    "vars": {
+      "title": "模板变量",
+      "subtitle": "在邮件、Webhook、自动赋值等文本中动态引用实体数据和时间",
+      "syntaxTitle": "语法",
+      "basicUsageLabel": "基础用法",
+      "namespaceUsageLabel": "带命名空间（与上方等效）",
+      "unrecognizedPre": "未识别的变量名会",
+      "unrecognizedHighlight": "原样保留",
+      "unrecognizedPost": "（不替换为空），便于排查配置错误。",
+      "colVar": "变量",
+      "colDesc": "说明",
+      "colExample": "示例值",
+      "tabLead": "线索字段",
+      "tabClient": "客户字段",
+      "tabTime": "时间变量",
+      "timeNote": "时间变量基于系统设置中的时区计算（默认 Asia/Shanghai）。本周以周一为第一天，本月以自然月为准。",
+      "leadNotePost": "来自关联用户表，其余字段直接读取线索记录。",
+      "clientNotePost": "来自关联用户表。",
+      "clientNoteServicePlans": "为数组，多项时以顿号（、）连接。"
+    },
+    "varGroups": {
+      "lead": "线索字段",
+      "client": "客户字段",
+      "activity": "跟进字段",
+      "time": "时间变量"
+    },
+    "varDescs": {
+      "lead": {
+        "name": "线索姓名",
+        "contactInfo": "联系方式",
+        "source": "来源渠道",
+        "status": "当前状态",
+        "intendedServices": "意向服务（多项时以顿号分隔）",
+        "lostReason": "丢失原因",
+        "nextContactDate": "下次联系时间",
+        "notes": "备注",
+        "assignedToName": "负责人姓名",
+        "assignedToEmail": "负责人邮箱",
+        "createdAt": "创建时间"
+      },
+      "client": {
+        "name": "客户姓名",
+        "phone": "电话",
+        "email": "邮箱",
+        "contractStatus": "合同状态",
+        "servicePlans": "服务套餐（多项时以顿号分隔）",
+        "assignedSalesName": "负责销售姓名",
+        "assignedSalesEmail": "负责销售邮箱",
+        "createdAt": "创建时间"
+      },
+      "activity": {
+        "activityType": "跟进类型",
+        "description": "跟进内容",
+        "activityDate": "跟进时间",
+        "nextContactDate": "下次联系时间",
+        "recorderName": "记录人姓名",
+        "recorderEmail": "记录人邮箱",
+        "leadName": "关联线索名",
+        "clientName": "关联客户名"
+      },
+      "time": {
+        "now": "当前时间（精确到分钟）",
+        "today": "今天日期 YYYY-MM-DD",
+        "tomorrow": "明天日期",
+        "yesterday": "昨天日期",
+        "weekStart": "本周一日期",
+        "weekEnd": "本周日日期",
+        "monthStart": "本月第一天",
+        "monthEnd": "本月最后一天"
+      }
+    },
+    "actionsSection": {
+      "title": "动作类型",
+      "subtitle": "工作流触发后可执行的五种动作及配置说明",
+      "configExampleLabel": "配置示例",
+      "notesLabel": "注意"
+    },
+    "actions": {
+      "set_field": {
+        "label": "自动赋值字段",
+        "desc": "满足触发条件时，自动将某个字段设置为指定值。字段值支持模板变量。",
+        "example": "触发：线索状态变为「已确认」\n字段：下次联系日期\n值：{{tomorrow}}",
+        "notes": [
+          "赋值按动作列表顺序依次执行，前一个动作的结果可被后续动作的模板变量读取",
+          "字段值中可以使用模板变量，如 {{today}}、{{name}} 等"
+        ]
+      },
+      "send_email": {
+        "label": "发送邮件",
+        "desc": "触发时向指定邮箱发送通知邮件。收件人、主题、正文均支持模板变量。",
+        "example": "收件人：{{assignedToEmail}}\n主题：新线索提醒：{{name}}\n正文：你好，\n\n线索 {{name}}（{{contactInfo}}）已分配给你。\n来源：{{source}}\n意向服务：{{intendedServices}}\n\n请在 {{tomorrow}} 前完成首次跟进。",
+        "notes": [
+          "邮件通过 SendGrid 发送，需在 Cloudflare Workers 环境变量中配置 SENDGRID_API_KEY",
+          "收件人支持写死邮箱或使用 {{assignedToEmail}} / {{assignedSalesEmail}} 动态获取",
+          "正文为纯文本格式，换行会被保留"
+        ]
+      },
+      "webhook": {
+        "label": "Webhook 通知",
+        "desc": "触发时向外部系统发送 HTTP 请求，URL 和 Body 均支持模板变量。",
+        "example": "URL：https://hooks.example.com/crm\n方法：POST\nBody：{\n  \"event\": \"lead_confirmed\",\n  \"name\": \"{{name}}\",\n  \"phone\": \"{{contactInfo}}\",\n  \"assignee\": \"{{assignedToName}}\",\n  \"date\": \"{{today}}\"\n}",
+        "notes": [
+          "Body 应为合法 JSON，字符串值中可嵌入 {{变量}}",
+          "请求带 Content-Type: application/json 请求头",
+          "GET 请求不发送 Body"
+        ]
+      },
+      "require_activity": {
+        "label": "要求跟进记录",
+        "desc": "在前端拦截用户操作，要求先添加跟进记录才能完成状态变更。",
+        "example": "触发：线索状态变为「丢失」\n要求填写原因：是\n预设选项：客户无意向、价格不合适、已选其他机构",
+        "notes": [
+          "仅在前端生效，后端 API 不做校验",
+          "预设选项用英文逗号分隔"
+        ]
+      },
+      "require_fields": {
+        "label": "强制填写字段",
+        "desc": "要求用户在完成操作前必须填写指定字段，字段为空时无法继续。",
+        "example": "触发：线索状态变为「已确认」\n必填字段：下次联系日期、意向服务",
+        "notes": [
+          "仅在前端生效，后端 API 不做校验"
+        ]
+      }
+    },
+    "tipsSection": {
+      "title": "注意事项",
+      "subtitle": "使用工作流时需要了解的边界行为与安全说明"
+    },
+    "tips": {
+      "actionOrder": {
+        "title": "动作执行顺序",
+        "items": [
+          "同一工作流内的动作按列表顺序串行执行",
+          "set_field 执行后，新值立刻可被后续动作的模板变量读取",
+          "一个动作失败不会阻止后续动作执行（每个动作独立 try-catch）"
+        ]
+      },
+      "emailConfig": {
+        "title": "邮件发送配置",
+        "items": [
+          "发件服务使用 SendGrid，需在 Cloudflare Workers 环境变量中配置 SENDGRID_API_KEY",
+          "未配置 SENDGRID_API_KEY 时，发送邮件动作静默跳过，不报错",
+          "发件人地址由 Worker 环境变量 EMAIL_FROM 配置"
+        ]
+      },
+      "unmatched": {
+        "title": "变量未匹配时的行为",
+        "items": [
+          "使用了不存在的变量名（如 {{xyz}}），系统会原样保留 {{xyz}}，不替换为空字符串",
+          "这样便于排查配置错误，避免静默地发出含空白的错误通知",
+          "字段值为 null 时，该变量不会出现在上下文中，引用它同样会原样保留"
+        ]
+      },
+      "timing": {
+        "title": "触发时机与前端刷新",
+        "items": [
+          "工作流在后台异步执行（fire-and-forget），前端操作不会等待工作流完成",
+          "set_field 写入数据库后，前端页面需手动刷新才能看到最新值",
+          "要求跟进（require_activity）和强制填写（require_fields）仅在前端拦截，后端 API 不校验"
+        ]
+      },
+      "webhookSecurity": {
+        "title": "Webhook 安全",
+        "items": [
+          "Webhook URL 支持模板变量，请确保 URL 来自可信来源，避免 SSRF 风险",
+          "暂不支持请求签名或 HMAC 验证，接收端建议自行校验来源 IP 或添加 token 参数",
+          "Body 中的变量插值发生在发送前，敏感数据（如密码）不应通过变量传递"
+        ]
+      }
+    },
+    "title": "工作流使用说明",
+    "open": "使用说明"
   }
 }
