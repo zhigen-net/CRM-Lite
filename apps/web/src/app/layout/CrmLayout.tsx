@@ -15,20 +15,21 @@ export default function CrmLayout() {
   const navigate = useNavigate()
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
-  const navItems = [
+  // 主导航按 访客 → 线索 → 客户 的流程排列；roles 为空表示所有角色可见
+  const navItems: { to: string; label: string; roles?: string[] }[] = [
+    { to: '/app/analytics', label: t('nav.analytics'), roles: ['admin', 'operations'] },
     { to: '/app/leads', label: t('nav.leads') },
     { to: '/app/clients', label: t('nav.clients') },
     { to: '/app/activities', label: t('nav.activities') },
     { to: '/app/products', label: t('nav.products'), roles: ['admin', 'operations'] },
-    // 访客统计：管理员、运营
-    { to: '/app/analytics', label: t('nav.analytics'), roles: ['admin', 'operations'] },
-    // 所有角色可用：用户通过 AI Agent（MCP）或外部系统接入 CRM
-    { to: '/app/ai-access', label: t('nav.aiAccess') },
   ]
 
-  const adminNavItems = [
-    { to: '/app/users', label: t('nav.users') },
-    { to: '/app/settings', label: t('nav.settings') },
+  // 「设置」分组：AI 接入所有角色可用（用户通过 AI Agent / MCP 或外部系统接入）
+  const settingsItems: { to: string; label: string; roles?: string[] }[] = [
+    { to: '/app/ai-access', label: t('nav.aiAccess') },
+    { to: '/app/users', label: t('nav.users'), roles: ['admin'] },
+    { to: '/app/settings', label: t('nav.settings'), roles: ['admin'] },
+    { to: '/app/docs', label: t('nav.docs') },
   ]
 
   const { data: newLeadsData } = useQuery({
@@ -62,14 +63,12 @@ export default function CrmLayout() {
     if (publicSettings?.timezone) setAppTimezone(publicSettings.timezone)
   }, [publicSettings?.timezone])
 
-  const docsItem = { to: '/app/docs', label: t('nav.docs') }
-  const filteredNavItems = navItems.filter(
-    (item) => !item.roles || item.roles.includes(user?.role ?? ''),
-  )
-  const allNavItems =
-    user?.role === 'admin'
-      ? [...filteredNavItems, ...adminNavItems, docsItem]
-      : [...filteredNavItems, docsItem]
+  const visible = (items: { to: string; label: string; roles?: string[] }[]) =>
+    items.filter((item) => !item.roles || item.roles.includes(user?.role ?? ''))
+  const navGroups = [
+    { key: 'main', label: null, items: visible(navItems) },
+    { key: 'settings', label: t('nav.groupSettings'), items: visible(settingsItems) },
+  ]
 
   const UserMenu = ({ onNavClick }: { onNavClick?: (() => void) | undefined }) => {
     const [open, setOpen] = useState(false)
@@ -141,28 +140,33 @@ export default function CrmLayout() {
       <div className="flex h-14 items-center px-4 border-b">
         <span className="font-bold text-gray-900">{systemName}</span>
       </div>
-      <nav className="flex-1 overflow-y-auto p-3 space-y-0.5">
-        {allNavItems.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            onClick={onNavClick}
-            className={({ isActive }) =>
-              cn(
-                'flex items-center justify-between rounded-md px-3 py-2.5 text-sm font-medium transition-colors',
-                isActive
-                  ? 'bg-primary-50 text-primary-700'
-                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900',
-              )
-            }
-          >
-            {item.label}
-            {item.to === '/app/leads' && newLeadsData != null && newLeadsData > 0 && (
-              <span className="ml-1.5 flex-shrink-0 rounded-full bg-red-400 text-white min-w-[14px] h-3.5 flex items-center justify-center px-1" style={{ fontSize: '9px', lineHeight: 1 }}>
-                {newLeadsData > 99 ? '99+' : newLeadsData}
-              </span>
-            )}
-          </NavLink>
+      <nav className="flex-1 overflow-y-auto p-3">
+        {navGroups.map((group) => (
+          <div key={group.key} className={group.label ? 'mt-4 space-y-0.5' : 'space-y-0.5'}>
+            {group.label && <p className="px-3 pb-1 text-xs font-medium text-gray-400">{group.label}</p>}
+            {group.items.map((item) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                onClick={onNavClick}
+                className={({ isActive }) =>
+                  cn(
+                    'flex items-center justify-between rounded-md px-3 py-2.5 text-sm font-medium transition-colors',
+                    isActive
+                      ? 'bg-primary-50 text-primary-700'
+                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900',
+                  )
+                }
+              >
+                {item.label}
+                {item.to === '/app/leads' && newLeadsData != null && newLeadsData > 0 && (
+                  <span className="ml-1.5 flex-shrink-0 rounded-full bg-red-400 text-white min-w-[14px] h-3.5 flex items-center justify-center px-1" style={{ fontSize: '9px', lineHeight: 1 }}>
+                    {newLeadsData > 99 ? '99+' : newLeadsData}
+                  </span>
+                )}
+              </NavLink>
+            ))}
+          </div>
         ))}
       </nav>
       <div className="border-t p-2">

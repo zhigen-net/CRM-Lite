@@ -85,17 +85,18 @@
   },
   "nav": {
     "leads": "Leads",
-    "clients": "Clients",
-    "activities": "Activities",
-    "products": "Products",
+    "clients": "Customers",
+    "activities": "Follow-ups",
+    "products": "Products & services",
     "users": "Users",
-    "settings": "Settings",
+    "settings": "System settings",
     "docs": "Docs",
     "logout": "Logout",
     "profile": "Profile",
     "language": "语言",
     "aiAccess": "AI Access",
-    "analytics": "Analytics"
+    "analytics": "Visitors",
+    "groupSettings": "Settings"
   },
   "auth": {
     "title": "CRM System",
@@ -199,7 +200,7 @@
     }
   },
   "clients": {
-    "title": "Clients",
+    "title": "Customers",
     "count": "clients",
     "search": "Search name, email, phone...",
     "noMatch": "No matching clients",
@@ -239,7 +240,7 @@
     "noContact": "No contact info"
   },
   "activities": {
-    "title": "Activities",
+    "title": "Follow-ups",
     "count": "records",
     "search": "Search content, client/lead, owner...",
     "filterLabel": "Filter",
@@ -387,7 +388,7 @@
     "deleteConfirm": "Delete \"{{name}}\"?"
   },
   "products": {
-    "title": "Product Library",
+    "title": "Products & services",
     "noServices": "No services yet. Click the button above to create one.",
     "noProducts": "No products yet. Click the button above to add one.",
     "docsLabel": "Service Documents",
@@ -427,16 +428,13 @@
     "deleteConfirm": "Delete \"{{name}}\"?"
   },
   "settings": {
-    "title": "Settings",
+    "title": "System settings",
     "subtitle": "Configure system information and parameters",
     "tabs": {
       "basic": "General",
-      "ai": "AI",
       "options": "Options",
-      "workflow": "Workflows",
-      "trash": "Trash",
-      "apiFailures": "API Failures",
-      "auditLog": "Audit Log"
+      "automation": "AI & automation",
+      "trash": "Trash"
     },
     "basic": {
       "title": "Basic Info",
@@ -999,7 +997,7 @@
           "mcp": "MCP (AI works in the CRM)",
           "push": "Push leads"
         },
-        "intro": "Add the configuration below to an MCP-capable AI tool such as Claude Code, Cursor or Claude Desktop, and the AI can read and update CRM data within this key's permissions. Every call is recorded in Settings → Audit Log.",
+        "intro": "Add the configuration below to an MCP-capable AI tool such as Claude Code, Cursor or Claude Desktop, and the AI can read and update CRM data within this key's permissions. Every call is recorded in the Audit log at the bottom of this page (visible to admins).",
         "url": "MCP URL",
         "claudeCode": "Claude Code command",
         "json": "JSON config (Cursor, Claude Desktop, etc.)",
@@ -1482,7 +1480,6 @@
   "aiAccess": {
     "title": "AI Access",
     "subtitle": "Connect AI agents (Claude Code, Cursor, etc.) or external systems to the CRM. Keys act as you and never exceed your role.",
-    "auditLink": "View audit log →",
     "sections": {
       "mcp": {
         "title": "AI tools (MCP)",
@@ -1534,7 +1531,7 @@
     }
   },
   "analytics": {
-    "title": "Visitor Analytics",
+    "title": "Visitors",
     "subtitle": "Where website visitors come from, what they view and do, and whether they have become leads.",
     "tabs": {
       "visitors": "Visitors",

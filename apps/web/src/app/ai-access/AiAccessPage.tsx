@@ -15,6 +15,8 @@ import { Modal } from '@/shared/components/Modal'
 import { formatDate } from '@/shared/utils/format'
 import { ApiIntegrationDialog } from './ApiIntegrationDialog'
 import { ApiScopePicker, ScopeSummary, SCOPE_PRESETS, type ApiScope } from './ApiScopePicker'
+import { ApiFailuresPanel } from './ApiFailuresPanel'
+import { AuditLogPanel } from './AuditLogPanel'
 
 const apiKeySchema = z.object({
   name: z.string().min(1).max(50),
@@ -164,9 +166,6 @@ export default function AiAccessPage() {
             <h1 className="text-lg sm:text-xl font-semibold text-gray-900">{t('aiAccess.title')}</h1>
             <p className="mt-0.5 text-sm text-gray-500">{t('aiAccess.subtitle')}</p>
           </div>
-          {user?.role === 'admin' && (
-            <Link to="/app/settings?tab=auditLog" className="text-sm text-primary-600 hover:underline">{t('aiAccess.auditLink')}</Link>
-          )}
         </div>
 
         <div className="flex flex-col gap-3 sm:flex-row">
@@ -269,6 +268,9 @@ export default function AiAccessPage() {
             </details>
           </>
         )}
+
+        {/* 管理员：MCP / API Key 的调用记录；推送线索失败的请求 */}
+        {user?.role === 'admin' && (section === 'mcp' ? <AuditLogPanel /> : <ApiFailuresPanel />)}
       </div>
 
       {integration && (
