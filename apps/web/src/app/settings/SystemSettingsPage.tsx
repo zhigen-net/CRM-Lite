@@ -16,7 +16,6 @@ import type { Team } from '@/shared/types'
 import type { OptionItem, ActivityMeta, ActivityMetaField, MilestoneMapping } from '@/shared/hooks/useOptions'
 import { useOptions, parseActivityMeta } from '@/shared/hooks/useOptions'
 import type { Workflow } from '@/shared/hooks/useWorkflows'
-import { AuditLogPanel } from './AuditLogPanel'
 
 // ─── 选项配置相关常量和组件 ───────────────────────────────────────────────────
 
@@ -1798,159 +1797,6 @@ const COMMON_TIMEZONE_VALUES = [
   'UTC',
 ]
 
-// ─── API 失败记录面板 ─────────────────────────────────────────────────────────
-
-interface ApiFailure {
-  id: string
-  requestBody: string
-  errorMessage: string | null
-  apiKeyPrefix: string | null
-  createdAt: string
-  resolvedAt: string | null
-  resolution: 'created_lead' | 'dismissed' | null
-}
-
-interface ApiFailureRequestBody {
-  name?: string
-  contactInfo?: string
-  source?: string
-  intendedServices?: string[]
-  [key: string]: unknown
-}
-
-function ApiFailuresPanel() {
-  const { t } = useTranslation()
-  const navigate = useNavigate()
-  const queryClient = useQueryClient()
-
-  const { data, isLoading } = useQuery({
-    queryKey: ['admin-api-failures'],
-    queryFn: () =>
-      crmApi.get<{ data: ApiFailure[] }>('/admin/api-failures').then((r) => r.data.data),
-  })
-
-  const createLeadMutation = useMutation({
-    mutationFn: (id: string) =>
-      crmApi.post<{ data: { leadId: string } }>(`/admin/api-failures/${id}/create-lead`, {}),
-    onSuccess: () => {
-      navigate('/app/leads')
-    },
-  })
-
-  const dismissMutation = useMutation({
-    mutationFn: (id: string) =>
-      crmApi.post(`/admin/api-failures/${id}/dismiss`, {}),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-api-failures'] })
-    },
-  })
-
-  const parseBody = (raw: string): ApiFailureRequestBody => {
-    try {
-      return JSON.parse(raw) as ApiFailureRequestBody
-    } catch {
-      return {}
-    }
-  }
-
-  const formatContactInfo = (body: ApiFailureRequestBody): string => {
-    const parts: string[] = []
-    if (body.name) parts.push(body.name)
-    if (body.contactInfo) parts.push(body.contactInfo)
-    if (body.source) parts.push(body.source)
-    if (Array.isArray(body.intendedServices) && body.intendedServices.length > 0) {
-      parts.push(`[${body.intendedServices.join('、')}]`)
-    }
-    return parts.join(' · ') || '—'
-  }
-
-  const items = data ?? []
-
-  return (
-    <div className="space-y-4">
-      <div className="rounded-lg border bg-white overflow-hidden">
-        <div className="flex items-center justify-between px-4 py-3 border-b bg-gray-50">
-          <div>
-            <h2 className="font-semibold text-gray-800 text-sm">{t('settings.apiFailures.title')}</h2>
-            <p className="text-xs text-gray-400 mt-0.5">{t('settings.apiFailures.subtitle')}</p>
-          </div>
-          <span className="text-xs text-gray-400">{items.length} {t('common.items')}</span>
-        </div>
-
-        {isLoading ? (
-          <div className="py-10 text-center text-sm text-gray-400">{t('common.loading')}</div>
-        ) : items.length === 0 ? (
-          <div className="py-10 text-center text-sm text-gray-400">{t('settings.apiFailures.empty')}</div>
-        ) : (
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b">
-              <tr>
-                <th className="px-4 py-3 text-left font-medium text-gray-700 whitespace-nowrap">{t('settings.apiFailures.cols.time')}</th>
-                <th className="px-4 py-3 text-left font-medium text-gray-700 whitespace-nowrap">{t('settings.apiFailures.cols.keyPrefix')}</th>
-                <th className="px-4 py-3 text-left font-medium text-gray-700">{t('settings.apiFailures.cols.contact')}</th>
-                <th className="px-4 py-3 text-left font-medium text-gray-700">{t('settings.apiFailures.cols.error')}</th>
-                <th className="px-4 py-3 text-left font-medium text-gray-700 whitespace-nowrap">{t('settings.apiFailures.cols.actions')}</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {items.map((item) => {
-                const body = parseBody(item.requestBody)
-                const contactInfo = formatContactInfo(body)
-                const isCreating = createLeadMutation.isPending && createLeadMutation.variables === item.id
-                const isDismissing = dismissMutation.isPending && dismissMutation.variables === item.id
-                return (
-                  <tr key={item.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 text-gray-500 text-xs whitespace-nowrap">
-                      {formatDate(item.createdAt)}
-                    </td>
-                    <td className="px-4 py-3 text-gray-500 font-mono text-xs whitespace-nowrap">
-                      {item.apiKeyPrefix ?? '—'}
-                    </td>
-                    <td className="px-4 py-3 text-gray-700 text-xs max-w-xs">
-                      {contactInfo}
-                    </td>
-                    <td className="px-4 py-3 max-w-xs">
-                      {item.errorMessage ? (
-                        <span className="text-xs text-red-500 line-clamp-2">{item.errorMessage}</span>
-                      ) : (
-                        <span className="text-xs text-gray-400">—</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2 whitespace-nowrap">
-                        <Button
-                          size="sm"
-                          loading={isCreating}
-                          disabled={isDismissing}
-                          onClick={() => createLeadMutation.mutate(item.id)}
-                        >
-                          {t('settings.apiFailures.createLead')}
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          loading={isDismissing}
-                          disabled={isCreating}
-                          onClick={() => {
-                            if (confirm(t('settings.apiFailures.confirmDismiss')))
-                              dismissMutation.mutate(item.id)
-                          }}
-                        >
-                          {t('settings.apiFailures.dismiss')}
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        )}
-      </div>
-    </div>
-  )
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
 
 const schema = z.object({
@@ -1964,15 +1810,14 @@ type SettingsForm = z.infer<typeof schema>
 type Settings = Record<string, string>
 
 const TAB_KEYS = [
-  { key: 'basic',       labelKey: 'settings.tabs.basic' },
-  { key: 'ai',          labelKey: 'settings.tabs.ai' },
-  { key: 'options',     labelKey: 'settings.tabs.options' },
-  { key: 'policies',    labelKey: 'settings.tabs.workflow' },
-  { key: 'trash',       labelKey: 'settings.tabs.trash' },
-  { key: 'apiFailures', labelKey: 'settings.tabs.apiFailures' },
-  { key: 'auditLog',    labelKey: 'settings.tabs.auditLog' },
+  { key: 'basic',      labelKey: 'settings.tabs.basic' },
+  { key: 'options',    labelKey: 'settings.tabs.options' },
+  { key: 'automation', labelKey: 'settings.tabs.automation' },
+  { key: 'trash',      labelKey: 'settings.tabs.trash' },
 ] as const
 type TabKey = typeof TAB_KEYS[number]['key']
+// 旧链接兼容：AI 配置与工作流合并为「AI 与自动化」
+const TAB_ALIASES: Record<string, TabKey> = { ai: 'automation', policies: 'automation' }
 
 const teamSchema = z.object({
   name:   z.string().min(1),
@@ -1988,7 +1833,8 @@ export default function SystemSettingsPage() {
   const OPTION_GROUPS = OPTION_GROUPS_KEYS.map((g) => ({ ...g, label: t(g.labelKey) }))
   const TABS = TAB_KEYS.map((tab) => ({ ...tab, label: t(tab.labelKey) }))
   const [activeTab, setActiveTab] = useState<TabKey>(() => {
-    const tab = searchParams.get('tab')
+    const raw = searchParams.get('tab') ?? ''
+    const tab = TAB_ALIASES[raw] ?? raw
     return (TAB_KEYS.some((t) => t.key === tab) ? tab : 'basic') as TabKey
   })
   const [editTarget, setEditTarget] = useState<Team | null>(null)
@@ -2038,14 +1884,14 @@ export default function SystemSettingsPage() {
   const { data: aiProvidersData, refetch: refetchProviders } = useQuery({
     queryKey: ['ai-providers'],
     queryFn: () => crmApi.get<{ data: AiProvider[] }>('/admin/ai/providers').then((r) => r.data.data),
-    enabled: activeTab === 'ai',
+    enabled: activeTab === 'automation',
   })
   const aiProviders = aiProvidersData ?? []
 
   const { data: aiModelsData, refetch: refetchModels } = useQuery({
     queryKey: ['ai-models'],
     queryFn: () => crmApi.get<{ data: AiModel[] }>('/admin/ai/models').then((r) => r.data.data),
-    enabled: activeTab === 'ai',
+    enabled: activeTab === 'automation',
   })
   const aiModels = aiModelsData ?? []
 
@@ -2363,25 +2209,11 @@ export default function SystemSettingsPage() {
         </div>
       )}
 
-      {/* 工作流 */}
-      {activeTab === 'policies' && (
-        <WorkflowsPanel
-          autoAssignEnabled={data?.auto_assign_enabled !== 'false'}
-          onSettingsSaved={() => queryClient.invalidateQueries({ queryKey: ['system-settings'] })}
-        />
-      )}
-
       {/* 回收站 */}
       {activeTab === 'trash' && <RecycleBinPanel />}
 
-      {/* API 失败记录 */}
-      {activeTab === 'apiFailures' && <ApiFailuresPanel />}
-
-      {/* 审计日志 */}
-      {activeTab === 'auditLog' && <AuditLogPanel />}
-
-      {/* AI 配置 */}
-      {activeTab === 'ai' && (
+      {/* AI 与自动化：AI 配置在上，工作流在下 */}
+      {activeTab === 'automation' && (
         <div className="space-y-6">
           {/* 模型提供商 */}
           <div className="rounded-lg border bg-white overflow-hidden">
@@ -2672,6 +2504,12 @@ export default function SystemSettingsPage() {
 
           {/* AI 分析提示词 */}
           <AiPromptsPanel />
+
+          {/* 工作流 */}
+          <WorkflowsPanel
+            autoAssignEnabled={data?.auto_assign_enabled !== 'false'}
+            onSettingsSaved={() => queryClient.invalidateQueries({ queryKey: ['system-settings'] })}
+          />
         </div>
       )}
     </div>

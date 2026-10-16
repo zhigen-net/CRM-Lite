@@ -84,18 +84,19 @@
     "brand": "客路"
   },
   "nav": {
-    "leads": "线索管理",
-    "clients": "客户档案",
-    "activities": "销售活动",
-    "products": "产品库",
-    "users": "用户管理",
-    "settings": "系统管理",
+    "leads": "线索",
+    "clients": "客户",
+    "activities": "跟进记录",
+    "products": "产品与服务",
+    "users": "用户",
+    "settings": "系统设置",
     "docs": "文档",
     "logout": "退出登录",
     "profile": "个人资料",
     "language": "Language",
     "aiAccess": "AI 接入",
-    "analytics": "访客分析"
+    "analytics": "访客",
+    "groupSettings": "设置"
   },
   "auth": {
     "title": "内部管理系统",
@@ -117,7 +118,7 @@
     "passwordMismatch": "两次密码不一致",
     "nameRequired": "请输入姓名",
     "templateLabel": "行业模板",
-    "templateHint": "模板只在初始化时应用，之后可在「系统管理」中修改服务项目、选项和业务背景。",
+    "templateHint": "模板只在初始化时应用，之后可在「系统设置」中修改服务项目、选项和业务背景。",
     "templates": {
       "blank": {
         "name": "通用",
@@ -130,7 +131,7 @@
     }
   },
   "leads": {
-    "title": "线索管理",
+    "title": "线索",
     "count": "条线索",
     "new": "新建线索",
     "search": "搜索姓名、联系方式、来源、编号...",
@@ -199,7 +200,7 @@
     }
   },
   "clients": {
-    "title": "客户档案",
+    "title": "客户",
     "count": "位客户",
     "search": "搜索姓名、邮箱、电话...",
     "noMatch": "未找到匹配客户",
@@ -239,7 +240,7 @@
     "noContact": "无联系方式"
   },
   "activities": {
-    "title": "销售活动",
+    "title": "跟进记录",
     "count": "条记录",
     "search": "搜索内容、关联客户/线索、跟进人...",
     "filterLabel": "筛选",
@@ -299,7 +300,7 @@
     "followUp": "跟进："
   },
   "users": {
-    "title": "用户管理",
+    "title": "用户",
     "count": "名用户",
     "search": "搜索姓名、邮箱...",
     "new": "新建用户",
@@ -387,7 +388,7 @@
     "deleteConfirm": "确认删除「{{name}}」？"
   },
   "products": {
-    "title": "产品库",
+    "title": "产品与服务",
     "noServices": "暂无服务，点击右上方新建",
     "noProducts": "暂无产品，点击右上方添加",
     "docsLabel": "服务资料",
@@ -427,16 +428,13 @@
     "deleteConfirm": "确认删除「{{name}}」？"
   },
   "settings": {
-    "title": "系统管理",
+    "title": "系统设置",
     "subtitle": "配置系统基本信息和服务参数",
     "tabs": {
       "basic": "基本配置",
-      "ai": "AI 配置",
       "options": "选项配置",
-      "workflow": "工作流",
-      "trash": "回收站",
-      "apiFailures": "API 失败记录",
-      "auditLog": "审计日志"
+      "automation": "AI 与自动化",
+      "trash": "回收站"
     },
     "basic": {
       "title": "基本信息",
@@ -999,7 +997,7 @@
           "mcp": "MCP（AI 直接操作 CRM）",
           "push": "推送线索"
         },
-        "intro": "在 Claude Code、Cursor、Claude Desktop 等支持 MCP 的 AI 工具里添加下面的配置，AI 就能按这把密钥的权限查询和维护 CRM 数据。所有调用都记录在「系统管理 → 审计日志」。",
+        "intro": "在 Claude Code、Cursor、Claude Desktop 等支持 MCP 的 AI 工具里添加下面的配置，AI 就能按这把密钥的权限查询和维护 CRM 数据。所有调用都记录在本页下方的「审计日志」中（管理员可见）。",
         "url": "MCP 地址",
         "claudeCode": "Claude Code 命令",
         "json": "JSON 配置（Cursor、Claude Desktop 等）",
@@ -1482,7 +1480,6 @@
   "aiAccess": {
     "title": "AI 接入",
     "subtitle": "把 AI Agent（Claude Code、Cursor 等）或外部系统接入 CRM。密钥以你的身份操作，权限不超过你的角色。",
-    "auditLink": "查看审计日志 →",
     "sections": {
       "mcp": {
         "title": "AI 工具（MCP）",
@@ -1534,7 +1531,7 @@
     }
   },
   "analytics": {
-    "title": "访客分析",
+    "title": "访客",
     "subtitle": "网站访客从哪里来、看了什么、做了什么，以及是否已经留资。",
     "tabs": {
       "visitors": "访客",
