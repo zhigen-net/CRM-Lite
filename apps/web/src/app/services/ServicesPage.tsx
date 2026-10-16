@@ -215,7 +215,7 @@ export default function ServicesPage() {
             <Input label={t('services.form.name')} error={form.formState.errors.name?.message} {...form.register('name')} />
             <Textarea label={t('services.form.description')} {...form.register('description')} />
             <Input label={t('services.form.price')} type="number" {...form.register('price')} />
-            <Textarea label={t('services.form.steps')} rows={5} placeholder="初步咨询&#10;医疗评估&#10;方案制定" {...form.register('processSteps')} />
+            <Textarea label={t('services.form.steps')} rows={5} placeholder={t('products.serviceForm.stepsPlaceholder')} {...form.register('processSteps')} />
           </div>
         </Modal>
       )}

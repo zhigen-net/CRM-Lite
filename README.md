@@ -1,4 +1,6 @@
-# CRM-Lite
+# 客路 Kelu
+
+> 从访客到客户，一条路。
 
 **开源、运行在 Cloudflare 上、AI 优先的 HubSpot 替代方案**，覆盖获客到服务的全流程：
 

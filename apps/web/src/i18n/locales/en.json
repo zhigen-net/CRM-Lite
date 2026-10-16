@@ -80,7 +80,8 @@
       "showing": "{{total}} items, showing {{from}}–{{to}}"
     },
     "sep": ", ",
-    "status": "Status"
+    "status": "Status",
+    "brand": "Kelu"
   },
   "nav": {
     "leads": "Leads",
@@ -393,7 +394,7 @@
     "partnerDisabled": "(Disabled)",
     "serviceForm": {
       "steps": "Service steps (one per line)",
-      "stepsPlaceholder": "Initial consultation\nMedical evaluation\nPlan development"
+      "stepsPlaceholder": "Initial call\nProposal\nDelivery"
     },
     "category": "Category",
     "supplier": "Supplier",
@@ -1133,7 +1134,7 @@
         "uploadedAt": "Uploaded At"
       },
       "types": {
-        "MedicalReport": "Medical Report",
+        "MedicalReport": "Report",
         "Contract": "Contract",
         "PassportCopy": "Passport Copy",
         "PartnerContact": "Partner Contact"

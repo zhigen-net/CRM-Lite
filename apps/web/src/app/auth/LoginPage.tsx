@@ -18,10 +18,10 @@ export default function CrmLoginPage() {
 
   const { data: publicSettings } = useQuery({
     queryKey: ['public-settings'],
-    queryFn: () => crmApi.get<{ data: { systemName: string } }>('/public/settings').then((r) => r.data.data),
+    queryFn: () => crmApi.get<{ data: { systemName: string | null } }>('/public/settings').then((r) => r.data.data),
     staleTime: 1000 * 60 * 60,
   })
-  const systemName = publicSettings?.systemName ?? 'CRM'
+  const systemName = publicSettings?.systemName || t('common.brand')
   useEffect(() => { document.title = systemName }, [systemName])
 
   const { data: setupData, isLoading: setupLoading } = useQuery({

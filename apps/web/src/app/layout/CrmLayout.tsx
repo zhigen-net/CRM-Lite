@@ -53,10 +53,10 @@ export default function CrmLayout() {
 
   const { data: publicSettings } = useQuery({
     queryKey: ['public-settings'],
-    queryFn: () => crmApi.get<{ data: { systemName: string; timezone: string; aiAgentEnabled: boolean } }>('/public/settings').then((r) => r.data.data),
+    queryFn: () => crmApi.get<{ data: { systemName: string | null; timezone: string; aiAgentEnabled: boolean } }>('/public/settings').then((r) => r.data.data),
     staleTime: 1000 * 60 * 60,
   })
-  const systemName = publicSettings?.systemName ?? 'CRM'
+  const systemName = publicSettings?.systemName || t('common.brand')
   useEffect(() => { document.title = systemName }, [systemName])
   useEffect(() => {
     if (publicSettings?.timezone) setAppTimezone(publicSettings.timezone)
