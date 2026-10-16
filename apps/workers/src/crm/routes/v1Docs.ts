@@ -36,7 +36,7 @@ Content-Type: application/json
 - source（必填，字符串）：线索来源，如「官网表单」「百度推广」
 - name（必填，字符串）：客户姓名或称呼
 - contactInfo（必填，字符串）：电话、微信或邮箱
-- intendedServices（必填，字符串数组，至少一个）：意向服务。可选值：${services.length > 0 ? services.join('、') : `（系统暂未配置服务，填「${fallback}」）`}。不在列表中的值会被记为「${fallback}」，原值写入备注
+- intendedServices（可选，字符串数组）：意向服务。可选值：${services.length > 0 ? services.join('、') : `（系统暂未配置服务，填「${fallback}」）`}。不在列表中的值会被记为「${fallback}」，原值写入备注
 - notes（可选，字符串）：备注
 - adInfo（可选，对象）：广告追踪信息，键为 ${AD_KEYS.join('、')}；也可以把这些键直接放在顶层
 - crm_vid（可选，字符串）：网站接入访客统计后，表单里会自动多出隐藏字段 crm_vid（访客 ID）。原样传入即可在线索上看到访客的来源渠道和访问轨迹；没有时不传
@@ -81,14 +81,14 @@ export function buildOpenApi(origin: string, services: string[]) {
   const fallback = pickFallbackService(services)
   const leadInput = {
     type: 'object',
-    required: ['source', 'name', 'contactInfo', 'intendedServices'],
+    required: ['source', 'name', 'contactInfo'],
     additionalProperties: true,
     properties: {
       source: { type: 'string', minLength: 1, description: '线索来源' },
       name: { type: 'string', minLength: 1, description: '客户姓名或称呼' },
       contactInfo: { type: 'string', minLength: 1, description: '电话、微信或邮箱' },
       intendedServices: {
-        type: 'array', minItems: 1,
+        type: 'array',
         items: { type: 'string' },
         description: `意向服务，可选值：${services.length > 0 ? services.join('、') : fallback}；不在列表中的值会被记为「${fallback}」，原值写入备注`,
       },

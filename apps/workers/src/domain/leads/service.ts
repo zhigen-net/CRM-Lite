@@ -164,7 +164,6 @@ export interface CreateLeadInput {
 
 /** 新建线索：写库 → 进入自动分配队列 → 触发"新建"类工作流。返回线索 ID */
 export async function createLead(deps: Deps, actor: Actor, input: CreateLeadInput): Promise<string> {
-  if (!input.intendedServices.length) throw badRequest('请至少选择一个意向服务')
   const id = uuidv4()
 
   let teamId: string | null = null
@@ -221,7 +220,6 @@ export async function updateLead(deps: Deps, actor: Actor, id: string, patch: Up
   const byWorkflow = actor.via === 'workflow'
 
   if (patch.status !== undefined) assertValidStatus(patch.status)
-  if (patch.intendedServices !== undefined && patch.intendedServices.length === 0) throw badRequest('请至少选择一个意向服务')
   assertDate(patch.nextContactDate, '下次联系时间')
   // 只校验有变化的值：历史数据里已停用的选项，原样保存时不应报错
   if (patch.lostReason !== undefined && patch.lostReason !== lead.lost_reason) {

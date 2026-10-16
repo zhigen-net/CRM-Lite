@@ -31,7 +31,7 @@ import { useOptionGroup, toSelectOptions, getOptionColor, getOptionLabel, parseA
 import { ActivityModal } from '@/shared/components/ActivityModal'
 import type { ActivitySubmitData } from '@/shared/components/ActivityModal'
 import { AttachmentList } from '@/shared/components/AttachmentList'
-import { AiAnalysisCard } from '@/shared/components/AiAnalysisCard'
+import { AskAiButton } from '@/shared/components/AskAiButton'
 
 const editSchema = z.object({
   phone: z.string().nullable().optional(),
@@ -462,15 +462,8 @@ export default function ClientDetailPage() {
         </div>
       </div>
 
-      {/* AI 分析 */}
-      <AiAnalysisCard
-        entityType="client"
-        entityId={id!}
-        onActionExecuted={() => {
-          queryClient.invalidateQueries({ queryKey: ['client', id] })
-          queryClient.invalidateQueries({ queryKey: ['activities', 'client', id] })
-        }}
-      />
+      {/* 让 AI 分析：打开 AI 助手 */}
+      <AskAiButton prompt={t('ai.ask.clientPrompt', { name: client.name, id })} />
 
       {/* 编辑弹窗 */}
       {showEdit && (

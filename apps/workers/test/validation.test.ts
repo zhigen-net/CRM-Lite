@@ -76,11 +76,11 @@ describe('日期格式', () => {
 })
 
 describe('外部线索整理：兜底服务本身不写「系统未收录」备注', () => {
-  it('系统没有配置「其他」时，不传或传「其他」都不产生提示', async () => {
+  it('系统没有配置「其他」时，不传意向服务为空、传「其他」不产生提示', async () => {
     const services = await env.DB.prepare("SELECT COUNT(*) AS n FROM services WHERE deleted_at IS NULL AND name IN ('其他','其它','Other','Others')").first<{ n: number }>()
     expect(services?.n).toBe(0)
     const none = await normalizeExternalLead(env.DB, { source: 'x', name: 'x', contactInfo: 'x' })
-    expect(none.intendedServices).toEqual(['其他'])
+    expect(none.intendedServices).toEqual([])
     expect(none.notes).toBeNull()
     const explicit = await normalizeExternalLead(env.DB, { source: 'x', name: 'x', contactInfo: 'x', intendedServices: ['其他', '火星旅行'] })
     expect(explicit.notes).toBe('意向服务（系统未收录）：火星旅行')

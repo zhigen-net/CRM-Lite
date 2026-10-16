@@ -1183,27 +1183,31 @@ export default function SystemSettingsPage() {
         <div className="max-w-2xl mt-4">
           <div className="rounded-lg border bg-white p-4 sm:p-6">
             <h2 className="text-sm font-semibold text-gray-700 mb-3">{t('settings.features.title')}</h2>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-700">{t('settings.features.aiAgent')}</p>
-                <p className="text-xs text-gray-400 mt-0.5">{t('settings.features.aiAgentHint')}</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  const next = data?.ai_agent_enabled !== 'false' ? 'false' : 'true'
-                  crmApi.put('/admin/settings', { ai_agent_enabled: next }).then(() =>
-                    queryClient.invalidateQueries({ queryKey: ['system-settings'] })
-                  )
-                }}
-                className={`relative inline-flex h-6 w-11 cursor-pointer items-center rounded-full transition-colors focus:outline-none ${
-                  data?.ai_agent_enabled !== 'false' ? 'bg-primary-600' : 'bg-gray-200'
-                }`}
-              >
-                <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
-                  data?.ai_agent_enabled !== 'false' ? 'translate-x-6' : 'translate-x-1'
-                }`} />
-              </button>
+            <div className="divide-y">
+              {([
+                // AI 助手默认开启；客户门户默认关闭
+                { key: 'ai_agent_enabled', on: data?.ai_agent_enabled !== 'false', label: 'aiAgent' },
+                { key: 'portal_enabled', on: data?.portal_enabled === 'true', label: 'portal' },
+              ] as const).map((f) => (
+                <div key={f.key} className="flex items-center justify-between gap-4 py-3 first:pt-0 last:pb-0">
+                  <div>
+                    <p className="text-sm font-medium text-gray-700">{t(`settings.features.${f.label}`)}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">{t(`settings.features.${f.label}Hint`)}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      crmApi.put('/admin/settings', { [f.key]: f.on ? 'false' : 'true' }).then(() => {
+                        queryClient.invalidateQueries({ queryKey: ['system-settings'] })
+                        queryClient.invalidateQueries({ queryKey: ['public-settings'] })
+                      })
+                    }}
+                    className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer items-center rounded-full transition-colors focus:outline-none ${f.on ? 'bg-primary-600' : 'bg-gray-200'}`}
+                  >
+                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${f.on ? 'translate-x-6' : 'translate-x-1'}`} />
+                  </button>
+                </div>
+              ))}
             </div>
           </div>
           <div className="flex items-center gap-3 mt-4">
@@ -1627,182 +1631,11 @@ export default function SystemSettingsPage() {
             )}
           </div>
 
-          {/* AI 分析提示词 */}
-          <AiPromptsPanel />
-
           {/* 工作流 */}
           <WorkflowsPanel
             autoAssignEnabled={data?.auto_assign_enabled !== 'false'}
             onSettingsSaved={() => queryClient.invalidateQueries({ queryKey: ['system-settings'] })}
           />
-        </div>
-      )}
-    </div>
-  )
-}
-
-// ─── AI 分析提示词配置面板 ────────────────────────────────────────────────────
-
-interface AiPrompt {
-  id: string
-  key: string
-  name: string
-  systemPrompt: string
-  userPromptTemplate: string
-  modelId: string | null
-  isActive: number
-}
-
-const PROMPT_VARS: Record<string, { key: string; descKey: string }[]> = {
-  lead_analysis: [
-    { key: 'today',            descKey: 'settings.prompts.vars.today' },
-    { key: 'name',             descKey: 'settings.prompts.vars.name' },
-    { key: 'source',           descKey: 'settings.prompts.vars.source' },
-    { key: 'status',           descKey: 'settings.prompts.vars.status' },
-    { key: 'intended_services',descKey: 'settings.prompts.vars.intendedServices' },
-    { key: 'next_contact_date',descKey: 'settings.prompts.vars.nextContactDate' },
-    { key: 'assigned_to_name', descKey: 'settings.prompts.vars.assignedName' },
-    { key: 'activities',       descKey: 'settings.prompts.vars.activities' },
-    { key: 'activity_types',   descKey: 'settings.prompts.vars.activityTypes' },
-  ],
-  client_analysis: [
-    { key: 'today',               descKey: 'settings.prompts.vars.today' },
-    { key: 'name',                descKey: 'settings.prompts.vars.name' },
-    { key: 'contract_status',     descKey: 'settings.prompts.vars.contractStatus' },
-    { key: 'service_plans',       descKey: 'settings.prompts.vars.servicePlans' },
-    { key: 'next_contact_date',   descKey: 'settings.prompts.vars.nextContactDate' },
-    { key: 'assigned_sales_name', descKey: 'settings.prompts.vars.assignedSalesName' },
-    { key: 'activities',          descKey: 'settings.prompts.vars.activities' },
-    { key: 'activity_types',      descKey: 'settings.prompts.vars.activityTypes' },
-  ],
-}
-
-function AiPromptsPanel() {
-  const { t } = useTranslation()
-  const queryClient = useQueryClient()
-  const [editId, setEditId] = useState<string | null>(null)
-  const [editForm, setEditForm] = useState<{ systemPrompt: string; userPromptTemplate: string } | null>(null)
-  const [showVars, setShowVars] = useState(false)
-
-  const { data: promptsData, isLoading } = useQuery({
-    queryKey: ['ai-prompts'],
-    queryFn: () => crmApi.get<{ data: AiPrompt[] }>('/admin/ai/prompts').then((r) => r.data.data),
-  })
-  const prompts = promptsData ?? []
-
-  const saveMutation = useMutation({
-    mutationFn: ({ id, ...body }: { id: string; systemPrompt: string; userPromptTemplate: string }) =>
-      crmApi.put(`/admin/ai/prompts/${id}`, body),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['ai-prompts'] })
-      setEditId(null)
-      setEditForm(null)
-    },
-  })
-
-  const openEdit = (p: AiPrompt) => {
-    setEditId(p.id)
-    setEditForm({ systemPrompt: p.systemPrompt, userPromptTemplate: p.userPromptTemplate })
-    setShowVars(false)
-  }
-
-  return (
-    <div className="rounded-lg border bg-white overflow-hidden">
-      <div className="px-4 py-3 border-b bg-gray-50">
-        <h3 className="text-sm font-semibold text-gray-700">{t('settings.ai.promptTitle')}</h3>
-        <p className="text-xs text-gray-400 mt-0.5">{t('settings.ai.promptSubtitle')}</p>
-      </div>
-
-      {isLoading ? (
-        <div className="p-4 text-sm text-gray-400">{t('common.loading')}</div>
-      ) : (
-        <div className="divide-y">
-          {prompts.map((p) => (
-            <div key={p.id} className="p-4">
-              <div className="flex items-center justify-between mb-2">
-                <div>
-                  <span className="text-sm font-medium text-gray-800">{p.name}</span>
-                  <span className="ml-2 text-xs text-gray-400 font-mono">{p.key}</span>
-                </div>
-                {editId !== p.id ? (
-                  <button onClick={() => openEdit(p)} className="text-xs text-primary-600 hover:text-primary-800">{t('common.edit')}</button>
-                ) : (
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => { setEditId(null); setEditForm(null) }}
-                      className="text-xs text-gray-400 hover:text-gray-600"
-                    >
-                      {t('common.cancel')}
-                    </button>
-                    <button
-                      onClick={() => saveMutation.mutate({ id: p.id, ...editForm! })}
-                      className="text-xs text-primary-600 hover:text-primary-800 font-medium"
-                    >
-                      {saveMutation.isPending ? t('settings.ai.saving') : t('common.save')}
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {editId === p.id && editForm ? (
-                <div className="space-y-3">
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">{t('settings.ai.systemPrompt')}</label>
-                    <textarea
-                      rows={3}
-                      className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-primary-500 resize-y"
-                      value={editForm.systemPrompt}
-                      onChange={(e) => setEditForm((f) => f ? { ...f, systemPrompt: e.target.value } : f)}
-                    />
-                  </div>
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <label className="block text-xs font-medium text-gray-600">{t('settings.ai.userPrompt')}</label>
-                      <button
-                        type="button"
-                        onClick={() => setShowVars((v) => !v)}
-                        className="text-xs text-gray-400 hover:text-gray-600"
-                      >
-                        {showVars ? t('settings.ai.collapseVars') : t('settings.ai.showVars')}
-                      </button>
-                    </div>
-                    {showVars && (
-                      <div className="mb-2 rounded-md border border-gray-200 bg-gray-50 p-3">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
-                          {(PROMPT_VARS[p.key] ?? []).map((v) => (
-                            <div key={v.key} className="flex items-baseline gap-1.5 text-xs">
-                              <code className="font-mono text-primary-700 bg-white border border-gray-200 rounded px-1">{`{{${v.key}}}`}</code>
-                              <span className="text-gray-400">{t(v.descKey)}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    <textarea
-                      rows={12}
-                      className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-primary-500 resize-y"
-                      value={editForm.userPromptTemplate}
-                      onChange={(e) => setEditForm((f) => f ? { ...f, userPromptTemplate: e.target.value } : f)}
-                    />
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  <div>
-                    <p className="text-xs text-gray-400 mb-1">{t('settings.ai.systemRole')}</p>
-                    <p className="text-xs text-gray-600 bg-gray-50 rounded p-2 line-clamp-2">{p.systemPrompt || t('settings.ai.notConfigured')}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-400 mb-1">{t('settings.ai.userPromptLabel')}</p>
-                    <p className="text-xs text-gray-600 bg-gray-50 rounded p-2 line-clamp-3 whitespace-pre-wrap">{p.userPromptTemplate || t('settings.ai.notConfigured')}</p>
-                  </div>
-                </div>
-              )}
-            </div>
-          ))}
-          {prompts.length === 0 && (
-            <p className="p-4 text-sm text-gray-400">{t('settings.ai.noPrompt')}</p>
-          )}
         </div>
       )}
     </div>
