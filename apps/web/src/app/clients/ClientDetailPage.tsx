@@ -1,4 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom'
+import { VisitorSourceCard } from '@/app/analytics/Journey'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -368,6 +369,9 @@ export default function ClientDetailPage() {
           <span>{t('leads.detail.createdAt')} {formatDate(client.createdAt)}</span>
         </div>
       </div>
+
+      {/* 网站来源（转化前线索关联的访客） */}
+      <VisitorSourceCard url={`/clients/${id}/attribution`} />
 
       {/* Tab 切换 */}
       <div className="rounded-lg border bg-white overflow-hidden">

@@ -11,6 +11,7 @@ import type { ActivitySubmitData } from '@/shared/components/ActivityModal'
 import { AttachmentList } from '@/shared/components/AttachmentList'
 import { AiAnalysisCard } from '@/shared/components/AiAnalysisCard'
 import { useCrmAuth } from '@/app/auth/CrmAuthContext'
+import { VisitorSourceCard } from '@/app/analytics/Journey'
 import { useWorkflows } from '@/shared/hooks/useWorkflows'
 import type { ActivityConfig } from '@/shared/hooks/useWorkflows'
 import type { Lead, LeadStatus, SalesActivity, User } from '@/shared/types'
@@ -320,6 +321,9 @@ export default function LeadDetailPage() {
           </div>
         )}
       </div>
+
+      {/* 网站来源（留资时关联的访客） */}
+      <VisitorSourceCard url={`/leads/${id}/attribution`} />
 
       {/* 跟进记录 */}
       <div className="rounded-lg border bg-white p-4 sm:p-6">

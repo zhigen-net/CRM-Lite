@@ -8,6 +8,7 @@ import { formatDate } from '@/shared/utils/format'
 import { useCrmAuth } from '@/app/auth/CrmAuthContext'
 import { Pagination } from '@/shared/components/Pagination'
 import { SitesPanel } from './SitesPanel'
+import { JourneyDrawer, place } from './Journey'
 
 interface SiteOption { id: string; name: string; domain: string | null; isActive: boolean; visitorCount: number }
 interface Visitor {
@@ -16,90 +17,9 @@ interface Visitor {
   deviceType: string | null; os: string | null; browser: string | null; region: string | null; city: string | null; isp: string | null
   leadId: string | null; leadName: string | null; keyActions: number
 }
-interface TrackEvent { id: string; type: string; path: string | null; title: string | null; durationMs: number | null; scrollPct: number | null; createdAt: string }
-interface Visit {
-  id: string; startedAt: string; endedAt: string; pageviews: number; durationSec: number; landingPath: string | null
-  referrer: string | null; channel: string | null; utmSource: string | null; utmCampaign: string | null; clickIdType: string | null
-  deviceType: string | null; os: string | null; browser: string | null; screen: string | null; network: string | null
-  region: string | null; city: string | null; isp: string | null; events: TrackEvent[]
-}
-
 const CHANNELS = ['paid', 'search', 'social', 'referral', 'direct'] as const
 const PAGE_SIZE = 30
 const selectCls = 'rounded border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-700'
-
-function duration(sec: number) {
-  if (sec < 60) return `${sec}s`
-  const m = Math.floor(sec / 60)
-  return m < 60 ? `${m}m${sec % 60 ? ` ${sec % 60}s` : ''}` : `${Math.floor(m / 60)}h ${m % 60}m`
-}
-const place = (v: { region: string | null; city: string | null }) => [v.region, v.city].filter(Boolean).join(' ') || '—'
-
-function JourneyDrawer({ siteId, visitorId, onClose }: { siteId: string; visitorId: string; onClose: () => void }) {
-  const { t } = useTranslation()
-  const { data, isLoading } = useQuery({
-    queryKey: ['visitor-journey', siteId, visitorId],
-    queryFn: () => crmApi.get<{ data: { visitor: Visitor; visits: Visit[] } }>(`/tracking/visitors/${siteId}/${visitorId}`).then((r) => r.data.data),
-  })
-  const ch = (c: string | null) => (c ? t(`analytics.channels.${c}`, { defaultValue: c }) : '—')
-
-  return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-black/30" onClick={onClose}>
-      <div className="h-full w-full max-w-xl overflow-y-auto bg-white shadow-xl" onClick={(e) => e.stopPropagation()}>
-        <div className="sticky top-0 flex items-center justify-between border-b bg-white px-5 py-4">
-          <h2 className="text-base font-semibold text-gray-900">{t('analytics.journey.title')}</h2>
-          <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-full text-xl text-gray-400 hover:bg-gray-100">×</button>
-        </div>
-        {isLoading || !data ? (
-          <div className="p-5 text-sm text-gray-400">{t('common.loading')}</div>
-        ) : (
-          <div className="space-y-4 p-5 text-sm">
-            <div className="grid grid-cols-2 gap-3 rounded-lg bg-gray-50 p-3 text-xs">
-              <div><p className="text-gray-400">{t('analytics.journey.firstSource')}</p><p className="mt-0.5 text-gray-800">{ch(data.visitor.firstChannel)}{data.visitor.firstUtmCampaign ? ` · ${data.visitor.firstUtmCampaign}` : ''}</p></div>
-              <div><p className="text-gray-400">{t('analytics.journey.firstLanding')}</p><p className="mt-0.5 truncate text-gray-800">{data.visitor.firstLanding ?? '—'}</p></div>
-              <div><p className="text-gray-400">{t('analytics.journey.visits')}</p><p className="mt-0.5 text-gray-800">{data.visitor.visitCount} / {data.visitor.pageviewCount}</p></div>
-              <div><p className="text-gray-400">{t('analytics.journey.lead')}</p>
-                <p className="mt-0.5">{data.visitor.leadId
-                  ? <Link className="text-primary-600 hover:underline" to={`/app/leads/${data.visitor.leadId}`}>{data.visitor.leadName ?? t('analytics.journey.viewLead')}</Link>
-                  : <span className="text-gray-400">{t('analytics.journey.noLead')}</span>}</p></div>
-            </div>
-            {data.visits.map((v) => (
-              <div key={v.id} className="rounded-lg border">
-                <div className="border-b bg-gray-50 px-3 py-2 text-xs">
-                  <p className="font-medium text-gray-800">{formatDate(v.startedAt)} · {ch(v.channel)}{v.utmSource ? ` · ${v.utmSource}` : ''}{v.utmCampaign ? ` / ${v.utmCampaign}` : ''}</p>
-                  <p className="mt-0.5 text-gray-500">
-                    {t('analytics.journey.visitSummary', { pages: v.pageviews, time: duration(v.durationSec) })} · {[v.deviceType && t(`analytics.devices.${v.deviceType}`), v.os, v.browser].filter(Boolean).join(' / ')}
-                    {' · '}{place(v)}{v.isp ? ` · ${v.isp}` : ''}{v.network ? ` · ${v.network}` : ''}
-                  </p>
-                  {v.referrer && <p className="mt-0.5 truncate text-gray-400">{t('analytics.journey.referrer')}：{v.referrer}</p>}
-                </div>
-                <ul className="divide-y divide-gray-50">
-                  {v.events.filter((e) => e.type !== 'leave').map((e) => {
-                    const leave = v.events.find((x) => x.type === 'leave' && x.path === e.path && x.createdAt >= e.createdAt)
-                    return (
-                      <li key={e.id} className="flex items-start gap-2 px-3 py-1.5 text-xs">
-                        <span className={`mt-0.5 shrink-0 rounded px-1.5 py-0.5 ${e.type === 'pageview' ? 'bg-gray-100 text-gray-600' : 'bg-amber-100 text-amber-700'}`}>
-                          {t(`analytics.events.${e.type}`, { defaultValue: e.type })}
-                        </span>
-                        <span className="min-w-0 flex-1">
-                          <span className="block truncate text-gray-800">{e.title || e.path}</span>
-                          {e.title && <span className="block truncate text-gray-400">{e.path}</span>}
-                        </span>
-                        {e.type === 'pageview' && leave?.durationMs != null && (
-                          <span className="shrink-0 text-gray-400">{duration(Math.round(leave.durationMs / 1000))}{leave.scrollPct != null ? ` · ${leave.scrollPct}%` : ''}</span>
-                        )}
-                      </li>
-                    )
-                  })}
-                </ul>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  )
-}
 
 function VisitorsPanel() {
   const { t } = useTranslation()
@@ -187,7 +107,7 @@ function VisitorsPanel() {
           <Pagination page={page} totalPages={Math.ceil(data.total / PAGE_SIZE)} total={data.total} pageSize={PAGE_SIZE} onPageChange={setPage} />
         </div>
       )}
-      {openVisitor && <JourneyDrawer siteId={siteId} visitorId={openVisitor} onClose={() => setOpenVisitor(null)} />}
+      {openVisitor && <JourneyDrawer url={`/tracking/visitors/${siteId}/${openVisitor}`} onClose={() => setOpenVisitor(null)} />}
     </div>
   )
 }

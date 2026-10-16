@@ -35,6 +35,7 @@ describe('机器可读说明', () => {
     expect(text).toContain(serviceName)
     expect(text).toContain('?dryRun=1')
     expect(text).toContain('http://crm.test/api/v1/openapi.json')
+    expect(text).toContain('crm_vid')
   })
 
   it('openapi.json 无需鉴权，描述鉴权方式、必填字段和服务列表', async () => {

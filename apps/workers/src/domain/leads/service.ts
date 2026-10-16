@@ -8,6 +8,7 @@ import { fireWorkflow } from '../workflows'
 import { insertActivityStatement, insertAttachmentStatements, insertSystemActivityStatement, type AttachmentInput } from '../activities/records'
 import { assertCanChangeLeadTeam, assertCanEditLead, assertCanViewLead, leadVisibility } from './policy'
 import { assertDate, assertDateTime, assertOptionValue } from '../validation'
+import { linkVisitorStatement, parseVisitorId } from '../tracking/link'
 
 // 与 leads 表的 CHECK 约束一致
 export const LEAD_STATUSES = ['New', 'Contacted', 'Qualified', 'Converted', 'Lost'] as const
@@ -157,6 +158,8 @@ export interface CreateLeadInput {
   adInfo?: Record<string, string> | null | undefined
   /** 预关联创建人所属团队（界面新建时使用） */
   linkCreatorTeam?: boolean | undefined
+  /** 网站访客 ID（访客统计脚本加到表单里的 crm_vid），用于关联来源与访问轨迹 */
+  visitorId?: string | null | undefined
 }
 
 /** 新建线索：写库 → 进入自动分配队列 → 触发"新建"类工作流。返回线索 ID */
@@ -170,16 +173,18 @@ export async function createLead(deps: Deps, actor: Actor, input: CreateLeadInpu
     teamId = creator?.team_id ?? null
   }
 
-  await deps.db.prepare(
-    `INSERT INTO leads (id, source, name, contact_info, intended_services, status, notes, ad_info, created_by_userId, assigned_to_teamId, lead_no)
-     VALUES (?, ?, ?, ?, ?, 'New', ?, ?, ?, ?, (SELECT COALESCE(MAX(lead_no), 0) + 1 FROM leads))`,
+  const visitorId = parseVisitorId(input.visitorId)
+  const insert = deps.db.prepare(
+    `INSERT INTO leads (id, source, name, contact_info, intended_services, status, notes, ad_info, created_by_userId, assigned_to_teamId, visitor_id, lead_no)
+     VALUES (?, ?, ?, ?, ?, 'New', ?, ?, ?, ?, ?, (SELECT COALESCE(MAX(lead_no), 0) + 1 FROM leads))`,
   ).bind(
     id, input.source, input.name, input.contactInfo,
     JSON.stringify(input.intendedServices),
     input.notes ?? null,
     input.adInfo && Object.keys(input.adInfo).length > 0 ? JSON.stringify(input.adInfo) : null,
-    actor.userId, teamId,
-  ).run()
+    actor.userId, teamId, visitorId,
+  )
+  await deps.db.batch(visitorId ? [insert, linkVisitorStatement(deps.db, visitorId, id)] : [insert])
 
   // 线索已入库：分配队列失败只记录日志，不让整个请求失败（分配可在界面上手动完成）
   try {
