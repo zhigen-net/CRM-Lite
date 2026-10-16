@@ -17,7 +17,7 @@ Visitor ──form──▶ Lead ──convert──▶ Client ──sign──�
 
 - Leads: capture, rule-based assignment, follow-ups, conversion to clients
 - Clients: profiles, service milestones, next-contact reminders, attachments
-- Product library: services with delivery steps, partners and partner products
+- Products & services: services with price, delivery steps and documents
 - Activities, visual workflows (including scheduled runs), field-level policies, recycle bin
 - AI analysis and assistant (OpenAI, Anthropic, Workers AI or any compatible API) with a configurable business background
 - AI access: MCP server (`/api/mcp`), scoped API keys, audit log

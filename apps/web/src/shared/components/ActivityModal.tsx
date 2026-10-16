@@ -102,12 +102,10 @@ export function ActivityModal({
   const extraFields: ActivityMetaField[] = selectedTypeMeta.fields ?? []
   const hasProductSelect = extraFields.some((f) => f.type === 'product_select')
 
+  // 「产品选择」字段：从「产品与服务」中选择
   const { data: productsData } = useQuery({
-    queryKey: ['partner-products', 'active'],
-    queryFn: () =>
-      crmApi.get<{ data: { id: string; name: string; partnerName: string; price: number | null; currency: string }[] }>(
-        '/partner-products', { params: { active: 'true' } },
-      ).then((r) => r.data),
+    queryKey: ['services'],
+    queryFn: () => crmApi.get<{ data: { id: string; name: string; price: number | null }[] }>('/services').then((r) => r.data),
     enabled: hasProductSelect,
     staleTime: 1000 * 60 * 5,
   })
@@ -262,7 +260,7 @@ export function ActivityModal({
                         const product = allProducts.find((p) => p.id === productId)
                         setExtraField(f.key, productId)
                         if (product) {
-                          setExtraField(`${f.key}_name`, `${product.name}（${product.partnerName}）`)
+                          setExtraField(`${f.key}_name`, product.name)
                           // 自动填充同类型中名为 price 的 number 字段
                           const priceField = extraFields.find((ef) => ef.type === 'number' && ef.key === 'price')
                           if (priceField && product.price != null) {
@@ -274,7 +272,7 @@ export function ActivityModal({
                       <option value="">{t('activityModal.productPlaceholder')}</option>
                       {allProducts.map((p) => (
                         <option key={p.id} value={p.id}>
-                          {p.name} — {p.partnerName}{p.price != null ? ` (${p.currency} ${p.price.toLocaleString()})` : ''}
+                          {p.name}{p.price != null ? ` (${p.price.toLocaleString()})` : ''}
                         </option>
                       ))}
                     </select>
