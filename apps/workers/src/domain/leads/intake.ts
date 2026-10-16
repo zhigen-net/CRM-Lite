@@ -1,8 +1,9 @@
 // 外部推送线索的整理规则（对外接口 /api/v1/leads 与失败补录共用）
 import type { CreateLeadInput } from './service'
+import { parseVisitorId } from '../tracking/link'
 
 const KNOWN_FIELDS = new Set(['source', 'name', 'contactInfo', 'intendedServices', 'notes', 'adInfo'])
-// 访客统计脚本自动加到表单里的访客 ID（以后用于关联访客轨迹），不写入备注
+// 访客统计脚本自动加到表单里的访客 ID：用于关联访客来源与轨迹，不写入备注
 const IGNORED_FIELDS = new Set(['crm_vid', 'visitorId'])
 
 // 顶层广告字段别名（兼容旧格式，统一映射为中文 key）
@@ -79,5 +80,6 @@ export async function normalizeExternalLead(db: D1Database, body: Record<string,
     intendedServices,
     notes: notes.length > 0 ? notes.join('\n') : null,
     adInfo: Object.keys(adInfo).length > 0 ? adInfo : null,
+    visitorId: parseVisitorId(body.crm_vid) ?? parseVisitorId(body.visitorId),
   }
 }

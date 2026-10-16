@@ -3,6 +3,7 @@
 import { classifySource, isInternalReferrer, UTM_PARAMS } from './channel'
 import { isBotUA, parseUserAgent } from './userAgent'
 import type { TrackingSite } from './sites'
+import { backfillLeadStatement } from './link'
 
 export const EVENT_TYPES = ['pageview', 'leave', 'tel', 'wechat', 'form', 'custom'] as const
 type EventType = typeof EVENT_TYPES[number]
@@ -130,6 +131,8 @@ export async function ingestEvents(db: D1Database, site: TrackingSite, payload: 
     stmts.push(db.prepare('UPDATE visitors SET last_seen_at = ?, pageview_count = pageview_count + ? WHERE site_id = ? AND id = ?')
       .bind(now, pageviews.length, site.id, visitorId))
   }
+  // 只在新访问或提交表单时补关联线索（线索可能先于访客数据写入）
+  if (!existing || events.some((e) => e.t === 'form')) stmts.push(backfillLeadStatement(db, site.id, visitorId))
 
   for (const e of events) {
     const meta = e.m && typeof e.m === 'object' ? JSON.stringify(e.m).slice(0, 500) : null
