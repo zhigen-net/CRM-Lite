@@ -31,10 +31,10 @@ export default function PortalLoginPage() {
 
   const { data: publicSettings } = useQuery({
     queryKey: ['public-settings'],
-    queryFn: () => crmApi.get<{ data: { systemName: string } }>('/public/settings').then((r) => r.data.data),
+    queryFn: () => crmApi.get<{ data: { systemName: string | null } }>('/public/settings').then((r) => r.data.data),
     staleTime: 1000 * 60 * 60,
   })
-  const systemName = publicSettings?.systemName ?? t('portal.auth.title')
+  const systemName = publicSettings?.systemName || t('portal.auth.title')
   useEffect(() => { document.title = systemName }, [systemName])
 
   useEffect(() => {

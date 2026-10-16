@@ -80,7 +80,8 @@
       "showing": "共 {{total}} 条，显示第 {{from}}–{{to}} 条"
     },
     "sep": "、",
-    "status": "状态"
+    "status": "状态",
+    "brand": "客路"
   },
   "nav": {
     "leads": "线索管理",
@@ -393,7 +394,7 @@
     "partnerDisabled": "（已禁用）",
     "serviceForm": {
       "steps": "服务流程（每行一个步骤）",
-      "stepsPlaceholder": "初步咨询\n医疗评估\n方案制定"
+      "stepsPlaceholder": "初步沟通\n方案确认\n交付验收"
     },
     "category": "分类",
     "supplier": "供应商",
@@ -1133,7 +1134,7 @@
         "uploadedAt": "上传时间"
       },
       "types": {
-        "MedicalReport": "医疗报告",
+        "MedicalReport": "报告",
         "Contract": "合同",
         "PassportCopy": "证件复印",
         "PartnerContact": "合作方联系"

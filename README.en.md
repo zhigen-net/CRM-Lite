@@ -1,4 +1,6 @@
-# CRM-Lite
+# Kelu（客路）
+
+> From first visit to loyal customer, one path.
 
 **An open-source, AI-first HubSpot alternative that runs entirely on Cloudflare**, covering the whole journey from first visit to service delivery:
 

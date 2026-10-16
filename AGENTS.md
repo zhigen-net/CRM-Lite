@@ -3,7 +3,7 @@
 本文件是所有开发者和编码 agent（Claude Code、Codex、Cursor 等）在本仓库工作时必须遵守的约定。
 只记录"读代码看不出来、做错了会出事"的规则；架构与部署细节见 [README.md](./README.md)、[DEPLOY.md](./DEPLOY.md)。
 
-**定位**：开源（AGPL-3.0）、运行在 Cloudflare 上、AI 优先的 HubSpot 替代方案，覆盖 访客 → 线索 → 客户 → 服务交付。核心功能与行业无关。
+**定位**：产品名「客路 Kelu」（仓库与 Worker 名不变）。开源（AGPL-3.0）、运行在 Cloudflare 上、AI 优先的 HubSpot 替代方案，覆盖 访客 → 线索 → 客户 → 服务交付。核心功能与行业无关。
 
 > [CRM_Development_Guide.md](./CRM_Development_Guide.md) 是早期设计文档，架构和部署部分已过时，与代码冲突时以代码为准，不要据此实现。
 

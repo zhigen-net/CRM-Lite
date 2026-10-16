@@ -126,7 +126,7 @@ app.get('/api/public/settings', async (c) => {
   const map = Object.fromEntries(rows.results.map((r) => [r.key, r.value]))
   return c.json({
     data: {
-      systemName: map['system_name'] ?? 'CRM',
+      systemName: map['system_name'] || null,  // 未设置时前端显示产品名
       timezone: map['timezone'] ?? 'Asia/Shanghai',
       aiAgentEnabled: map['ai_agent_enabled'] !== 'false',
     },

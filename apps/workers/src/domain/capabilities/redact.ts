@@ -1,4 +1,4 @@
-// 联系方式打码：手机号、邮箱属于个人敏感信息（医疗等行业尤甚），
+// 联系方式打码：手机号、邮箱属于个人敏感信息，
 // 通过 API Key / MCP 读取时，没有 contacts:read 权限就只返回打码后的值
 const CONTACT_KEYS = new Set(['contactInfo', 'contact_info', 'phone', 'email'])
 
