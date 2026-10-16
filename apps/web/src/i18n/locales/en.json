@@ -391,7 +391,7 @@
       "saved": "Saved",
       "industryContext": "Business background",
       "industryContextPlaceholder": "e.g. Study-abroad consultancy; most clients are parents of high-school students; decisions take 1–3 months",
-      "industryContextHint": "Briefly describe your industry, clients and business. AI analysis, the AI assistant and MCP use it as context."
+      "industryContextHint": "Briefly describe your industry, clients and business. The AI assistant and MCP use it as context."
     },
     "features": {
       "title": "Feature Flags",

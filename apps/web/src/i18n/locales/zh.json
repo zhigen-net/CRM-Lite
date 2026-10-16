@@ -391,7 +391,7 @@
       "saved": "已保存",
       "industryContext": "业务背景",
       "industryContextPlaceholder": "例如：留学咨询机构，客户多为高中生家长，决策周期 1–3 个月",
-      "industryContextHint": "简要描述你的行业、客户和业务特点，AI 分析、AI 助手和 MCP 会参考这段内容。"
+      "industryContextHint": "简要描述你的行业、客户和业务特点，AI 助手和 MCP 会参考这段内容。"
     },
     "features": {
       "title": "功能开关",
