@@ -11,7 +11,6 @@ export type WorkflowAction =
   | { type: 'set_field';        field: string; label: string; value: string }
   | { type: 'send_email';       to: string; subject: string; body: string }
   | { type: 'webhook';          url: string; method: string; body: string }
-  | { type: 'ai_analysis';     autoExecute?: string[] }
 
 export interface Workflow {
   id: string

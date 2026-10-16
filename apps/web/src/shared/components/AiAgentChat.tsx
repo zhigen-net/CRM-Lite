@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { crmApi } from '@/shared/utils/request'
+import { ASK_AI_EVENT } from './AskAiButton'
 
 interface Message {
   role: 'user' | 'assistant'
@@ -51,6 +52,17 @@ export function AiAgentChat() {
       setTimeout(() => inputRef.current?.focus(), 50)
     }
   }, [messages, loading])
+
+  // 其它页面通过 askAi() 打开助手并发送问题（如详情页的「让 AI 分析」）
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const prompt = (e as CustomEvent<string>).detail
+      setOpen(true)
+      if (prompt) void send(prompt)
+    }
+    window.addEventListener(ASK_AI_EVENT, handler)
+    return () => window.removeEventListener(ASK_AI_EVENT, handler)
+  }, [send])
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {

@@ -139,7 +139,7 @@ export default function LeadsPage() {
     source: z.string().min(1, t('common.unset')),
     name: z.string().min(1, t('common.unset')),
     contactInfo: z.string().min(1, t('common.unset')),
-    intendedServices: z.array(z.string()).min(1, t('common.unset')),
+    intendedServices: z.array(z.string()),
     notes: z.string().optional(),
   })
   type CreateForm = z.infer<typeof createSchema>

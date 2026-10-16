@@ -19,11 +19,11 @@ Visitor ──form──▶ Lead ──convert──▶ Client ──sign──�
 - Clients: profiles, service milestones, next-contact reminders, attachments
 - Products & services: services with price, delivery steps and documents
 - Activities, visual workflows (including scheduled runs), field-level policies, recycle bin
-- AI analysis and assistant (OpenAI, Anthropic, Workers AI or any compatible API) with a configurable business background
+- AI assistant that queries and updates data in plain language, with one-click "Ask AI" on detail pages (OpenAI, Anthropic, Workers AI or any compatible API) and a configurable business background
 - AI access: MCP server (`/api/mcp`), scoped API keys, audit log
 - Public API for pushing leads (`POST /api/v1/leads`), with a machine-readable reference at `/api/v1/llms.txt`
 - Visitor analytics: websites connect through a same-origin `/_t/*` proxy (the CRM URL is never exposed), recording channels, journeys and key actions; set up with the in-app guide under Visitor analytics → Sites, which can check the connection automatically
-- Client portal (`/portal`) for profiles, services, resources and progress
+- Customer portal (`/portal`, off by default; enable it in System settings → Basic) for profiles, services, resources and progress
 - Chinese and English UI
 
 **Planned**: visitor-to-lead linking, channel reports, custom fields, lead scoring, unified timeline.

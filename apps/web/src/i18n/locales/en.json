@@ -396,7 +396,9 @@
     "features": {
       "title": "Feature Flags",
       "aiAgent": "AI Assistant",
-      "aiAgentHint": "Show AI chat widget in bottom-right corner"
+      "aiAgentHint": "Show AI chat widget in bottom-right corner",
+      "portal": "Customer portal",
+      "portalHint": "When on, customers can sign in at /portal to see their profile, services, files and delivery progress. Requires an email service (sign-in links are sent by email)."
     },
     "teams": {
       "title": "Teams",
@@ -513,18 +515,7 @@
       "enabledModels": "Enabled Models",
       "noEnabledModels": "No enabled models. Add a provider and fetch models.",
       "customProvider": "Custom (OpenAI compatible)",
-      "cloudflareHint": "Cloudflare Workers AI uses a native binding — no API Key required.",
-      "promptTitle": "AI Analysis Prompts",
-      "promptSubtitle": "Configure prompts used for lead and client AI analysis",
-      "systemPrompt": "System Prompt",
-      "userPrompt": "User Prompt Template",
-      "collapseVars": "Hide Variables",
-      "showVars": "Show Available Variables",
-      "systemRole": "System Role",
-      "userPromptLabel": "User Prompt Template",
-      "noPrompt": "No prompt configured",
-      "notConfigured": "(Not configured)",
-      "saving": "Saving..."
+      "cloudflareHint": "Cloudflare Workers AI uses a native binding — no API Key required."
     },
     "workflow": {
       "title": "Workflows",
@@ -682,11 +673,6 @@
           },
           "method": "Method",
           "bodyJson": "Body (JSON, supports variables)"
-        },
-        "aiAnalysis": {
-          "autoActions": "Auto-execute suggested actions (comma-separated, optional)",
-          "autoActionsDefault": "set_next_contact_date,update_lead_status",
-          "autoActionsHint": "Leave empty to only save the analysis. Options: set_next_contact_date / update_lead_status / update_contract_status"
         }
       },
       "createTitle": "New Workflow",
@@ -755,22 +741,6 @@
       "America/Los_Angeles": "US Pacific Time (UTC-8/-7)",
       "Europe/London": "UK Time (UTC+0/+1)",
       "Europe/Paris": "Central European Time (UTC+1/+2)"
-    },
-    "prompts": {
-      "vars": {
-        "today": "Current date",
-        "name": "Name",
-        "source": "Source",
-        "status": "Current status",
-        "intendedServices": "Intended services",
-        "nextContactDate": "Next contact date",
-        "assignedName": "Assigned sales",
-        "activities": "Follow-up records (last 20)",
-        "activityTypes": "Available activity types",
-        "contractStatus": "Contract status",
-        "servicePlans": "Service plans",
-        "assignedSalesName": "Assigned sales"
-      }
     },
     "auditLog": {
       "title": "Audit Log",
@@ -872,7 +842,7 @@
           "webhook": "Please connect lead pushes from our ad platforms (e.g. Baidu, Ocean Engine, Tencent Ads) to the CRM: every lead the platform receives should be forwarded to the CRM as a new lead.",
           "generic": "Please integrate our system with the CRM lead API so that leads are created automatically."
         },
-        "spec": "## CRM lead API\n- Full reference (generated live; read it first if you have web access): {{docsUrl}}\n- Endpoint: POST {{endpoint}}\n- Headers:\n  Content-Type: application/json\n  {{keyLine}}\n- Body fields (JSON):\n  - source (required, string): lead source, e.g. \"Website form\", \"Baidu ads\"\n  - name (required, string): customer name\n  - contactInfo (required, string): phone, WeChat or email\n  - intendedServices (required, string array, at least one): services of interest. Allowed values: {{services}}. Values not in the list are recorded as {{fallback}} with the original value added to notes\n  - notes (optional, string): notes\n  - adInfo (optional, object): ad tracking info with keys ip, url, 账户 (account), 广告计划 (campaign), 广告组 (ad group), 广告 (ad)\n  - crm_vid (optional, string): once the website uses visitor tracking, forms carry a hidden crm_vid field (visitor ID); pass it through as is to link the visitor's source\n  - Any other fields are accepted and appended to notes\n- Success: HTTP 201 with {\"data\":{\"id\":\"lead id\",\"status\":\"New\"}}\n- Errors: 401 missing or invalid key; 400 invalid parameters (e.g. a required field is missing), the body says which field\n- CORS is allowed, but the key must never be exposed to browsers",
+        "spec": "## CRM lead API\n- Full reference (generated live; read it first if you have web access): {{docsUrl}}\n- Endpoint: POST {{endpoint}}\n- Headers:\n  Content-Type: application/json\n  {{keyLine}}\n- Body fields (JSON):\n  - source (required, string): lead source, e.g. \"Website form\", \"Baidu ads\"\n  - name (required, string): customer name\n  - contactInfo (required, string): phone, WeChat or email\n  - intendedServices (optional, string array): services of interest. Allowed values: {{services}}. Values not in the list are recorded as {{fallback}} with the original value added to notes\n  - notes (optional, string): notes\n  - adInfo (optional, object): ad tracking info with keys ip, url, 账户 (account), 广告计划 (campaign), 广告组 (ad group), 广告 (ad)\n  - crm_vid (optional, string): once the website uses visitor tracking, forms carry a hidden crm_vid field (visitor ID); pass it through as is to link the visitor's source\n  - Any other fields are accepted and appended to notes\n- Success: HTTP 201 with {\"data\":{\"id\":\"lead id\",\"status\":\"New\"}}\n- Errors: 401 missing or invalid key; 400 invalid parameters (e.g. a required field is missing), the body says which field\n- CORS is allowed, but the key must never be exposed to browsers",
         "req": {
           "website": "## Requirements\n1. The key must not appear in front-end code. The form should post to our own back end (or a cloud/edge function), which adds the key and forwards the request to the CRM.\n2. Map the form fields to the fields above; make source identify the page; put the landing page url, visitor ip and ad parameters from the URL into adInfo where possible; if the form has a hidden crm_vid field, pass it to the CRM unchanged.\n3. If the CRM call fails, do not change what the visitor sees; just log it on the back end.",
           "webhook": "## Requirements\n1. Ad platforms usually cannot send custom headers, so use a relay (e.g. a Cloudflare Worker or cloud function) that receives the platform push, verifies the platform signature and forwards it to the CRM.\n2. Map the platform fields to the fields above: source is the platform name; account, campaign, ad group and ad go into adInfo.\n3. Return the success response the platform expects; when the CRM returns an error, log it and rely on the platform's retry mechanism if needed.",
@@ -972,30 +942,12 @@
         "List recently created leads"
       ]
     },
-    "analysis": {
-      "title": "AI Analysis",
-      "analyzing": "Analyzing...",
-      "start": "Start Analysis",
-      "regenerate": "Regenerate",
-      "error": "Analysis failed. Check AI model configuration.",
-      "loading": "Analyzing, please wait...",
-      "suggestions": {
-        "updateLeadStatus": "AI suggests: Update lead status to \"{{value}}\"",
-        "updateContractStatus": "AI suggests: Update contract status to \"{{value}}\"",
-        "updateService": "AI suggests: Update intended service to \"{{value}}\"",
-        "updatePlan": "AI suggests: Update service plan to \"{{value}}\"",
-        "reassign": "AI suggests: Reassign sales to \"{{value}}\"",
-        "nextContact": "AI suggests: Schedule next contact for {{value}}"
-      },
-      "executed": "Done",
-      "execute": "Execute →",
-      "empty": "Click \"Start Analysis\" to generate an AI report",
-      "waitTypes": "Follow-up types not loaded yet, please wait",
-      "opFailed": "Error: ",
-      "opError": "Action failed, please handle manually",
-      "loading2": "Loading..."
-    },
-    "fallbackDesc": "AI suggestion: {{label}} ({{value}}). {{reason}}"
+    "ask": {
+      "hint": "Let the AI assistant review the profile, follow-ups and website source, assess intent and suggest next steps.",
+      "button": "Ask AI",
+      "leadPrompt": "Please analyze lead \"{{name}}\" (ID: {{id}}): using the profile, follow-ups and website source, assess intent, flag anything to watch, and suggest the next follow-up action and contact date.",
+      "clientPrompt": "Please analyze customer \"{{name}}\" (ID: {{id}}): using the profile, follow-ups, delivery progress and website source, summarize the current status and risks, and suggest the next follow-up action."
+    }
   },
   "portal": {
     "auth": {
@@ -1015,7 +967,8 @@
       "resend": "Resend",
       "linkExpired": "Link expired. Please sign in again.",
       "invalidEmail": "Enter a valid email",
-      "passwordMin": "Password must be at least 6 characters"
+      "passwordMin": "Password must be at least 6 characters",
+      "disabled": "The customer portal is not available. Please contact your account manager."
     },
     "profile": {
       "title": "Profile",

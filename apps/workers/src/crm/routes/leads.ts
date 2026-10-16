@@ -51,7 +51,7 @@ const leadSchema = z.object({
   source: z.string().min(1),
   name: z.string().min(1),
   contactInfo: z.string().min(1),
-  intendedServices: z.array(z.string()).min(1, '请至少选择一个意向服务'),
+  intendedServices: z.array(z.string()).default([]),
   notes: z.string().nullable().optional(),
 })
 
@@ -74,7 +74,7 @@ leadsRoutes.put(
       assignedToUserId: z.string().nullable().optional(),
       assignedToTeamId: z.string().nullable().optional(),
       contactInfo: z.string().optional(),
-      intendedServices: z.array(z.string()).min(1).optional(),
+      intendedServices: z.array(z.string()).optional(),
       adInfo: z.record(z.string()).nullable().optional(),
       nextContactDate: z.string().nullable().optional(),
     }),

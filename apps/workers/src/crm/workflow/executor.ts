@@ -1,6 +1,5 @@
 import { toCamel } from '../../shared/db'
 import { sendEmail } from '../../shared/email'
-import { runAnalysis } from '../routes/aiAnalysis'
 import { applyWorkflowFieldUpdate } from '../../domain/workflowWrites'
 
 // ── 类型 ──────────────────────────────────────────────────────────────────────
@@ -23,7 +22,6 @@ type WfAction =
   | { type: 'set_field'; field: string; label: string; value: string }
   | { type: 'send_email'; to: string; subject: string; body: string }
   | { type: 'webhook'; url: string; method: string; body: string }
-  | { type: 'ai_analysis'; autoExecute?: string[] }
 
 interface StoredWorkflow {
   id: string
@@ -255,21 +253,6 @@ export async function executeWorkflowsForTrigger(
             interpolate(action.subject,  ctx),
             interpolate(action.body,     ctx),
           )
-        } else if (action.type === 'ai_analysis' && (entityType === 'lead' || entityType === 'client')) {
-          const result = await runAnalysis(env, entityType, entityId, null, 'workflow')
-          // 自动执行指定类型的建议操作
-          if (action.autoExecute?.length && Array.isArray(result.actions)) {
-            for (const act of result.actions as { type: string; value: string }[]) {
-              if (!action.autoExecute.includes(act.type)) continue
-              if (act.type === 'set_next_contact_date') {
-                await applyWorkflowFieldUpdate(db, env, entityType, entityId, 'nextContactDate', act.value)
-              } else if (act.type === 'update_lead_status' && entityType === 'lead') {
-                await applyWorkflowFieldUpdate(db, env, entityType, entityId, 'status', act.value)
-              } else if (act.type === 'update_contract_status' && entityType === 'client') {
-                await applyWorkflowFieldUpdate(db, env, entityType, entityId, 'contractStatus', act.value)
-              }
-            }
-          }
         }
         // require_activity / require_fields 仅前端约束，后端跳过
       } catch (err) {
