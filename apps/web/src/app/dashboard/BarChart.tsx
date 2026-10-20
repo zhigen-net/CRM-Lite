@@ -20,27 +20,38 @@ const barPath = (x: number, w: number, top: number, bottom: number) => {
   return `M${x},${bottom} V${top + r} Q${x},${top} ${x + r},${top} H${x + w - r} Q${x + w},${top} ${x + w},${top + r} V${bottom} Z`
 }
 
-export function BarChart({ series, data, label }: {
+export function BarChart({ series, data: raw, label }: {
   series: Series[]; data: ({ day: string } & Record<string, number | string>)[]; label: string
 }) {
   const { t } = useTranslation()
   const ref = useRef<HTMLDivElement>(null)
-  const [width, setWidth] = useState(600)
+  // 宽度以容器实测为准；测到之前不画，避免默认宽度把卡片撑出屏幕
+  const [width, setWidth] = useState(0)
   const [hover, setHover] = useState<number | null>(null)
   const [hidden, setHidden] = useState<Set<string>>(new Set())
   useEffect(() => {
     if (!ref.current) return
-    const ro = new ResizeObserver(([e]) => setWidth(Math.max(240, e!.contentRect.width)))
-    ro.observe(ref.current)
+    const el = ref.current
+    setWidth(el.clientWidth)
+    const ro = new ResizeObserver(([e]) => setWidth(Math.floor(e!.contentRect.width)))
+    ro.observe(el)
     return () => ro.disconnect()
   }, [])
 
   const shown = series.filter((s) => !hidden.has(s.key))
   const val = (d: Record<string, number | string>, k: string) => Number(d[k] ?? 0)
+  // 屏幕太窄、天数太多时（每列不足 8px），把相邻几天合并成一根柱子；悬停显示起止日期
+  const bucket = width > 0 ? Math.max(1, Math.ceil(raw.length / Math.max(1, Math.floor((width - PAD_L) / 8)))) : 1
+  const data = bucket === 1 ? raw.map((d) => ({ ...d, label: d.day })) : Array.from({ length: Math.ceil(raw.length / bucket) }, (_, i) => {
+    const part = raw.slice(i * bucket, (i + 1) * bucket)
+    const sums: Record<string, number> = {}
+    for (const s of series) sums[s.key] = part.reduce((sum, d) => sum + val(d, s.key), 0)
+    return { ...sums, day: part[0]!.day, label: `${part[0]!.day} ~ ${part.at(-1)!.day.slice(5)}` }
+  })
   const max = niceMax(Math.max(0, ...data.flatMap((d) => shown.map((s) => val(d, s.key)))))
   const plotW = width - PAD_L, plotH = H - PAD_B - PAD_T
   const step = plotW / Math.max(1, data.length)
-  const groupW = Math.max(1, Math.min(40, step - 4))
+  const groupW = Math.max(1, Math.min(40, step - (step > 12 ? 4 : 1)))
   const barW = Math.max(1, (groupW - GAP * (shown.length - 1)) / Math.max(1, shown.length))
   const y = (v: number) => PAD_T + plotH - (v / max) * plotH
   const every = Math.max(1, Math.ceil(data.length / (width < 480 ? 5 : 8)))
@@ -57,7 +68,7 @@ export function BarChart({ series, data, label }: {
       {series.length > 1 && (
         <div className="mb-2 flex flex-wrap gap-3 text-xs">
           {series.map((s) => {
-            const total = data.reduce((sum, d) => sum + val(d, s.key), 0)
+            const total = raw.reduce((sum, d) => sum + val(d, s.key), 0)
             const off = hidden.has(s.key)
             return (
               <button key={s.key} type="button" aria-pressed={!off} onClick={() => toggle(s.key)}
@@ -70,8 +81,8 @@ export function BarChart({ series, data, label }: {
           })}
         </div>
       )}
-      <div ref={ref} className="relative" onMouseLeave={() => setHover(null)}>
-        <svg width={width} height={H} role="img" aria-label={label} className="block">
+      <div ref={ref} className="relative w-full min-w-0 overflow-hidden" style={{ height: H }} onMouseLeave={() => setHover(null)}>
+        {width > 0 && <svg width={width} height={H} role="img" aria-label={label} className="block max-w-full">
           {[0, 0.5, 1].map((f) => (
             <g key={f}>
               <line x1={PAD_L} x2={width} y1={y(max * f)} y2={y(max * f)} stroke="#e5e7eb" strokeDasharray={f === 0 ? undefined : '3 3'} />
@@ -91,11 +102,11 @@ export function BarChart({ series, data, label }: {
               </g>
             )
           })}
-        </svg>
-        {h && hover !== null && (
+        </svg>}
+        {h && hover !== null && width > 0 && (
           <div className="pointer-events-none absolute top-0 min-w-[120px] rounded-md border bg-white px-2.5 py-1.5 text-xs shadow-md"
             style={{ left: Math.min(width - 130, Math.max(0, PAD_L + hover * step + step / 2 - 60)) }}>
-            <p className="mb-1 text-gray-500">{h.day}</p>
+            <p className="mb-1 text-gray-500">{h.label}</p>
             {shown.map((s) => (
               <p key={s.key} className="flex items-center gap-1.5">
                 <span className="inline-block h-0.5 w-3" style={{ background: s.color }} />
@@ -108,7 +119,7 @@ export function BarChart({ series, data, label }: {
         <table className="sr-only">
           <caption>{label}</caption>
           <thead><tr><th>{t('dashboard.day')}</th>{series.map((s) => <th key={s.key}>{s.label}</th>)}</tr></thead>
-          <tbody>{data.map((d) => <tr key={d.day}><th>{d.day}</th>{series.map((s) => <td key={s.key}>{val(d, s.key)}</td>)}</tr>)}</tbody>
+          <tbody>{raw.map((d) => <tr key={d.day}><th>{d.day}</th>{series.map((s) => <td key={s.key}>{val(d, s.key)}</td>)}</tr>)}</tbody>
         </table>
       </div>
     </div>
