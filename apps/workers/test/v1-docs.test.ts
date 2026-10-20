@@ -35,6 +35,7 @@ describe('机器可读说明', () => {
     expect(text).toContain(serviceName)
     expect(text).toContain('?dryRun=1')
     expect(text).toContain('http://crm.test/api/v1/openapi.json')
+    expect(text).toContain('crm_vid')
   })
 
   it('openapi.json 无需鉴权，描述鉴权方式、必填字段和服务列表', async () => {
@@ -47,7 +48,7 @@ describe('机器可读说明', () => {
     }
     expect(doc.servers[0]?.url).toBe('http://crm.test/api/v1')
     expect(doc.components.securitySchemes.apiKey.name).toBe('X-API-Key')
-    expect(doc.components.schemas.LeadInput.required).toEqual(['source', 'name', 'contactInfo', 'intendedServices'])
+    expect(doc.components.schemas.LeadInput.required).toEqual(['source', 'name', 'contactInfo'])
     expect(doc.components.schemas.LeadInput.properties.intendedServices.description).toContain(serviceName)
     expect(doc.paths['/leads']).toBeDefined()
   })
@@ -79,6 +80,14 @@ describe('试运行 dryRun', () => {
   it('同样校验密钥和必填字段', async () => {
     expect((await postLead('?dryRun=1', { source: 'x', name: 'x', contactInfo: 'x', intendedServices: ['其他'] }, 'crm_wrong')).status).toBe(401)
     expect((await postLead('?dryRun=1', { source: 'x', name: 'x', intendedServices: ['其他'] })).status).toBe(400)
+  })
+
+  it('意向服务选填：不传时为空，不再自动记为「其他」', async () => {
+    const res = await postLead('?dryRun=1', { source: '接入测试', name: '无意向', contactInfo: '13600000002' })
+    expect(res.status).toBe(200)
+    expect(((await res.json()) as { data: { lead: { intendedServices: string[] } } }).data.lead.intendedServices).toEqual([])
+    const created = await postLead('', { source: '接入测试', name: '无意向', contactInfo: '13600000003' })
+    expect(created.status).toBe(201)
   })
 
   it('不带 dryRun 时照常创建', async () => {

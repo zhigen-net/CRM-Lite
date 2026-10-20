@@ -31,10 +31,10 @@ export default function PortalLoginPage() {
 
   const { data: publicSettings } = useQuery({
     queryKey: ['public-settings'],
-    queryFn: () => crmApi.get<{ data: { systemName: string } }>('/public/settings').then((r) => r.data.data),
+    queryFn: () => crmApi.get<{ data: { systemName: string | null; portalEnabled: boolean } }>('/public/settings').then((r) => r.data.data),
     staleTime: 1000 * 60 * 60,
   })
-  const systemName = publicSettings?.systemName ?? t('portal.auth.title')
+  const systemName = publicSettings?.systemName || t('portal.auth.title')
   useEffect(() => { document.title = systemName }, [systemName])
 
   useEffect(() => {
@@ -67,6 +67,18 @@ export default function PortalLoginPage() {
     } catch {
       setServerError(t('portal.auth.sendFailed'))
     }
+  }
+
+  // 客户门户未开启：不显示登录表单
+  if (publicSettings && !publicSettings.portalEnabled) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
+        <div className="w-full max-w-sm rounded-xl bg-white p-8 text-center shadow-md">
+          <h1 className="text-xl font-bold text-gray-900">{systemName}</h1>
+          <p className="mt-3 text-sm text-gray-500">{t('portal.auth.disabled')}</p>
+        </div>
+      </div>
+    )
   }
 
   return (

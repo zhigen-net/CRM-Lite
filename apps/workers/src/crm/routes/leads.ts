@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { requireAuth, requireAdmin } from '../middleware/auth'
 import { actorFromJwt, depsFrom } from '../../domain/actor'
 import * as leads from '../../domain/leads/service'
+import { getLeadAttribution } from '../../domain/tracking/attribution'
 
 // 线索接口：只做参数解析与响应格式，业务规则在 domain/leads
 export const leadsRoutes = new Hono<{ Bindings: Env }>()
@@ -42,11 +43,15 @@ leadsRoutes.get('/:id', async (c) => {
   return c.json({ data: lead })
 })
 
+// GET /api/leads/:id/attribution（来源与访问轨迹；没有关联访客时 data 为 null）
+leadsRoutes.get('/:id/attribution', async (c) =>
+  c.json({ data: await getLeadAttribution(c.env.DB, actorFromJwt(c.get('jwtPayload'), 'web'), c.req.param('id')) }))
+
 const leadSchema = z.object({
   source: z.string().min(1),
   name: z.string().min(1),
   contactInfo: z.string().min(1),
-  intendedServices: z.array(z.string()).min(1, '请至少选择一个意向服务'),
+  intendedServices: z.array(z.string()).default([]),
   notes: z.string().nullable().optional(),
 })
 
@@ -69,7 +74,7 @@ leadsRoutes.put(
       assignedToUserId: z.string().nullable().optional(),
       assignedToTeamId: z.string().nullable().optional(),
       contactInfo: z.string().optional(),
-      intendedServices: z.array(z.string()).min(1).optional(),
+      intendedServices: z.array(z.string()).optional(),
       adInfo: z.record(z.string()).nullable().optional(),
       nextContactDate: z.string().nullable().optional(),
     }),

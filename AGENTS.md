@@ -3,7 +3,7 @@
 本文件是所有开发者和编码 agent（Claude Code、Codex、Cursor 等）在本仓库工作时必须遵守的约定。
 只记录"读代码看不出来、做错了会出事"的规则；架构与部署细节见 [README.md](./README.md)、[DEPLOY.md](./DEPLOY.md)。
 
-**定位**：开源（AGPL-3.0）、运行在 Cloudflare 上、AI 优先的 HubSpot 替代方案，覆盖 访客 → 线索 → 客户 → 服务交付。核心功能与行业无关。
+**定位**：产品名「客路 Kelu」（仓库与 Worker 名不变）。开源（AGPL-3.0）、运行在 Cloudflare 上、AI 优先的 HubSpot 替代方案，覆盖 访客 → 线索 → 客户 → 服务交付。核心功能与行业无关。
 
 > [CRM_Development_Guide.md](./CRM_Development_Guide.md) 是早期设计文档，架构和部署部分已过时，与代码冲突时以代码为准，不要据此实现。
 
@@ -48,6 +48,11 @@
 - 代码、界面文案、默认值、示例中**不要写死某个行业**（如辅助生殖的服务名、术语）。行业相关内容只通过 `domain/templates.ts` 的行业模板在初始化时写入，或由用户在系统中配置；AI 需要的行业信息放在「业务背景」设置（`industry_context`）中。
 - 早期迁移已内置辅助生殖示例数据，且不能修改；「通用」模板在初始化时清除它们。新增行业示例数据时写进模板，不要写进迁移。
 
+## 访客统计
+
+- 网站只通过同域 `/_t/*` 接入，由网站的 Pages Function / Worker 在服务器端带站点密钥转发到 CRM 的 `/api/t/*`（模板见 `domain/tracking/integration.ts`）。**采集脚本和网站前端里不能出现 CRM 地址或任何密钥**；`/api/t/*` 不开放跨域。
+- 访客 IP 保存完整值（用户决定，长期保留），只给管理员、运营查看；销售查看线索 / 客户来源时去掉 IP，API / MCP 无 `contacts:read` 时打码。浏览器上报的字段一律截断、校验，视为不可信。
+
 ## Workers 运行时
 
 - Worker 有 CPU 时间限制：不要引入重 CPU 的纯 JS 库（例如已因此把 bcryptjs 换成 Web Crypto PBKDF2，见 `apps/workers/src/shared/password.ts`）。优先用 Web Crypto 等平台原生 API。
@@ -58,6 +63,7 @@
 ## 前端
 
 - 界面文字一律走 i18n（`apps/web/src/i18n/locales/zh.json` 与 `en.json`），**两个文件的 key 必须同时增删**，不要在组件里写死文字。
+- 给用户的接入、配置指引做在系统界面里（分步向导、自动检测、可复制的代码），不要只写成仓库文档。
 
 ## 代码与提交
 

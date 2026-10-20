@@ -14,15 +14,13 @@ const LeadDetailPage = lazy(() => import('@/app/leads/LeadDetailPage'))
 const ClientsPage = lazy(() => import('@/app/clients/ClientsPage'))
 const ClientDetailPage = lazy(() => import('@/app/clients/ClientDetailPage'))
 const ServicesPage = lazy(() => import('@/app/services/ServicesPage'))
-const PartnersPage = lazy(() => import('@/app/partners/PartnersPage'))
-const ProductLibraryPage = lazy(() => import('@/app/products/ProductLibraryPage'))
 const ActivitiesPage = lazy(() => import('@/app/activities/ActivitiesPage'))
 const UsersPage = lazy(() => import('@/app/users/UsersPage'))
 const SystemSettingsPage = lazy(() => import('@/app/settings/SystemSettingsPage'))
 const WorkflowEditorPage = lazy(() => import('@/app/settings/workflows/WorkflowEditorPage'))
-const DocsPage = lazy(() => import('@/app/docs/DocsPage'))
 const ProfilePage = lazy(() => import('@/app/profile/ProfilePage'))
 const AiAccessPage = lazy(() => import('@/app/ai-access/AiAccessPage'))
+const AnalyticsPage = lazy(() => import('@/app/analytics/AnalyticsPage'))
 
 // 客户门户页面（懒加载）
 const PortalLogin = lazy(() => import('@/portal/auth/LoginPage'))
@@ -59,7 +57,7 @@ export default function App() {
                     <Route path="leads/:id" element={<LeadDetailPage />} />
                     <Route path="clients" element={<ClientsPage />} />
                     <Route path="clients/:id" element={<ClientDetailPage />} />
-                    <Route path="products" element={<ProductLibraryPage />} />
+                    <Route path="products" element={<ServicesPage />} />
                     <Route path="services" element={<Navigate to="/app/products" replace />} />
                     <Route path="partners" element={<Navigate to="/app/products" replace />} />
                     <Route path="activities" element={<ActivitiesPage />} />
@@ -67,10 +65,11 @@ export default function App() {
                     <Route path="settings" element={<SystemSettingsPage />} />
                     <Route path="settings/workflows/new" element={<WorkflowEditorPage />} />
                     <Route path="settings/workflows/:wfId" element={<WorkflowEditorPage />} />
-                    <Route path="docs" element={<DocsPage />} />
+                    <Route path="docs" element={<Navigate to="/app/settings?tab=automation" replace />} />
                     <Route path="settings/options" element={<Navigate to="/app/settings" replace />} />
                     <Route path="profile" element={<ProfilePage />} />
                     <Route path="ai-access" element={<AiAccessPage />} />
+                    <Route path="analytics" element={<AnalyticsPage />} />
                     <Route index element={<Navigate to="leads" replace />} />
                   </Route>
                 </Routes>

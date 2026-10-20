@@ -1,4 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom'
+import { VisitorSourceCard } from '@/app/analytics/Journey'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -30,7 +31,7 @@ import { useOptionGroup, toSelectOptions, getOptionColor, getOptionLabel, parseA
 import { ActivityModal } from '@/shared/components/ActivityModal'
 import type { ActivitySubmitData } from '@/shared/components/ActivityModal'
 import { AttachmentList } from '@/shared/components/AttachmentList'
-import { AiAnalysisCard } from '@/shared/components/AiAnalysisCard'
+import { AskAiButton } from '@/shared/components/AskAiButton'
 
 const editSchema = z.object({
   phone: z.string().nullable().optional(),
@@ -369,6 +370,9 @@ export default function ClientDetailPage() {
         </div>
       </div>
 
+      {/* 网站来源（转化前线索关联的访客） */}
+      <VisitorSourceCard url={`/clients/${id}/attribution`} />
+
       {/* Tab 切换 */}
       <div className="rounded-lg border bg-white overflow-hidden">
         <div className="flex border-b">
@@ -458,15 +462,8 @@ export default function ClientDetailPage() {
         </div>
       </div>
 
-      {/* AI 分析 */}
-      <AiAnalysisCard
-        entityType="client"
-        entityId={id!}
-        onActionExecuted={() => {
-          queryClient.invalidateQueries({ queryKey: ['client', id] })
-          queryClient.invalidateQueries({ queryKey: ['activities', 'client', id] })
-        }}
-      />
+      {/* 让 AI 分析：打开 AI 助手 */}
+      <AskAiButton prompt={t('ai.ask.clientPrompt', { name: client.name, id })} />
 
       {/* 编辑弹窗 */}
       {showEdit && (

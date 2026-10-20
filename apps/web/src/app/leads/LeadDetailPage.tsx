@@ -9,8 +9,9 @@ import { useOptionGroup, getOptionLabel, useOptions, parseActivityMeta } from '@
 import { ActivityModal } from '@/shared/components/ActivityModal'
 import type { ActivitySubmitData } from '@/shared/components/ActivityModal'
 import { AttachmentList } from '@/shared/components/AttachmentList'
-import { AiAnalysisCard } from '@/shared/components/AiAnalysisCard'
+import { AskAiButton } from '@/shared/components/AskAiButton'
 import { useCrmAuth } from '@/app/auth/CrmAuthContext'
+import { VisitorSourceCard } from '@/app/analytics/Journey'
 import { useWorkflows } from '@/shared/hooks/useWorkflows'
 import type { ActivityConfig } from '@/shared/hooks/useWorkflows'
 import type { Lead, LeadStatus, SalesActivity, User } from '@/shared/types'
@@ -321,6 +322,9 @@ export default function LeadDetailPage() {
         )}
       </div>
 
+      {/* 网站来源（留资时关联的访客） */}
+      <VisitorSourceCard url={`/leads/${id}/attribution`} />
+
       {/* 跟进记录 */}
       <div className="rounded-lg border bg-white p-4 sm:p-6">
         <div className="flex items-center justify-between mb-4">
@@ -370,15 +374,8 @@ export default function LeadDetailPage() {
         )}
       </div>
 
-      {/* AI 分析 */}
-      <AiAnalysisCard
-        entityType="lead"
-        entityId={id!}
-        onActionExecuted={() => {
-          queryClient.invalidateQueries({ queryKey: ['lead', id] })
-          queryClient.invalidateQueries({ queryKey: ['activities', 'lead', id] })
-        }}
-      />
+      {/* 让 AI 分析：打开 AI 助手 */}
+      <AskAiButton prompt={t('ai.ask.leadPrompt', { name: lead.name, id })} />
 
       {/* 添加跟进记录弹窗 */}
       {showActivity && (

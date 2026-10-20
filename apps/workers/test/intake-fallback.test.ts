@@ -29,13 +29,19 @@ describe('外部线索整理使用实际存在的兜底服务', () => {
     expect(input.intendedServices).toEqual(['IVF', 'Other'])
     expect(input.notes).toContain('火星旅行、Mars')
   })
-  it('没传意向服务时也用兜底服务', async () => {
+  it('意向服务选填：没传时为空，不自动记为兜底服务', async () => {
     const input = await normalizeExternalLead(dbWithServices(['IVF', 'Other']), { source: 'x', name: 'x', contactInfo: 'x' })
-    expect(input.intendedServices).toEqual(['Other'])
+    expect(input.intendedServices).toEqual([])
   })
   it('接口说明写明实际的兜底服务', () => {
     expect(buildLlmsTxt('https://crm.example', ['IVF', 'Other'])).toContain('不在列表中的值会被记为「Other」')
     const doc = buildOpenApi('https://crm.example', ['IVF', 'Other'])
     expect(doc.components.schemas.LeadInput.properties.intendedServices.description).toContain('记为「Other」')
+  })
+  it('访客统计脚本加的 crm_vid 字段不写入备注', async () => {
+    const input = await normalizeExternalLead(dbWithServices(['IVF']), {
+      source: 'x', name: 'x', contactInfo: 'x', intendedServices: ['IVF'], crm_vid: 'b1c2', pageTitle: '落地页',
+    })
+    expect(input.notes).toBe('附加信息：pageTitle：落地页')
   })
 })

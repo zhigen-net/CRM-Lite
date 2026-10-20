@@ -1,7 +1,10 @@
 // 外部推送线索的整理规则（对外接口 /api/v1/leads 与失败补录共用）
 import type { CreateLeadInput } from './service'
+import { parseVisitorId } from '../tracking/link'
 
 const KNOWN_FIELDS = new Set(['source', 'name', 'contactInfo', 'intendedServices', 'notes', 'adInfo'])
+// 访客统计脚本自动加到表单里的访客 ID：用于关联访客来源与轨迹，不写入备注
+const IGNORED_FIELDS = new Set(['crm_vid', 'visitorId'])
 
 // 顶层广告字段别名（兼容旧格式，统一映射为中文 key）
 const AD_FIELD_ALIASES: Record<string, string> = {
@@ -32,7 +35,7 @@ export async function listIntakeServiceNames(db: D1Database): Promise<string[]> 
 
 /**
  * 把外部推送的原始请求体整理成新建线索的参数：
- * - 系统未收录的意向服务替换为兜底服务（「其他」或 Other），原值写入备注
+ * - 意向服务选填；系统未收录的意向服务替换为兜底服务（「其他」或 Other），原值写入备注
  * - 广告字段优先取 adInfo 对象，再合并顶层别名字段
  * - 其余未知字段拼到备注，不丢信息
  */
@@ -44,9 +47,8 @@ export async function normalizeExternalLead(db: D1Database, body: Record<string,
   const notes: string[] = []
   if (body.notes) notes.push(String(body.notes))
 
-  const submitted = Array.isArray(body.intendedServices) && body.intendedServices.length > 0
-    ? (body.intendedServices as unknown[]).map(String)
-    : [fallback]
+  // 意向服务选填：没传时为空；传了系统未收录的值时记为兜底服务
+  const submitted = Array.isArray(body.intendedServices) ? (body.intendedServices as unknown[]).map(String) : []
   // 兜底服务本身（例如系统里没有配置「其他」时的「其他」）不算未收录，避免备注里出现无意义的提示
   const unknown = submitted.filter((s) => !validServices.has(s) && s !== fallback)
   if (unknown.length > 0) notes.push(`意向服务（系统未收录）：${unknown.join('、')}`)
@@ -60,7 +62,7 @@ export async function normalizeExternalLead(db: D1Database, body: Record<string,
   }
   const extra: string[] = []
   for (const [k, v] of Object.entries(body)) {
-    if (KNOWN_FIELDS.has(k) || k === 'contact_info') continue
+    if (KNOWN_FIELDS.has(k) || IGNORED_FIELDS.has(k) || k === 'contact_info') continue
     const adKey = AD_FIELD_ALIASES[k]
     if (adKey) {
       if (!adInfo[adKey]) adInfo[adKey] = String(v)
@@ -77,5 +79,6 @@ export async function normalizeExternalLead(db: D1Database, body: Record<string,
     intendedServices,
     notes: notes.length > 0 ? notes.join('\n') : null,
     adInfo: Object.keys(adInfo).length > 0 ? adInfo : null,
+    visitorId: parseVisitorId(body.crm_vid) ?? parseVisitorId(body.visitorId),
   }
 }

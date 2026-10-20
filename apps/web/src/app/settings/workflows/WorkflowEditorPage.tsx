@@ -17,6 +17,7 @@ import { Badge } from '@/shared/components/Badge'
 import type { Workflow } from '@/shared/hooks/useWorkflows'
 import { useOptions } from '@/shared/hooks/useOptions'
 import type { OptionItem } from '@/shared/hooks/useOptions'
+import { WorkflowHelpButton } from './WorkflowHelp'
 
 // ─── 类型定义 ──────────────────────────────────────────────────────────────────
 
@@ -652,7 +653,7 @@ export default function WorkflowEditorPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-workflows'] })
       queryClient.invalidateQueries({ queryKey: ['workflows'] })
-      navigate('/app/settings?tab=policies')
+      navigate('/app/settings?tab=automation')
     },
     onError: (err: unknown) => {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
@@ -750,7 +751,7 @@ export default function WorkflowEditorPage() {
       {/* 返回 */}
       <button
         type="button"
-        onClick={() => navigate('/app/settings?tab=policies')}
+        onClick={() => navigate('/app/settings?tab=automation')}
         className="mb-4 text-sm text-gray-500 hover:text-gray-700"
       >
         ← {t('common.back')}
@@ -767,6 +768,7 @@ export default function WorkflowEditorPage() {
           )}
         </div>
         <div className="flex items-center gap-3">
+          <WorkflowHelpButton />
           {/* 启用开关 */}
           <label className="flex items-center gap-2 cursor-pointer select-none">
             <span className="text-sm text-gray-600">{t('common.enable')}</span>
@@ -778,7 +780,7 @@ export default function WorkflowEditorPage() {
               <span className={`inline-block h-4 w-4 rounded-full bg-white shadow transform transition-transform ${form.isActive ? 'translate-x-4' : 'translate-x-0'}`} />
             </button>
           </label>
-          <Button variant="secondary" size="sm" onClick={() => navigate('/app/settings?tab=policies')}>
+          <Button variant="secondary" size="sm" onClick={() => navigate('/app/settings?tab=automation')}>
             {t('common.cancel')}
           </Button>
           <Button

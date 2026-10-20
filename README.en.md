@@ -1,4 +1,6 @@
-# CRM-Lite
+# Kelu（客路）
+
+> From first visit to loyal customer, one path.
 
 **An open-source, AI-first HubSpot alternative that runs entirely on Cloudflare**, covering the whole journey from first visit to service delivery:
 
@@ -15,15 +17,16 @@ Visitor ──form──▶ Lead ──convert──▶ Client ──sign──�
 
 - Leads: capture, rule-based assignment, follow-ups, conversion to clients
 - Clients: profiles, service milestones, next-contact reminders, attachments
-- Product library: services with delivery steps, partners and partner products
+- Products & services: services with price, delivery steps and documents
 - Activities, visual workflows (including scheduled runs), field-level policies, recycle bin
-- AI analysis and assistant (OpenAI, Anthropic, Workers AI or any compatible API) with a configurable business background
+- AI assistant that queries and updates data in plain language, with one-click "Ask AI" on detail pages (OpenAI, Anthropic, Workers AI or any compatible API) and a configurable business background
 - AI access: MCP server (`/api/mcp`), scoped API keys, audit log
 - Public API for pushing leads (`POST /api/v1/leads`), with a machine-readable reference at `/api/v1/llms.txt`
-- Client portal (`/portal`) for profiles, services, resources and progress
+- Visitor analytics: websites connect through a same-origin `/_t/*` proxy (the CRM URL is never exposed), recording channels, journeys and key actions; set up with the in-app guide under Visitor analytics → Sites, which can check the connection automatically
+- Customer portal (`/portal`, off by default; enable it in System settings → Basic) for profiles, services, resources and progress
 - Chinese and English UI
 
-**Planned**: visitor analytics and attribution, custom fields, lead scoring, unified timeline.
+**Planned**: visitor-to-lead linking, channel reports, custom fields, lead scoring, unified timeline.
 
 ## Deploy
 

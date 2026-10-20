@@ -80,20 +80,22 @@
       "showing": "共 {{total}} 条，显示第 {{from}}–{{to}} 条"
     },
     "sep": "、",
-    "status": "状态"
+    "status": "状态",
+    "brand": "客路"
   },
   "nav": {
-    "leads": "线索管理",
-    "clients": "客户档案",
-    "activities": "销售活动",
-    "products": "产品库",
-    "users": "用户管理",
-    "settings": "系统管理",
-    "docs": "文档",
+    "leads": "线索",
+    "clients": "客户",
+    "activities": "跟进记录",
+    "products": "产品与服务",
+    "users": "用户",
+    "settings": "系统设置",
     "logout": "退出登录",
     "profile": "个人资料",
     "language": "Language",
-    "aiAccess": "AI 接入"
+    "aiAccess": "AI 接入",
+    "analytics": "访客",
+    "groupSettings": "设置"
   },
   "auth": {
     "title": "内部管理系统",
@@ -115,7 +117,7 @@
     "passwordMismatch": "两次密码不一致",
     "nameRequired": "请输入姓名",
     "templateLabel": "行业模板",
-    "templateHint": "模板只在初始化时应用，之后可在「系统管理」中修改服务项目、选项和业务背景。",
+    "templateHint": "模板只在初始化时应用，之后可在「系统设置」中修改服务项目、选项和业务背景。",
     "templates": {
       "blank": {
         "name": "通用",
@@ -128,7 +130,7 @@
     }
   },
   "leads": {
-    "title": "线索管理",
+    "title": "线索",
     "count": "条线索",
     "new": "新建线索",
     "search": "搜索姓名、联系方式、来源、编号...",
@@ -197,7 +199,7 @@
     }
   },
   "clients": {
-    "title": "客户档案",
+    "title": "客户",
     "count": "位客户",
     "search": "搜索姓名、邮箱、电话...",
     "noMatch": "未找到匹配客户",
@@ -237,7 +239,7 @@
     "noContact": "无联系方式"
   },
   "activities": {
-    "title": "销售活动",
+    "title": "跟进记录",
     "count": "条记录",
     "search": "搜索内容、关联客户/线索、跟进人...",
     "filterLabel": "筛选",
@@ -297,7 +299,7 @@
     "followUp": "跟进："
   },
   "users": {
-    "title": "用户管理",
+    "title": "用户",
     "count": "名用户",
     "search": "搜索姓名、邮箱...",
     "new": "新建用户",
@@ -344,65 +346,15 @@
     "resetPwdBtn": "重置密码"
   },
   "partners": {
-    "title": "合作伙伴",
-    "count": "家",
-    "search": "搜索名称、联系人...",
-    "new": "新建合作伙伴",
-    "empty": "暂无合作伙伴",
-    "form": {
-      "name": "名称",
-      "type": "类型",
-      "contact": "联系人",
-      "contactInfo": "联系方式",
-      "contactInfoHint": "电话、邮箱等",
-      "services": "服务范围",
-      "servicesHint": "用逗号或顿号分隔，如：基础套餐、高级套餐"
-    },
-    "detail": {
-      "info": "伙伴资料",
-      "products": "产品",
-      "noProducts": "暂无产品",
-      "addProduct": "+ 添加产品",
-      "productCount": "共 {{count}} 个，来自 {{partners}} 家合作伙伴",
-      "contact": "联系人",
-      "productInfo": "产品资料"
-    },
-    "product": {
-      "add": "添加产品",
-      "edit": "编辑产品",
-      "name": "产品名称",
-      "description": "描述",
-      "price": "价格",
-      "currency": "货币",
-      "service": "关联服务"
-    },
-    "validation": {
-      "nameRequired": "请填写名称",
-      "typeRequired": "请选择类型",
-      "serviceRequired": "请选择关联服务",
-      "productNameRequired": "请填写产品名称"
-    },
-    "deleteConfirm": "确认删除「{{name}}」？"
+    "title": "合作伙伴"
   },
   "products": {
-    "title": "产品库",
+    "title": "产品与服务",
     "noServices": "暂无服务，点击右上方新建",
-    "noProducts": "暂无产品，点击右上方添加",
-    "docsLabel": "服务资料",
-    "partnerDisabled": "（已禁用）",
     "serviceForm": {
-      "steps": "服务流程（每行一个步骤）",
-      "stepsPlaceholder": "初步咨询\n医疗评估\n方案制定"
+      "stepsPlaceholder": "初步沟通\n方案确认\n交付验收"
     },
-    "category": "分类",
-    "supplier": "供应商",
-    "categories": "分类管理",
-    "suppliers": "供应商管理",
-    "allSuppliers": "全部供应商",
-    "newSupplier": "新建供应商",
-    "search": "搜索产品名称...",
-    "allCategories": "全部分类",
-    "attachments": "产品附件"
+    "subtitle": "服务项目会出现在线索的「意向服务」和客户的服务套餐中；交付步骤会生成客户的交付进度。"
   },
   "services": {
     "title": "服务管理",
@@ -414,9 +366,6 @@
       "description": "描述",
       "price": "价格（元）",
       "steps": "服务流程（每行一个步骤）",
-      "available": "可选产品",
-      "noProducts": "暂无产品，请在{{link}}页面添加",
-      "partnersLink": "合作伙伴",
       "docs": "服务资料"
     },
     "validation": {
@@ -425,16 +374,13 @@
     "deleteConfirm": "确认删除「{{name}}」？"
   },
   "settings": {
-    "title": "系统管理",
+    "title": "系统设置",
     "subtitle": "配置系统基本信息和服务参数",
     "tabs": {
       "basic": "基本配置",
-      "ai": "AI 配置",
       "options": "选项配置",
-      "workflow": "工作流",
-      "trash": "回收站",
-      "apiFailures": "API 失败记录",
-      "auditLog": "审计日志"
+      "automation": "AI 与自动化",
+      "trash": "回收站"
     },
     "basic": {
       "title": "基本信息",
@@ -445,12 +391,14 @@
       "saved": "已保存",
       "industryContext": "业务背景",
       "industryContextPlaceholder": "例如：留学咨询机构，客户多为高中生家长，决策周期 1–3 个月",
-      "industryContextHint": "简要描述你的行业、客户和业务特点，AI 分析、AI 助手和 MCP 会参考这段内容。"
+      "industryContextHint": "简要描述你的行业、客户和业务特点，AI 助手和 MCP 会参考这段内容。"
     },
     "features": {
       "title": "功能开关",
       "aiAgent": "AI 助手",
-      "aiAgentHint": "开启后右下角显示 AI 对话浮窗，可通过自然语言操作系统"
+      "aiAgentHint": "开启后右下角显示 AI 对话浮窗，可通过自然语言操作系统",
+      "portal": "客户门户",
+      "portalHint": "开启后客户可以在 /portal 登录，查看自己的资料、服务、资料文件和交付进度。需要先配置邮件服务（登录链接通过邮件发送）。"
     },
     "teams": {
       "title": "团队管理",
@@ -474,7 +422,6 @@
       "leadStatus": "线索状态",
       "contractStatus": "合同状态",
       "activityTypes": "跟进类型",
-      "partnerTypes": "合作伙伴类型",
       "valueRequired": "请填写值",
       "labelRequired": "请填写标签",
       "addOption": "+ 添加选项",
@@ -568,18 +515,7 @@
       "enabledModels": "已启用模型",
       "noEnabledModels": "暂无已启用模型，请先添加提供商并查询模型",
       "customProvider": "自定义（OpenAI 兼容）",
-      "cloudflareHint": "Cloudflare Workers AI 通过原生绑定调用，无需配置 API Key，直接使用即可。",
-      "promptTitle": "AI 分析提示词",
-      "promptSubtitle": "配置线索和客户 AI 分析时使用的提示词模板",
-      "systemPrompt": "系统角色设定（System Prompt）",
-      "userPrompt": "用户提示词模板（User Prompt Template）",
-      "collapseVars": "收起变量",
-      "showVars": "查看可用变量",
-      "systemRole": "系统角色",
-      "userPromptLabel": "用户提示词模板",
-      "noPrompt": "暂无提示词配置",
-      "notConfigured": "（未配置）",
-      "saving": "保存中..."
+      "cloudflareHint": "Cloudflare Workers AI 通过原生绑定调用，无需配置 API Key，直接使用即可。"
     },
     "workflow": {
       "title": "工作流",
@@ -658,9 +594,6 @@
         "subtitle": "触发后依次执行以下动作",
         "empty": "暂无动作，请从下方添加",
         "pending": "此动作执行逻辑待开发，配置将被保存但暂不生效",
-        "noTemplates": "动作库暂无可用模板，请先在「动作库」Tab 中创建。",
-        "addFromLib": "从动作库添加",
-        "selectTemplate": "选择动作模板",
         "workflowName": "工作流名称（留空自动生成）",
         "types": {
           "require_activity": "要求跟进记录",
@@ -740,29 +673,7 @@
           },
           "method": "方法",
           "bodyJson": "Body（JSON，支持变量）"
-        },
-        "aiAnalysis": {
-          "autoActions": "自动执行建议操作（逗号分隔，可选）",
-          "autoActionsDefault": "set_next_contact_date,update_lead_status",
-          "autoActionsHint": "留空则只保存分析结果，不自动执行任何操作。可填：set_next_contact_date / update_lead_status / update_contract_status"
         }
-      },
-      "actionLib": {
-        "title": "动作库",
-        "subtitle": "预先定义好的动作配置，新建工作流时可直接加载，无需重复配置。",
-        "new": "+ 新建模板",
-        "empty": "暂无动作模板",
-        "templateName": "模板名称",
-        "templateNamePlaceholder": "如：发送销售通知邮件",
-        "target": "适用对象（影响可选字段）",
-        "actionType": "动作类型",
-        "pending": "待开发",
-        "cols": {
-          "name": "模板名称",
-          "type": "动作类型",
-          "status": "状态"
-        },
-        "deleteConfirm": "确认删除此模板？"
       },
       "createTitle": "新建工作流",
       "editTitle": "编辑工作流",
@@ -830,22 +741,6 @@
       "America/Los_Angeles": "美国太平洋时间 (UTC-8/-7)",
       "Europe/London": "英国时间 (UTC+0/+1)",
       "Europe/Paris": "欧洲中部时间 (UTC+1/+2)"
-    },
-    "prompts": {
-      "vars": {
-        "today": "当前日期",
-        "name": "姓名",
-        "source": "来源",
-        "status": "当前状态",
-        "intendedServices": "意向服务",
-        "nextContactDate": "下次联系时间",
-        "assignedName": "负责销售",
-        "activities": "跟进记录（最近20条）",
-        "activityTypes": "可用跟进类型列表",
-        "contractStatus": "合同状态",
-        "servicePlans": "服务套餐",
-        "assignedSalesName": "负责销售"
-      }
     },
     "auditLog": {
       "title": "审计日志",
@@ -947,9 +842,9 @@
           "webhook": "请帮我把广告平台（如百度、巨量引擎、腾讯广告）的线索推送接入 CRM：平台每收到一条线索，就转发到 CRM 新建线索。",
           "generic": "请帮我把我们的系统接入 CRM 的线索接口，用来自动新建线索。"
         },
-        "spec": "## CRM 线索接口\n- 完整说明（系统实时生成，能联网请先读取）：{{docsUrl}}\n- 地址：POST {{endpoint}}\n- 请求头：\n  Content-Type: application/json\n  {{keyLine}}\n- 请求体字段（JSON）：\n  - source（必填，字符串）：线索来源，如「官网表单」「百度推广」\n  - name（必填，字符串）：客户姓名或称呼\n  - contactInfo（必填，字符串）：电话、微信或邮箱\n  - intendedServices（必填，字符串数组，至少一个）：意向服务，可选值：{{services}}。不在列表中的值会被记为「{{fallback}}」，原值写入备注\n  - notes（可选，字符串）：备注\n  - adInfo（可选，对象）：广告追踪信息，键为 ip、url、账户、广告计划、广告组、广告\n  - 其它未定义的字段不会报错，会拼接到备注里\n- 成功：HTTP 201，返回 {\"data\":{\"id\":\"线索ID\",\"status\":\"New\"}}\n- 失败：401 密钥缺失或无效；400 参数错误（缺少必填字段等），返回体说明是哪个字段\n- 接口允许跨域，但密钥不能暴露在浏览器中",
+        "spec": "## CRM 线索接口\n- 完整说明（系统实时生成，能联网请先读取）：{{docsUrl}}\n- 地址：POST {{endpoint}}\n- 请求头：\n  Content-Type: application/json\n  {{keyLine}}\n- 请求体字段（JSON）：\n  - source（必填，字符串）：线索来源，如「官网表单」「百度推广」\n  - name（必填，字符串）：客户姓名或称呼\n  - contactInfo（必填，字符串）：电话、微信或邮箱\n  - intendedServices（可选，字符串数组）：意向服务，可选值：{{services}}。不在列表中的值会被记为「{{fallback}}」，原值写入备注\n  - notes（可选，字符串）：备注\n  - adInfo（可选，对象）：广告追踪信息，键为 ip、url、账户、广告计划、广告组、广告\n  - crm_vid（可选，字符串）：网站接入访客统计后，表单里自动带上的隐藏字段（访客 ID），原样传入即可关联访客来源\n  - 其它未定义的字段不会报错，会拼接到备注里\n- 成功：HTTP 201，返回 {\"data\":{\"id\":\"线索ID\",\"status\":\"New\"}}\n- 失败：401 密钥缺失或无效；400 参数错误（缺少必填字段等），返回体说明是哪个字段\n- 接口允许跨域，但密钥不能暴露在浏览器中",
         "req": {
-          "website": "## 实现要求\n1. 密钥不能出现在网页前端代码里。表单应提交到我们自己的后端（或云函数/边缘函数），由后端带上密钥转发给 CRM。\n2. 把表单字段映射到上面的字段；source 写成能区分页面的名称；尽量把落地页 url、访客 ip 以及 URL 中的广告参数放进 adInfo。\n3. CRM 调用失败时不要影响访客看到的提交结果，在后端记录日志即可。",
+          "website": "## 实现要求\n1. 密钥不能出现在网页前端代码里。表单应提交到我们自己的后端（或云函数/边缘函数），由后端带上密钥转发给 CRM。\n2. 把表单字段映射到上面的字段；source 写成能区分页面的名称；尽量把落地页 url、访客 ip 以及 URL 中的广告参数放进 adInfo；表单里如果有隐藏字段 crm_vid，原样一起传给 CRM。\n3. CRM 调用失败时不要影响访客看到的提交结果，在后端记录日志即可。",
           "webhook": "## 实现要求\n1. 广告平台通常不能自定义请求头，需要一个中转服务（如 Cloudflare Worker 或云函数）接收平台推送，验证平台签名后转发到 CRM。\n2. 把平台的字段映射到上面的字段：source 写平台名称，账户/广告计划/广告组/广告 写进 adInfo。\n3. 按平台要求的格式返回成功响应；CRM 返回失败时记录日志，必要时按平台的重试机制处理。",
           "generic": "## 实现要求\n1. 先了解我们现有系统的结构，选择最合适的接入点，再告诉我你的方案。\n2. 密钥只能放在服务端环境变量中。\n3. 字段映射不确定时先问我，不要猜。"
         },
@@ -997,7 +892,7 @@
           "mcp": "MCP（AI 直接操作 CRM）",
           "push": "推送线索"
         },
-        "intro": "在 Claude Code、Cursor、Claude Desktop 等支持 MCP 的 AI 工具里添加下面的配置，AI 就能按这把密钥的权限查询和维护 CRM 数据。所有调用都记录在「系统管理 → 审计日志」。",
+        "intro": "在 Claude Code、Cursor、Claude Desktop 等支持 MCP 的 AI 工具里添加下面的配置，AI 就能按这把密钥的权限查询和维护 CRM 数据。所有调用都记录在本页下方的「审计日志」中（管理员可见）。",
         "url": "MCP 地址",
         "claudeCode": "Claude Code 命令",
         "json": "JSON 配置（Cursor、Claude Desktop 等）",
@@ -1047,30 +942,12 @@
         "帮我查一下最近新建的线索"
       ]
     },
-    "analysis": {
-      "title": "AI 分析",
-      "analyzing": "分析中...",
-      "start": "开始分析",
-      "regenerate": "重新生成",
-      "error": "分析失败，请检查 AI 模型配置",
-      "loading": "正在分析，请稍候...",
-      "suggestions": {
-        "updateLeadStatus": "AI 建议：更新线索状态为「{{value}}」。",
-        "updateContractStatus": "AI 建议：更新合同状态为「{{value}}」",
-        "updateService": "AI 建议：更新意向服务为「{{value}}」",
-        "updatePlan": "AI 建议：更新服务套餐为「{{value}}」",
-        "reassign": "AI 建议：重新分配销售为「{{value}}」",
-        "nextContact": "AI 建议：安排下次联系时间为{{value}}"
-      },
-      "executed": "已执行",
-      "execute": "执行 →",
-      "empty": "点击「开始分析」生成 AI 分析报告",
-      "waitTypes": "跟进类型尚未加载，请稍候再试",
-      "opFailed": "操作失败：",
-      "opError": "操作执行失败，请手动处理",
-      "loading2": "加载中..."
-    },
-    "fallbackDesc": "AI 建议：{{label}}（{{value}}）。{{reason}}"
+    "ask": {
+      "hint": "让 AI 助手结合资料、跟进记录和网站来源，分析意向并建议下一步。",
+      "button": "让 AI 分析",
+      "leadPrompt": "请分析线索「{{name}}」（ID：{{id}}）：结合基本资料、跟进记录和网站来源，判断意向程度，指出需要注意的地方，并建议下一步跟进动作和下次联系时间。",
+      "clientPrompt": "请分析客户「{{name}}」（ID：{{id}}）：结合基本资料、跟进记录、交付进度和网站来源，总结当前状态和风险，并建议下一步跟进动作。"
+    }
   },
   "portal": {
     "auth": {
@@ -1090,7 +967,8 @@
       "resend": "重新发送",
       "linkExpired": "链接已失效，请重新登录",
       "invalidEmail": "请输入有效邮箱",
-      "passwordMin": "密码至少 6 位"
+      "passwordMin": "密码至少 6 位",
+      "disabled": "客户门户暂未开启，请联系服务人员。"
     },
     "profile": {
       "title": "个人资料",
@@ -1132,7 +1010,7 @@
         "uploadedAt": "上传时间"
       },
       "types": {
-        "MedicalReport": "医疗报告",
+        "MedicalReport": "报告",
         "Contract": "合同",
         "PassportCopy": "证件复印",
         "PartnerContact": "合作方联系"
@@ -1159,26 +1037,291 @@
       "logout": "退出"
     }
   },
-  "docs": {
-    "title": "文档",
-    "copyBtn": "复制",
-    "copied": "已复制",
-    "nav": {
-      "workflow": "工作流自动化",
-      "api": "API 接入"
+  "fileManager": {
+    "loading": "加载中...",
+    "empty": "暂无文件",
+    "deleteConfirm": "确认删除文件「{{name}}」？",
+    "upload": "+ 上传文件",
+    "clickToDownload": "点击下载",
+    "loadFailed": "文件加载失败"
+  },
+  "attachments": {
+    "loading": "加载中...",
+    "loadFailed": "文件加载失败",
+    "download": "下载"
+  },
+  "milestone": {
+    "pending": "待开始",
+    "inProgress": "进行中",
+    "completed": "已完成",
+    "skipped": "已跳过",
+    "noMilestones": "暂无进度记录，选择服务流程初始化：",
+    "initFrom": "初始化",
+    "completedOn": "完成于",
+    "expectedOn": "预计",
+    "notesHint": "备注（可选）"
+  },
+  "aiAccess": {
+    "title": "AI 接入",
+    "subtitle": "把 AI Agent（Claude Code、Cursor 等）或外部系统接入 CRM。密钥以你的身份操作，权限不超过你的角色。",
+    "sections": {
+      "mcp": {
+        "title": "AI 工具（MCP）",
+        "desc": "在 Claude Code、Cursor、Claude Desktop 等 AI 工具里，用自然语言查询和维护客户、线索。适合管理员、客服日常使用。"
+      },
+      "push": {
+        "title": "外部系统推送线索",
+        "desc": "网站表单、广告平台等外部系统把新线索自动推送进 CRM。"
+      },
+      "keyCount": "已有 {{count}} 把密钥"
     },
+    "mcp": {
+      "stepsTitle": "三步接入",
+      "create": "创建 MCP 密钥",
+      "defaultName": "MCP（AI 工具）",
+      "step1": {
+        "title": "创建密钥",
+        "desc": "默认读写权限，可查看完整联系方式；也可以改为只读。"
+      },
+      "step2": {
+        "title": "复制配置",
+        "desc": "在弹窗中复制 Claude Code 命令，或 Cursor / Claude Desktop 的 JSON 配置，粘贴到 AI 工具。"
+      },
+      "step3": {
+        "title": "直接说需求",
+        "desc": "AI 会按你的权限和角色操作 CRM，每一步都记录在审计日志。"
+      },
+      "examplesTitle": "可以这样对 AI 说：",
+      "example1": "今天有哪些客户需要跟进？",
+      "example2": "把张三的状态改为已联系，并记录刚才的电话沟通",
+      "example3": "把线索 1024 转为客户，负责销售设为李四",
+      "example4": "列出上周新增、还没分配的线索",
+      "keysTitle": "MCP 密钥",
+      "empty": "还没有 MCP 密钥，点击「创建 MCP 密钥」开始"
+    },
+    "push": {
+      "keysTitle": "推送密钥",
+      "intro": "每个接入的系统用一把密钥，方便单独停用。创建后可复制给 AI 的接入提示词，让 AI 帮你写对接代码。",
+      "create": "创建推送密钥",
+      "defaultName": "官网表单",
+      "empty": "还没有推送密钥",
+      "docsToggle": "接口说明",
+      "llmsHint": "能联网的 AI 可以直接读取实时生成的接口说明："
+    },
+    "keys": {
+      "lastUsed": "最后使用 {{time}}",
+      "neverUsed": "从未使用",
+      "view": "查看配置"
+    }
+  },
+  "analytics": {
+    "title": "访客",
+    "subtitle": "网站访客从哪里来、看了什么、做了什么，以及是否已经留资。",
+    "tabs": {
+      "visitors": "访客",
+      "sites": "站点管理"
+    },
+    "channels": {
+      "paid": "广告",
+      "search": "搜索",
+      "social": "社交",
+      "referral": "外链",
+      "direct": "直接访问"
+    },
+    "devices": {
+      "mobile": "手机",
+      "tablet": "平板",
+      "desktop": "电脑"
+    },
+    "events": {
+      "pageview": "浏览",
+      "leave": "离开",
+      "tel": "点击电话",
+      "wechat": "复制微信",
+      "form": "提交表单",
+      "custom": "自定义"
+    },
+    "visitors": {
+      "allChannels": "全部来源",
+      "allVisitors": "全部访客",
+      "withLead": "已留资",
+      "withoutLead": "未留资",
+      "total": "共 {{count}} 位访客",
+      "empty": "暂无访客数据。网站接入后，有人访问就会出现在这里。",
+      "noSites": "还没有接入网站。请管理员在「站点管理」中添加站点并部署接入代码。",
+      "cols": {
+        "lastSeen": "最近访问",
+        "source": "首次来源",
+        "visits": "访问 / 浏览",
+        "device": "设备",
+        "location": "IP / 地区 / 运营商",
+        "actions": "关键行为",
+        "lead": "线索"
+      }
+    },
+    "journey": {
+      "title": "访问轨迹",
+      "firstSource": "首次来源",
+      "firstLanding": "首次落地页",
+      "visits": "访问次数 / 浏览量",
+      "lead": "关联线索",
+      "viewLead": "查看线索",
+      "noLead": "未留资",
+      "visitSummary": "{{pages}} 页 · 停留 {{time}}",
+      "referrer": "来源网址"
+    },
+    "sites": {
+      "title": "站点",
+      "subtitle": "每个接入统计的网站一把站点密钥，只放在网站服务器端的加密环境变量中。",
+      "create": "添加站点",
+      "empty": "还没有站点。添加站点后，按接入向导一步步完成网站接入。",
+      "name": "站点名称",
+      "namePlaceholder": "如：官网、活动落地页",
+      "domain": "域名（可选）",
+      "disabled": "已停用",
+      "visitors": "访客 {{count}}",
+      "lastSeen": "最近数据 {{time}}",
+      "noData": "尚未收到数据",
+      "viewCode": "接入向导",
+      "rotate": "更换密钥",
+      "rotateConfirm": "更换「{{name}}」的站点密钥？旧密钥会立即失效，需要同步更新网站的 CRM_SITE_KEY。",
+      "disable": "停用",
+      "enable": "启用"
+    },
+    "guide": {
+      "title": "接入「{{name}}」",
+      "steps": {
+        "prepare": "准备",
+        "secrets": "配置变量",
+        "code": "转发代码",
+        "script": "页面脚本",
+        "verify": "检测"
+      },
+      "prev": "上一步",
+      "next": "下一步",
+      "done": "完成",
+      "siteTypes": {
+        "pages": "Pages 网站",
+        "worker": "Worker 网站"
+      },
+      "prepare": {
+        "intro": "按向导完成 5 步，网站访客就会出现在「访客」中。浏览器只访问网站自己的 /_t/ 路径，看不到 CRM 地址和密钥。",
+        "siteType": "网站部署在哪里？",
+        "siteTypeHint": {
+          "pages": "Cloudflare Pages 项目，静态站点或使用 functions/ 目录",
+          "worker": "Cloudflare Workers 项目（含带静态资源的 Worker），或 Pages 高级模式（_worker.js）"
+        },
+        "account": "网站与本 CRM 在同一个 Cloudflare 账号下吗？",
+        "connect": {
+          "binding": "同一账号（推荐）",
+          "url": "不同账号"
+        },
+        "connectHint": {
+          "binding": "使用服务绑定，请求走 Cloudflare 内部，不经过公网",
+          "url": "通过 CRM 地址访问；地址保存在网站的加密变量中，浏览器看不到"
+        },
+        "envNotice": "当前 CRM：{{origin}}。测试环境和生产环境的站点与密钥互不通用：要接入哪个环境，就在哪个 CRM 中添加站点并运行本向导。"
+      },
+      "secrets": {
+        "path": "打开网站所在的 Cloudflare 项目（不是 CRM 的 Worker）：Workers & Pages → 网站项目 → Settings。",
+        "keyTitle": "① Variables and Secrets → Add，类型选 Secret，名称 CRM_SITE_KEY，值为站点密钥：",
+        "keyNotice": "请立即复制，关闭后不再显示。",
+        "keyHidden": "站点密钥只在创建或更换时显示一次。如果已经配置在网站中，跳过这一项；如果找不到了，可以更换密钥（旧密钥立即失效）。",
+        "rotate": "更换密钥并显示",
+        "bindingTitle": "② Bindings → Add → Service binding：",
+        "bindingName": "Variable name 填",
+        "bindingService": "Service 选择本 CRM 的 Worker：",
+        "bindingServiceUnknown": "（即当前这个 CRM 对应的 Worker）",
+        "urlTitle": "② 再添加一个 Secret，名称 CRM_URL，值为本 CRM 地址（末尾不要加 /）：",
+        "pagesEnv": "Pages 项目的变量和绑定分 Production 和 Preview 两套，至少要配置在 Production。",
+        "redeploy": "变量和绑定要重新部署后才生效，完成后面的代码改动后统一部署一次即可。"
+      },
+      "code": {
+        "pagesPlace": "在网站项目根目录（与 package.json 同级，不要放进 dist/ 或 public/）新建文件 functions/_t/[[path]].js，粘贴以下代码：",
+        "pagesRoutes": "如果项目有自定义的 _routes.json，确认 /_t/* 在 include 中、不在 exclude 中。",
+        "pagesAdvanced": "如果构建输出中有 _worker.js（高级模式，Next.js 等框架常见），functions/ 不会生效，请回到第 1 步改选「Worker 网站」。",
+        "workerPlace": "在 Worker 入口的 fetch 函数最前面加上这一行，再把 forwardToCrm 函数加进同一个文件：",
+        "workerEntry": "加在 fetch 入口最前面",
+        "workerAssets": "如果 Worker 带静态资源（配置中有 [assets]），还要让 /_t/* 先进入 Worker，否则 t.js 会返回网页：",
+        "workerBinding": "服务绑定也可以写在网站的 wrangler 配置里，与控制台设置等效：",
+        "workerNamePlaceholder": "<CRM 的 Worker 名>",
+        "noModify": "请原样使用，不要修改转发逻辑。",
+        "aiTitle": "让 AI 来改代码",
+        "aiHint": "把提示词交给编码 AI（Claude Code、Cursor 等），在网站仓库中执行。密钥请自己在 Cloudflare 控制台填写，不要发给 AI，也不要提交到代码仓库。"
+      },
+      "aiConnect": {
+        "binding": "网站与 CRM 在同一个 Cloudflare 账号：使用服务绑定 CRM（变量名大写）。",
+        "url": "网站与 CRM 不在同一个 Cloudflare 账号：使用加密环境变量 CRM_URL（CRM 地址，末尾不带 /）。"
+      },
+      "aiPlace": {
+        "pages": "新建文件 functions/_t/[[path]].js（项目根目录）；如果有自定义 _routes.json，确保 /_t/* 被包含。",
+        "worker": "把 forwardToCrm 加进 Worker 入口，并在 fetch 最前面判断 /_t/ 开头的路径交给它；如果配置了 [assets]，加上 run_worker_first = [\"/_t/*\"]。"
+      },
+      "aiPrompt": "请帮我给这个{{mode}}接入 CRM 访客统计：\n1. {{place}}不要修改转发逻辑。\n2. 在所有页面的 </head> 前加上：{{scriptTag}}\n3. 不要把 CRM 地址或密钥写进前端代码或仓库。站点密钥使用加密环境变量 CRM_SITE_KEY。{{connect}}\n4. 完成后告诉我需要在 Cloudflare 控制台设置哪些变量或绑定。\n\n转发代码：\n{{code}}",
+      "script": {
+        "place": "在网站每个页面的 </head> 前加上这一行（公共布局或模板中加一次即可；单页应用加在 index.html）：",
+        "spa": "单页应用的路由切换会自动记为新的浏览。",
+        "form": "提交表单时会自动带上隐藏字段 crm_vid（访客 ID），CRM 的线索接口会忽略它；第三方表单后端校验严格时请放行该字段。",
+        "csp": "脚本和上报都是同源请求，网站有 CSP 时 'self' 即可，不需要放行 CRM 域名。",
+        "deploy": "完成后推送代码或在控制台重新部署网站，然后进入下一步检测。"
+      },
+      "verify": {
+        "disabled": "该站点已停用，启用后才能接收数据。",
+        "checkTitle": "自动检测",
+        "check": "检测接入",
+        "checkHint": "CRM 会从服务器端访问该网站的 /_t/t.js 和 /_t/collect，检查转发代码和站点密钥，不会产生访客数据。填写的域名会保存到站点。",
+        "rows": {
+          "script": "采集脚本 /_t/t.js",
+          "collect": "转发与站点密钥 /_t/collect"
+        },
+        "reasons": {
+          "ok": "正常",
+          "unreachable": "无法访问网站。请确认域名正确且网站已部署。如果网站和 CRM 都使用 workers.dev 域名，Cloudflare 可能不允许互相访问，请用下方「实时数据」验证。",
+          "not_found": "返回 HTTP {{status}}：转发代码没有部署。Pages 网站检查 functions/_t/[[path]].js 的位置和文件名（两层方括号）；Worker 网站检查入口是否加了 /_t/ 判断。",
+          "html": "返回了网页而不是预期内容：请求没有进入转发代码。Pages 网站检查 _routes.json 和是否为高级模式；Worker 网站检查 run_worker_first 以及 /_t/ 判断是否在入口最前面。",
+          "redirect": "被重定向（HTTP {{status}}）：请填写网站最终访问的域名，例如带 www 的域名。",
+          "bad_key": "CRM 拒绝了密钥：CRM_SITE_KEY 不正确、站点已停用、变量只配置在 Preview，或配置后没有重新部署。另请确认密钥来自当前这个 CRM 环境。",
+          "wrong_site": "网站使用的是另一个站点的密钥，请换成本站点的密钥。",
+          "server_error": "网站返回 HTTP {{status}}：通常是没有配置服务绑定 CRM 或 CRM_URL，或 CRM_URL 写错（末尾多了 / 或缺少 https://）。可在网站项目的 Workers Logs 查看具体错误。",
+          "unexpected": "返回了意外的响应（HTTP {{status}}），请检查转发代码是否被修改。"
+        },
+        "allOk": "接入正常。用浏览器打开网站浏览几个页面，数据会出现在下方。",
+        "liveTitle": "实时数据",
+        "liveWaiting": "等待数据……请用正常浏览器（关闭广告拦截插件）打开网站任意页面。",
+        "liveReceived": "已收到数据：最近 {{time}}，共 {{count}} 位访客。",
+        "manualTitle": "在浏览器中手动检查",
+        "manual1": "打开网站，按 F12 打开开发者工具的 Network（网络）面板，刷新页面。",
+        "manual2": "/_t/t.js 应返回 200，内容是 JavaScript 而不是网页。",
+        "manual3": "/_t/collect 应返回 204。",
+        "manual4": "测试来源识别：在网址后加 ?utm_source=test&utm_medium=cpc，用无痕窗口访问，「首次来源」应显示为广告。",
+        "multi": "还有其它网站？完成后再「添加站点」，每个网站使用自己的密钥，重复本向导即可。同一域名下的多个页面属于同一个站点。"
+      }
+    },
+    "source": {
+      "title": "网站来源",
+      "site": "站点：{{name}}",
+      "viewJourney": "查看访问轨迹",
+      "channel": "首次来源",
+      "campaign": "广告参数（来源 / 媒介 / 计划）",
+      "landing": "首次落地页",
+      "referrer": "来源网址",
+      "firstSeen": "首次访问",
+      "visits": "访问次数",
+      "visitsValue": "{{visits}} 次访问，浏览 {{pages}} 页",
+      "ip": "最近访问 IP"
+    }
+  },
+  "workflowHelp": {
     "sections": {
       "intro": "概述",
       "vars": "模板变量",
       "actions": "动作类型",
-      "tips": "注意事项",
-      "apiOverview": "认证与概述",
-      "apiLeads": "提交线索"
+      "tips": "注意事项"
     },
     "intro": {
       "title": "工作流自动化",
       "subtitle": "了解工作流的运行机制、触发方式与执行流程",
-      "body": "工作流让系统在满足特定条件时自动执行一系列动作，减少手动操作、保证业务流程一致性。你可以在「系统管理 → 工作流」中配置和启用工作流。",
+      "body": "工作流让系统在满足特定条件时自动执行一系列动作，减少手动操作、保证业务流程一致性。你可以在「系统设置 → AI 与自动化」中配置和启用工作流。",
       "flowTitle": "执行流程",
       "steps": {
         "trigger": {
@@ -1387,148 +1530,7 @@
         ]
       }
     },
-    "api": {
-      "overview": {
-        "title": "API 接入 — 认证与概述",
-        "subtitle": "通过 REST API 将外部系统（落地页、广告平台等）的线索自动录入 CRM",
-        "authTitle": "认证方式",
-        "authDesc": "所有 API 请求需在请求头中携带",
-        "authDescPost": "进行身份验证。",
-        "keyNote": "API Key 由管理员在「系统管理 → API 密钥」中创建和管理。Key 以",
-        "keyNotePost": "开头，请妥善保管，不要泄露到前端代码或公开仓库。",
-        "endpointsTitle": "接口列表",
-        "submitLeadsLabel": "提交线索",
-        "errorsTitle": "错误码说明",
-        "autoAssignTitle": "自动分配",
-        "autoAssignDesc": "通过 API 提交的线索会自动进入分配队列，根据「系统管理 → 分配规则」中配置的规则自动分配给合适的销售人员。"
-      },
-      "errorCodes": {
-        "401": "缺少或无效的 X-API-Key",
-        "400": "请求参数校验失败，message 字段说明具体原因",
-        "500": "服务器内部错误"
-      },
-      "leads": {
-        "title": "提交线索",
-        "subtitle": "将落地页或广告平台收集的客户信息提交到 CRM",
-        "headerNote": "Content-Type: application/json · 需携带 X-API-Key 请求头",
-        "reqFieldsTitle": "请求字段",
-        "cols": {
-          "field": "字段",
-          "type": "类型",
-          "required": "必填",
-          "desc": "说明"
-        },
-        "requiredLabel": "必填",
-        "optionalLabel": "可选",
-        "adInfoTitle": "adInfo 广告字段说明",
-        "adInfoCols": {
-          "field": "字段名",
-          "desc": "说明"
-        },
-        "adInfoNote": "所有 adInfo 子字段均为可选。提交后可在线索详情页的「广告信息」卡片中查看。",
-        "reqExampleLabel": "请求示例",
-        "successLabel": "成功响应（201）",
-        "fallbackTitle": "意向服务兜底规则",
-        "fallbackItems": [
-          "系统会对照服务列表校验 intendedServices 中的每一项",
-          "未收录的服务名自动替换为「其他」，并将原始名称追加到备注中",
-          "若提交了系统未配置的「其他」服务，请先在「系统管理 → 服务管理」中添加对应服务项"
-        ],
-        "fields": {
-          "source": "线索来源渠道，如「百度」、「抖音」",
-          "name": "线索姓名",
-          "contactInfo": "联系方式（手机号 / 微信 / 邮箱等）",
-          "intendedServices": "意向服务列表，至少一项。系统未收录的服务会兜底替换为「其他」并记入备注",
-          "notes": "备注信息（可选）",
-          "adInfo": "广告追踪信息（可选），详见下方广告字段说明"
-        },
-        "adInfoFields": {
-          "ip": "用户 IP 地址",
-          "url": "落地页或广告链接",
-          "account": "广告账户名称",
-          "plan": "广告计划名称",
-          "group": "广告组名称",
-          "ad": "广告创意名称"
-        }
-      }
-    }
-  },
-  "fileManager": {
-    "loading": "加载中...",
-    "empty": "暂无文件",
-    "deleteConfirm": "确认删除文件「{{name}}」？",
-    "upload": "+ 上传文件",
-    "clickToDownload": "点击下载",
-    "loadFailed": "文件加载失败"
-  },
-  "attachments": {
-    "loading": "加载中...",
-    "loadFailed": "文件加载失败",
-    "download": "下载"
-  },
-  "milestone": {
-    "pending": "待开始",
-    "inProgress": "进行中",
-    "completed": "已完成",
-    "skipped": "已跳过",
-    "noMilestones": "暂无进度记录，选择服务流程初始化：",
-    "initFrom": "初始化",
-    "completedOn": "完成于",
-    "expectedOn": "预计",
-    "notesHint": "备注（可选）"
-  },
-  "aiAccess": {
-    "title": "AI 接入",
-    "subtitle": "把 AI Agent（Claude Code、Cursor 等）或外部系统接入 CRM。密钥以你的身份操作，权限不超过你的角色。",
-    "auditLink": "查看审计日志 →",
-    "sections": {
-      "mcp": {
-        "title": "AI 工具（MCP）",
-        "desc": "在 Claude Code、Cursor、Claude Desktop 等 AI 工具里，用自然语言查询和维护客户、线索。适合管理员、客服日常使用。"
-      },
-      "push": {
-        "title": "外部系统推送线索",
-        "desc": "网站表单、广告平台等外部系统把新线索自动推送进 CRM。"
-      },
-      "keyCount": "已有 {{count}} 把密钥"
-    },
-    "mcp": {
-      "stepsTitle": "三步接入",
-      "create": "创建 MCP 密钥",
-      "defaultName": "MCP（AI 工具）",
-      "step1": {
-        "title": "创建密钥",
-        "desc": "默认读写权限，可查看完整联系方式；也可以改为只读。"
-      },
-      "step2": {
-        "title": "复制配置",
-        "desc": "在弹窗中复制 Claude Code 命令，或 Cursor / Claude Desktop 的 JSON 配置，粘贴到 AI 工具。"
-      },
-      "step3": {
-        "title": "直接说需求",
-        "desc": "AI 会按你的权限和角色操作 CRM，每一步都记录在审计日志。"
-      },
-      "examplesTitle": "可以这样对 AI 说：",
-      "example1": "今天有哪些客户需要跟进？",
-      "example2": "把张三的状态改为已联系，并记录刚才的电话沟通",
-      "example3": "把线索 1024 转为客户，负责销售设为李四",
-      "example4": "列出上周新增、还没分配的线索",
-      "keysTitle": "MCP 密钥",
-      "empty": "还没有 MCP 密钥，点击「创建 MCP 密钥」开始"
-    },
-    "push": {
-      "keysTitle": "推送密钥",
-      "intro": "每个接入的系统用一把密钥，方便单独停用。创建后可复制给 AI 的接入提示词，让 AI 帮你写对接代码。",
-      "create": "创建推送密钥",
-      "defaultName": "官网表单",
-      "empty": "还没有推送密钥",
-      "docsToggle": "接口说明",
-      "llmsHint": "能联网的 AI 可以直接读取实时生成的接口说明："
-    },
-    "keys": {
-      "lastUsed": "最后使用 {{time}}",
-      "neverUsed": "从未使用",
-      "view": "查看配置"
-    }
+    "title": "工作流使用说明",
+    "open": "使用说明"
   }
 }

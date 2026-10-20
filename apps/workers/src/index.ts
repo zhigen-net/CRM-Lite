@@ -22,10 +22,8 @@ import { optionsRoutes } from './crm/routes/options'
 import { apiKeysRoutes } from './crm/routes/apiKeys'
 import { assignmentRulesRoutes } from './crm/routes/assignmentRules'
 import { aiConfigRoutes } from './crm/routes/aiConfig'
-import { aiAnalysisRoutes } from './crm/routes/aiAnalysis'
 import { aiAgentRoutes } from './crm/routes/aiAgent'
 import { workflowsRoutes, workflowsAdminRoutes } from './crm/routes/workflows'
-import { actionTemplatesAdminRoutes } from './crm/routes/actionTemplates'
 import { entitySchemaRoutes } from './crm/routes/entitySchema'
 import { recycleBinRoutes } from './crm/routes/recycleBin'
 import { apiFailuresRoutes } from './crm/routes/apiFailures'
@@ -33,6 +31,7 @@ import { milestonesRoutes } from './crm/routes/milestones'
 import { v1DocsRoutes } from './crm/routes/v1Docs'
 import { auditLogRoutes } from './crm/routes/auditLog'
 import { mcpRoutes } from './crm/routes/mcp'
+import { trackingCollectRoutes, trackingRoutes, trackingSitesAdminRoutes } from './crm/routes/tracking'
 import { requireApiKey, requireScope } from './crm/middleware/apiKeyAuth'
 import { executeScheduledWorkflows } from './crm/workflow/executor'
 import { hashPassword } from './shared/password'
@@ -120,14 +119,16 @@ app.post('/api/public/setup', zValidator('json', z.object({
 
 app.get('/api/public/settings', async (c) => {
   const rows = await c.env.DB.prepare(
-    "SELECT key, value FROM system_settings WHERE key IN ('system_name', 'timezone', 'ai_agent_enabled')",
+    "SELECT key, value FROM system_settings WHERE key IN ('system_name', 'timezone', 'ai_agent_enabled', 'portal_enabled')",
   ).all<{ key: string; value: string }>()
   const map = Object.fromEntries(rows.results.map((r) => [r.key, r.value]))
   return c.json({
     data: {
-      systemName: map['system_name'] ?? 'CRM',
+      systemName: map['system_name'] || null,  // 未设置时前端显示产品名
       timezone: map['timezone'] ?? 'Asia/Shanghai',
       aiAgentEnabled: map['ai_agent_enabled'] !== 'false',
+      // 客户门户默认关闭，管理员在「系统设置 → 基本设置」开启
+      portalEnabled: map['portal_enabled'] === 'true',
     },
   })
 })
@@ -138,11 +139,14 @@ app.route('/api/v1', v1DocsRoutes)
 // MCP 服务（API Key 鉴权）
 app.route('/api/mcp', mcpRoutes)
 
+// 访客统计采集（网站服务器端转发，站点密钥鉴权）
+app.route('/api/t', trackingCollectRoutes)
+
 const v1LeadSchema = z.object({
   source: z.string().min(1, '请填写来源'),
   name: z.string().min(1, '请填写姓名'),
   contactInfo: z.string().min(1, '请填写联系方式'),
-  intendedServices: z.array(z.string()).min(1, '请至少填写一个意向服务'),
+  intendedServices: z.array(z.string()).optional(),
   notes: z.string().nullable().optional(),
   adInfo: z.object({
     ip: z.string().optional(),
@@ -209,19 +213,24 @@ app.route('/api/admin/settings', settingsRoutes)
 app.route('/api/admin/options', optionsRoutes)
 app.route('/api/admin/assignment-rules', assignmentRulesRoutes)
 app.route('/api/admin/ai', aiConfigRoutes)
-app.route('/api', aiAnalysisRoutes)
 app.route('/api', aiAgentRoutes)
 app.route('/api/auth/api-keys', apiKeysRoutes)
 app.route('/api/workflows', workflowsRoutes)
 app.route('/api/admin/workflows', workflowsAdminRoutes)
-app.route('/api/admin/action-templates', actionTemplatesAdminRoutes)
 app.route('/api/admin/entity-schema', entitySchemaRoutes)
 app.route('/api/admin/recycle-bin', recycleBinRoutes)
 app.route('/api/admin/api-failures', apiFailuresRoutes)
 app.route('/api/admin/audit-log', auditLogRoutes)
+app.route('/api/admin/tracking-sites', trackingSitesAdminRoutes)
+app.route('/api/tracking', trackingRoutes)
 app.route('/api/milestones', milestonesRoutes)
 
-// 客户门户 API（/api/client/*）
+// 客户门户 API（/api/client/*）：默认关闭，未开启时一律 404
+app.use('/api/client/*', async (c, next) => {
+  const row = await c.env.DB.prepare("SELECT value FROM system_settings WHERE key = 'portal_enabled'").first<{ value: string }>()
+  if (row?.value !== 'true') return c.json({ message: '客户门户未开启' }, 404)
+  return next()
+})
 app.route('/api/client/auth', portalAuthRoutes)
 app.route('/api/client/profile', profileRoutes)
 app.route('/api/client/services', portalServicesRoutes)

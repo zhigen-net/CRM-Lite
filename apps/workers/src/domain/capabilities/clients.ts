@@ -4,6 +4,7 @@ import { recentActivities } from '../activities/service'
 import { badRequest } from '../errors'
 import { getLead } from '../leads/service'
 import type { Capability } from './types'
+import { leadVisitorId, visitorSourceSummary } from '../tracking/attribution'
 
 export const queryClients: Capability = {
   name: 'query_clients',
@@ -39,7 +40,7 @@ export const queryClients: Capability = {
 
 export const getClient: Capability = {
   name: 'get_client',
-  description: '获取单个客户的完整信息，包含基本资料和最近10条跟进记录。在对某个客户执行操作前先调用此工具了解现状。',
+  description: '获取单个客户的完整信息，包含基本资料、最近10条跟进记录，以及转化前线索的网站访客来源（visitorSource，未关联时为 null）。在对某个客户执行操作前先调用此工具了解现状。',
   scope: 'clients:read',
   readOnly: true,
   inputSchema: {
@@ -50,7 +51,7 @@ export const getClient: Capability = {
   async run({ db }, actor, input) {
     const id = input.id as string
     const client = await clients.getClient(db, actor, id)
-    return { ...client, recentActivities: await recentActivities(db, 'client', id) }
+    return { ...client, recentActivities: await recentActivities(db, 'client', id), visitorSource: await visitorSourceSummary(db, actor, await leadVisitorId(db, client.leadId)) }
   },
 }
 

@@ -4,6 +4,7 @@ import { recentActivities } from '../activities/service'
 import { badRequest } from '../errors'
 import { normalizeExternalLead } from '../leads/intake'
 import type { Capability } from './types'
+import { visitorSourceSummary } from '../tracking/attribution'
 
 const NEXT_CONTACT = { type: 'string', enum: ['overdue', 'today', 'week'], description: 'overdue=已逾期 today=今天到期 week=未来7天' } as const
 
@@ -43,7 +44,7 @@ export const queryLeads: Capability = {
 
 export const getLead: Capability = {
   name: 'get_lead',
-  description: '获取单个线索的完整信息，包含基本资料和最近10条跟进记录。在对某条线索执行操作前先调用此工具了解现状。',
+  description: '获取单个线索的完整信息，包含基本资料、最近10条跟进记录，以及网站访客来源（visitorSource：渠道、广告参数、落地页、访问次数，未关联访客时为 null）。在对某条线索执行操作前先调用此工具了解现状。',
   scope: 'leads:read',
   readOnly: true,
   inputSchema: {
@@ -54,7 +55,7 @@ export const getLead: Capability = {
   async run({ db }, actor, input) {
     const id = input.id as string
     const lead = await leads.getLead(db, actor, id)
-    return { ...lead, recentActivities: await recentActivities(db, 'lead', id) }
+    return { ...lead, recentActivities: await recentActivities(db, 'lead', id), visitorSource: await visitorSourceSummary(db, actor, lead.visitorId) }
   },
 }
 

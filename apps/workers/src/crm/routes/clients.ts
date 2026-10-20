@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { requireAuth, requireAdmin } from '../middleware/auth'
 import { actorFromJwt, depsFrom } from '../../domain/actor'
 import * as clients from '../../domain/clients/service'
+import { getClientAttribution } from '../../domain/tracking/attribution'
 
 // 客户接口：只做参数解析与响应格式，业务规则在 domain/clients
 export const clientsRoutes = new Hono<{ Bindings: Env }>()
@@ -26,6 +27,10 @@ clientsRoutes.get('/:id', async (c) => {
   const client = await clients.getClient(c.env.DB, actorFromJwt(c.get('jwtPayload'), 'web'), c.req.param('id'))
   return c.json({ data: client })
 })
+
+// GET /api/clients/:id/attribution（转化前线索的来源与访问轨迹）
+clientsRoutes.get('/:id/attribution', async (c) =>
+  c.json({ data: await getClientAttribution(c.env.DB, actorFromJwt(c.get('jwtPayload'), 'web'), c.req.param('id')) }))
 
 // POST /api/clients（带 leadId 时为线索转化）
 clientsRoutes.post(
