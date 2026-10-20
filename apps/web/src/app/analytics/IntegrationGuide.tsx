@@ -102,7 +102,10 @@ export function IntegrationGuide({ site, siteKey: initialKey, onClose }: { site:
   const code = tpl ? (siteType === 'pages' ? tpl.pagesFunction : tpl.workerSnippet) : ''
   const aiPrompt = tpl ? t('analytics.guide.aiPrompt', {
     mode: t(`analytics.guide.siteTypes.${siteType}`),
-    connect: t(`analytics.guide.aiConnect.${connect}`),
+    // 带上本 CRM 的地址 / Worker 名，AI 才能告诉你变量该填什么（只在控制台设置，不写进代码）
+    connect: t(`analytics.guide.aiConnect.${connect}`, {
+      origin, worker: workerName ?? t('analytics.guide.secrets.bindingServiceUnknown'),
+    }),
     place: t(`analytics.guide.aiPlace.${siteType}`),
     scriptTag: tpl.scriptTag,
     code,

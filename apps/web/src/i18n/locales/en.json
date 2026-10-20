@@ -1250,8 +1250,8 @@
         "aiHint": "Give this prompt to a coding AI (Claude Code, Cursor, etc.) in the website repository. Enter the key yourself in the Cloudflare dashboard; do not send it to the AI or commit it."
       },
       "aiConnect": {
-        "binding": "The website and the CRM are in the same Cloudflare account: use the service binding CRM (uppercase).",
-        "url": "The website and the CRM are in different Cloudflare accounts: use the encrypted environment variable CRM_URL (the CRM address, no trailing /)."
+        "binding": "The website and the CRM are in the same Cloudflare account: use a service binding named CRM (uppercase) pointing to the CRM Worker: {{worker}}.",
+        "url": "The website and the CRM are in different Cloudflare accounts: use the encrypted environment variable CRM_URL with the value {{origin}} (no trailing /). Set this address only as a Secret in the Cloudflare dashboard; never put it in code, config files or the repository."
       },
       "aiPlace": {
         "pages": "Create functions/_t/[[path]].js in the project root; if there is a custom _routes.json, make sure /_t/* is included.",
