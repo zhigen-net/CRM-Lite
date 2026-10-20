@@ -46,7 +46,7 @@ export function SiteConnect({ site, siteKey, onRotate, rotating, onGoFeatures }:
   if (!tpl) return <p className="text-sm text-gray-400">{t('common.loading')}</p>
 
   const ctx: PromptContext = {
-    t, tpl, platform: site.platform, features: site.features, siteName: site.name,
+    t, tpl, platform: site.platform, features: site.features, leadSource: site.domain || site.name,
     origin: window.location.origin, workerName: guessWorkerName(), services: (services ?? []).map((s) => s.name),
   }
   const prompt = buildPrompt(ctx, scope)

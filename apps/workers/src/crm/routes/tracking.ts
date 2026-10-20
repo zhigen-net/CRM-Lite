@@ -99,7 +99,7 @@ trackingCollectRoutes.post('/lead', async (c) => {
   // 接入检测的探测请求：只回报密钥对应的站点，不建线索、不计入提交频率
   if ('ping' in raw) return c.json({ data: { siteId: site.id } })
 
-  const result = await submitSiteLead(depsFrom(c), { id: site.id, name: site.name, ownerId: site.ownerId ?? null }, raw, {
+  const result = await submitSiteLead(depsFrom(c), { id: site.id, name: site.name, domain: site.domain ?? null, ownerId: site.ownerId ?? null }, raw, {
     geo: parseGeoHeader(c.req.header('X-Visitor-Geo')), ipSalt: c.env.JWT_SECRET,
   })
   const status = result.status === 'ok' || result.status === 'spam' ? 200
