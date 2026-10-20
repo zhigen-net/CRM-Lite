@@ -28,6 +28,7 @@ export const TRACKER_SCRIPT = `(function () {
   }
   function send(events, beacon) {
     try {
+      for (var i = 0; i < events.length; i++) if (!events[i].h) events[i].h = location.hostname
       var body = JSON.stringify({ v: vid, s: session(), e: events, scr: screen.width + 'x' + screen.height,
         lg: navigator.language, net: navigator.connection && navigator.connection.effectiveType, wd: navigator.webdriver ? 1 : 0 })
       if (beacon && navigator.sendBeacon) { navigator.sendBeacon(ENDPOINT, new Blob([body], { type: 'application/json' })); return }

@@ -138,6 +138,24 @@ describe('采集', () => {
     expect(await visitorRow(v)).toMatchObject({ visit_count: 1, pageview_count: 1, first_channel: 'paid', first_utm_campaign: '品牌词', last_ip: '203.0.113.9' })
   })
 
+  it('记录每个事件和每次访问所在的域名（多个域名接入同一站点时显示完整网址）', async () => {
+    const v = uuid(), s = uuid()
+    await collect(siteKey, { v, s, e: [
+      { id: uuid(), t: 'pageview', p: '/a?x=1', h: 'LP1.Site.test' },
+      { id: uuid(), t: 'tel', p: '/a?x=1', h: 'lp1.site.test' },
+      { id: uuid(), t: 'pageview', p: '/b', h: 'bad host<script>' },
+    ] })
+    const visit = await waitFor(() => visitRow(s))
+    expect(visit?.landing_host).toBe('lp1.site.test')
+    expect((await visitorRow(v))?.first_host).toBe('lp1.site.test')
+    const hosts = await env.DB.prepare('SELECT path, host FROM track_events WHERE visit_id = ? ORDER BY path').bind(s).all<{ path: string; host: string | null }>()
+    expect(hosts.results.map((r) => r.host)).toEqual(['lp1.site.test', 'lp1.site.test', null])
+    const res = await api(admin, 'GET', `/api/tracking/visitors/${siteId}/${v}`)
+    const { data } = (await res.json()) as { data: { visitor: { siteDomain: string }; visits: { events: { host: string | null }[] }[] } }
+    expect(data.visitor.siteDomain).toBe('site.test')
+    expect(data.visits[0]?.events[0]?.host).toBe('lp1.site.test')
+  })
+
   it('IP 格式不对时不保存', async () => {
     const s = uuid()
     await collect(siteKey, { v: uuid(), s, e: [{ id: uuid(), t: 'pageview', p: '/', h: 'site.test' }] }, geoHeader({ ip: "1.2.3.4'; DROP TABLE visits;--" }))

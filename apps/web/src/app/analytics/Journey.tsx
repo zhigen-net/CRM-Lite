@@ -9,15 +9,16 @@ import { formatDate } from '@/shared/utils/format'
 export interface JourneyVisitor {
   id: string; firstSeenAt: string; visitCount: number; pageviewCount: number
   firstChannel: string | null; firstReferrer: string | null; firstLanding: string | null
+  firstHost?: string | null; siteDomain?: string | null
   firstUtmSource: string | null; firstUtmMedium: string | null; firstUtmCampaign: string | null; firstClickIdType: string | null
   deviceType: string | null; region: string | null; city: string | null
   leadId: string | null; leadName: string | null
   /** 只有管理员、运营能看到 */
   lastIp?: string | null
 }
-export interface TrackEvent { id: string; type: string; path: string | null; title: string | null; durationMs: number | null; scrollPct: number | null; createdAt: string }
+export interface TrackEvent { id: string; type: string; host?: string | null; path: string | null; title: string | null; durationMs: number | null; scrollPct: number | null; createdAt: string }
 export interface Visit {
-  id: string; startedAt: string; endedAt: string; pageviews: number; durationSec: number; landingPath: string | null
+  id: string; startedAt: string; endedAt: string; pageviews: number; durationSec: number; landingPath: string | null; landingHost?: string | null
   referrer: string | null; channel: string | null; utmSource: string | null; utmCampaign: string | null; clickIdType: string | null
   deviceType: string | null; os: string | null; browser: string | null; screen: string | null; network: string | null
   region: string | null; city: string | null; isp: string | null; ip?: string | null; events: TrackEvent[]
@@ -31,6 +32,20 @@ export function useJourney(url: string) {
     queryKey: ['visitor-journey', url],
     queryFn: () => crmApi.get<{ data: Journey | null }>(url).then((r) => r.data.data),
   })
+}
+
+/** 完整网址：优先用记录里的域名，旧数据没有域名时用站点设置的域名；都没有时只显示路径 */
+export function fullUrl(host: string | null | undefined, path: string | null | undefined, fallbackHost?: string | null) {
+  const h = host || fallbackHost
+  if (!path) return h ? `https://${h}/` : null
+  return h ? `https://${h}${path.startsWith('/') ? '' : '/'}${path}` : path
+}
+
+/** 网址显示为可点击的链接（新窗口打开） */
+export function UrlLink({ url, className = '' }: { url: string | null; className?: string }) {
+  if (!url) return <span className={className}>—</span>
+  if (!/^https:\/\//.test(url)) return <span className={className}>{url}</span>
+  return <a href={url} target="_blank" rel="noopener noreferrer" title={url} className={`hover:text-primary-600 hover:underline ${className}`}>{url}</a>
 }
 
 export function duration(sec: number) {
@@ -59,7 +74,7 @@ export function JourneyDrawer({ url, onClose }: { url: string; onClose: () => vo
           <div className="space-y-4 p-5 text-sm">
             <div className="grid grid-cols-2 gap-3 rounded-lg bg-gray-50 p-3 text-xs">
               <div><p className="text-gray-400">{t('analytics.journey.firstSource')}</p><p className="mt-0.5 text-gray-800">{ch(data.visitor.firstChannel)}{data.visitor.firstUtmCampaign ? ` · ${data.visitor.firstUtmCampaign}` : ''}</p></div>
-              <div><p className="text-gray-400">{t('analytics.journey.firstLanding')}</p><p className="mt-0.5 truncate text-gray-800">{data.visitor.firstLanding ?? '—'}</p></div>
+              <div><p className="text-gray-400">{t('analytics.journey.firstLanding')}</p><p className="mt-0.5 truncate text-gray-800"><UrlLink url={fullUrl(data.visitor.firstHost, data.visitor.firstLanding, data.visitor.siteDomain)} /></p></div>
               <div><p className="text-gray-400">{t('analytics.journey.visits')}</p><p className="mt-0.5 text-gray-800">{data.visitor.visitCount} / {data.visitor.pageviewCount}</p></div>
               <div><p className="text-gray-400">{t('analytics.journey.lead')}</p>
                 <p className="mt-0.5">{data.visitor.leadId
@@ -85,8 +100,9 @@ export function JourneyDrawer({ url, onClose }: { url: string; onClose: () => vo
                           {t(`analytics.events.${e.type}`, { defaultValue: e.type })}
                         </span>
                         <span className="min-w-0 flex-1">
-                          <span className="block truncate text-gray-800">{e.title || e.path}</span>
-                          {e.title && <span className="block truncate text-gray-400">{e.path}</span>}
+                          {e.title && <span className="block truncate text-gray-800">{e.title}</span>}
+                          <UrlLink className={`block truncate ${e.title ? 'text-gray-400' : 'text-gray-800'}`}
+                            url={fullUrl(e.host ?? v.landingHost, e.path, data.visitor.siteDomain)} />
                         </span>
                         {e.type === 'pageview' && leave?.durationMs != null && (
                           <span className="shrink-0 text-gray-400">{duration(Math.round(leave.durationMs / 1000))}{leave.scrollPct != null ? ` · ${leave.scrollPct}%` : ''}</span>
@@ -116,7 +132,7 @@ export function VisitorSourceCard({ url }: { url: string }) {
   const items: [string, string][] = [
     [t('analytics.source.channel'), v.firstClickIdType ? `${ch}（${v.firstClickIdType}）` : ch],
     [t('analytics.source.campaign'), ad || '—'],
-    [t('analytics.source.landing'), v.firstLanding ?? '—'],
+    [t('analytics.source.landing'), fullUrl(v.firstHost, v.firstLanding, v.siteDomain) ?? '—'],
     [t('analytics.source.referrer'), v.firstReferrer ?? '—'],
     [t('analytics.source.firstSeen'), formatDate(v.firstSeenAt)],
     [t('analytics.source.visits'), t('analytics.source.visitsValue', { visits: v.visitCount, pages: v.pageviewCount })],
