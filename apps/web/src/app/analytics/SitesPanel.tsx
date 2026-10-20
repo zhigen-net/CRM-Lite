@@ -2,13 +2,14 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { Link, useNavigate } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
 import { crmApi } from '@/shared/utils/request'
 import { formatDate } from '@/shared/utils/format'
 import { Button } from '@/shared/components/Button'
 import { Input } from '@/shared/components/Input'
 import { Modal } from '@/shared/components/Modal'
 import { isStale, Stat, type Platform, type SiteFeatures } from '@/app/sites/ui'
+import { SiteDrawer, toSiteTab, type SiteTab } from '@/app/sites/SiteDrawer'
 
 interface Site {
   id: string; name: string; domain: string | null; keyPrefix: string; isActive: boolean
@@ -21,9 +22,17 @@ export function SitesPanel() {
   const queryClient = useQueryClient()
   const [creating, setCreating] = useState(false)
   const [form, setForm] = useState({ name: '', domain: '' })
-  const navigate = useNavigate()
-  // 站点详情页：新建或更换密钥后带上明文密钥（只显示一次）
-  const openSite = (id: string, tab: string, key?: string) => navigate(`/app/ai-access/sites/${id}?tab=${tab}`, key ? { state: { key } } : undefined)
+  // 站点详情抽屉：打开的站点和标签记在地址里（?site=&view=），刷新或分享链接后仍能打开
+  const [searchParams, setSearchParams] = useSearchParams()
+  const openId = searchParams.get('site')
+  const view = toSiteTab(searchParams.get('view'))
+  // 新建站点后的明文密钥只在抽屉里显示一次
+  const [newKey, setNewKey] = useState<{ id: string; key: string } | null>(null)
+  const openSite = (id: string, tab: SiteTab, key?: string) => {
+    setNewKey(key ? { id, key } : null)
+    setSearchParams((p) => { p.set('site', id); p.set('view', tab); return p })
+  }
+  const closeSite = () => { setNewKey(null); setSearchParams((p) => { p.delete('site'); p.delete('view'); return p }) }
 
   const { data: sites, isLoading } = useQuery({
     queryKey: ['tracking-sites-admin'],
@@ -66,7 +75,7 @@ export function SitesPanel() {
             <li key={s.id} className="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3">
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium text-gray-900">
-                  <Link to={`/app/ai-access/sites/${s.id}`} className="hover:text-primary-600 hover:underline">{s.name}</Link>
+                  <button type="button" onClick={() => openSite(s.id, 'overview')} className="text-left hover:text-primary-600 hover:underline">{s.name}</button>
                   {!s.isActive && <span className="ml-2 rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-500">{t('analytics.sites.disabled')}</span>}
                 </p>
                 <p className="mt-0.5 text-xs text-gray-400">
@@ -108,6 +117,11 @@ export function SitesPanel() {
             </li>
           ))}
         </ul>
+      )}
+
+      {openId && (
+        <SiteDrawer key={openId} id={openId} tab={view} initialKey={newKey?.id === openId ? newKey.key : null}
+          onTab={(tab) => setSearchParams((p) => { p.set('view', tab); return p }, { replace: true })} onClose={closeSite} />
       )}
 
       {creating && (
