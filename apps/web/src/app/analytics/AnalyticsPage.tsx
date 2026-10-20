@@ -15,7 +15,7 @@ interface Visitor {
   id: string; siteId: string; firstSeenAt: string; lastSeenAt: string; visitCount: number; pageviewCount: number
   firstChannel: string | null; firstUtmSource: string | null; firstUtmCampaign: string | null; firstLanding: string | null
   deviceType: string | null; os: string | null; browser: string | null; region: string | null; city: string | null; isp: string | null
-  leadId: string | null; leadName: string | null; keyActions: number
+  leadId: string | null; leadName: string | null; keyActions: number; lastIp: string | null
 }
 const CHANNELS = ['paid', 'search', 'social', 'referral', 'direct'] as const
 const PAGE_SIZE = 30
@@ -91,7 +91,10 @@ function VisitorsPanel() {
                   </td>
                   <td className="whitespace-nowrap px-4 py-2.5 text-gray-600">{v.visitCount} / {v.pageviewCount}</td>
                   <td className="whitespace-nowrap px-4 py-2.5 text-gray-600">{[v.deviceType && t(`analytics.devices.${v.deviceType}`), v.browser].filter(Boolean).join(' · ')}</td>
-                  <td className="px-4 py-2.5 text-gray-600">{place(v)}{v.isp && <span className="block text-xs text-gray-400">{v.isp}</span>}</td>
+                  <td className="px-4 py-2.5 text-gray-600">
+                    {v.lastIp && <span className="block font-mono text-xs text-gray-700">{v.lastIp}</span>}
+                    {place(v)}{v.isp && <span className="block text-xs text-gray-400">{v.isp}</span>}
+                  </td>
                   <td className="px-4 py-2.5">{v.keyActions > 0 ? <span className="rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-700">{v.keyActions}</span> : <span className="text-gray-300">—</span>}</td>
                   <td className="px-4 py-2.5">{v.leadId
                     ? <Link className="text-primary-600 hover:underline" to={`/app/leads/${v.leadId}`} onClick={(e) => e.stopPropagation()}>{v.leadName ?? t('analytics.journey.viewLead')}</Link>

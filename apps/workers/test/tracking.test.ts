@@ -119,7 +119,7 @@ describe('采集', () => {
     expect((await collect(siteKey, '{bad')).status).toBe(400)
   })
 
-  it('新访问：记录来源、广告参数、设备、地区；不存原始 IP', async () => {
+  it('新访问：记录来源、广告参数、设备、地区和 IP', async () => {
     const v = uuid(), s = uuid()
     const res = await collect(siteKey, {
       v, s, scr: '390x844', lg: 'zh-CN', net: '4g',
@@ -133,9 +133,17 @@ describe('采集', () => {
       landing_path: '/landing?bd_vid=abc', device_type: 'mobile', os: 'Android', browser: 'Chrome',
       city: '深圳', isp: 'China Telecom', screen: '390x844', pageviews: 1,
     })
-    expect(JSON.stringify(visit)).not.toContain('203.0.113.9')
+    expect(visit?.ip).toBe('203.0.113.9')
     expect(String(visit.ip_hash)).toMatch(/^[0-9a-f]{32}$/)
-    expect(await visitorRow(v)).toMatchObject({ visit_count: 1, pageview_count: 1, first_channel: 'paid', first_utm_campaign: '品牌词' })
+    expect(await visitorRow(v)).toMatchObject({ visit_count: 1, pageview_count: 1, first_channel: 'paid', first_utm_campaign: '品牌词', last_ip: '203.0.113.9' })
+  })
+
+  it('IP 格式不对时不保存', async () => {
+    const s = uuid()
+    await collect(siteKey, { v: uuid(), s, e: [{ id: uuid(), t: 'pageview', p: '/', h: 'site.test' }] }, geoHeader({ ip: "1.2.3.4'; DROP TABLE visits;--" }))
+    const visit = await waitFor(() => visitRow(s))
+    expect(visit?.ip).toBeNull()
+    expect(visit?.ip_hash).toBeNull()
   })
 
   it('同一会话：累加浏览与停留时长；新会话增加访问次数；重复事件只记一次', async () => {

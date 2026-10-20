@@ -55,7 +55,7 @@ export const getLead: Capability = {
   async run({ db }, actor, input) {
     const id = input.id as string
     const lead = await leads.getLead(db, actor, id)
-    return { ...lead, recentActivities: await recentActivities(db, 'lead', id), visitorSource: await visitorSourceSummary(db, lead.visitorId) }
+    return { ...lead, recentActivities: await recentActivities(db, 'lead', id), visitorSource: await visitorSourceSummary(db, actor, lead.visitorId) }
   },
 }
 

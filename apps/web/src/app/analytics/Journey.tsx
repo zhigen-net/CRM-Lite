@@ -12,13 +12,15 @@ export interface JourneyVisitor {
   firstUtmSource: string | null; firstUtmMedium: string | null; firstUtmCampaign: string | null; firstClickIdType: string | null
   deviceType: string | null; region: string | null; city: string | null
   leadId: string | null; leadName: string | null
+  /** 只有管理员、运营能看到 */
+  lastIp?: string | null
 }
 export interface TrackEvent { id: string; type: string; path: string | null; title: string | null; durationMs: number | null; scrollPct: number | null; createdAt: string }
 export interface Visit {
   id: string; startedAt: string; endedAt: string; pageviews: number; durationSec: number; landingPath: string | null
   referrer: string | null; channel: string | null; utmSource: string | null; utmCampaign: string | null; clickIdType: string | null
   deviceType: string | null; os: string | null; browser: string | null; screen: string | null; network: string | null
-  region: string | null; city: string | null; isp: string | null; events: TrackEvent[]
+  region: string | null; city: string | null; isp: string | null; ip?: string | null; events: TrackEvent[]
 }
 
 export interface Journey { siteId?: string; siteName?: string; visitor: JourneyVisitor; visits: Visit[] }
@@ -70,7 +72,7 @@ export function JourneyDrawer({ url, onClose }: { url: string; onClose: () => vo
                   <p className="font-medium text-gray-800">{formatDate(v.startedAt)} · {ch(v.channel)}{v.utmSource ? ` · ${v.utmSource}` : ''}{v.utmCampaign ? ` / ${v.utmCampaign}` : ''}</p>
                   <p className="mt-0.5 text-gray-500">
                     {t('analytics.journey.visitSummary', { pages: v.pageviews, time: duration(v.durationSec) })} · {[v.deviceType && t(`analytics.devices.${v.deviceType}`), v.os, v.browser].filter(Boolean).join(' / ')}
-                    {' · '}{place(v)}{v.isp ? ` · ${v.isp}` : ''}{v.network ? ` · ${v.network}` : ''}
+                    {' · '}{v.ip ? `${v.ip} · ` : ''}{place(v)}{v.isp ? ` · ${v.isp}` : ''}{v.network ? ` · ${v.network}` : ''}
                   </p>
                   {v.referrer && <p className="mt-0.5 truncate text-gray-400">{t('analytics.journey.referrer')}：{v.referrer}</p>}
                 </div>
@@ -118,6 +120,7 @@ export function VisitorSourceCard({ url }: { url: string }) {
     [t('analytics.source.referrer'), v.firstReferrer ?? '—'],
     [t('analytics.source.firstSeen'), formatDate(v.firstSeenAt)],
     [t('analytics.source.visits'), t('analytics.source.visitsValue', { visits: v.visitCount, pages: v.pageviewCount })],
+    ...(v.lastIp ? [[t('analytics.source.ip'), v.lastIp] as [string, string]] : []),
   ]
   return (
     <div className="mb-4 rounded-lg border bg-white p-4 sm:mb-6 sm:p-6">
