@@ -319,7 +319,7 @@ export function WorkflowHelpButton() {
                 <h2 className="text-base font-semibold text-gray-900">{t('workflowHelp.title')}</h2>
                 <button onClick={() => setOpen(false)} className="flex h-8 w-8 items-center justify-center rounded-full text-xl text-gray-400 hover:bg-gray-100">×</button>
               </div>
-              <div className="flex gap-1 overflow-x-auto px-5">
+              <div className="flex gap-1 overflow-x-auto overflow-y-hidden scrollbar-none px-5">
                 {SECTIONS.map((s) => (
                   <button key={s} type="button" onClick={() => setSection(s)}
                     className={`-mb-px flex-none border-b-2 px-3 py-2 text-sm ${section === s ? 'border-primary-600 font-medium text-primary-600' : 'border-transparent text-gray-500'}`}>

@@ -7,3 +7,9 @@
     @apply bg-gray-50 text-gray-900 antialiased;
   }
 }
+
+/* 横向滚动的标签栏：隐藏滚动条（Windows 上即使不溢出也可能显示滚动箭头） */
+@layer utilities {
+  .scrollbar-none { scrollbar-width: none; -ms-overflow-style: none; }
+  .scrollbar-none::-webkit-scrollbar { display: none; }
+}
