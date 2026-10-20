@@ -143,49 +143,40 @@ export default function AiAccessPage() {
   const mcpUrl = `${origin}/api/mcp`
   const endpoint = `${origin}/api/v1/leads`
   const keys = data ?? []
-  const { data: sitesData } = useQuery({
-    queryKey: ['tracking-sites-admin'],
-    queryFn: () => crmApi.get<{ data: unknown[] }>('/admin/tracking-sites').then((r) => r.data.data),
-    enabled: isAdmin,
-  })
-  const siteCount = sitesData?.length ?? 0
   const mcpKeys = keys.filter(isMcpKey)
   const pushKeys = keys.filter((k) => !isMcpKey(k))
 
   const view = (k: ApiKey) => setIntegration({ name: k.name, key: null, scopes: k.scopes ?? [] })
   const revoke = (k: ApiKey) => { if (confirm(t('profile.api.revokeConfirm', { name: k.name }))) deleteMutation.mutate(k.id) }
 
-  // 顶部用标签切换三类接入，只显示当前一类的说明，节省空间
-  const sectionTab = (sec: Section, icon: string) => {
-    const count = sec === 'sites' ? siteCount : sec === 'mcp' ? mcpKeys.length : pushKeys.length
-    return (
-      <button
-        key={sec}
-        type="button"
-        onClick={() => setSearchParams({ tab: sec })}
-        className={`-mb-px flex flex-none items-center gap-1.5 border-b-2 px-3 py-2 text-sm font-medium transition-colors ${section === sec
-          ? 'border-primary-600 text-primary-600'
-          : 'border-transparent text-gray-500 hover:text-gray-700'}`}
-      >
-        <span>{icon}</span>{t(`aiAccess.sections.${sec}.title`)}
-        <span className={`rounded-full px-1.5 text-xs ${section === sec ? 'bg-primary-50 text-primary-600' : 'bg-gray-100 text-gray-500'}`}>{count}</span>
-      </button>
-    )
-  }
+  // 顶部标签与「系统设置」保持同一样式；标题下只显示当前分类的说明
+  const sections: Section[] = isAdmin ? ['sites', 'push', 'mcp'] : ['push', 'mcp']
 
   return (
     <div className="p-4 sm:p-6">
-      <div className="max-w-4xl space-y-4">
-        <div>
-          <h1 className="text-lg sm:text-xl font-semibold text-gray-900">{t('aiAccess.title')}</h1>
-          <div className="mt-2 flex overflow-x-auto border-b">
-            {isAdmin && sectionTab('sites', '🌐')}
-            {sectionTab('push', '🔗')}
-            {sectionTab('mcp', '🤖')}
-          </div>
-          <p className="mt-2 text-xs text-gray-500">{t(`aiAccess.sections.${section}.desc`)}</p>
-        </div>
+      <div className="mb-6">
+        <h1 className="text-lg sm:text-xl font-semibold text-gray-900">{t('aiAccess.title')}</h1>
+        <p className="mt-0.5 text-sm text-gray-500">{t(`aiAccess.sections.${section}.desc`)}</p>
+      </div>
 
+      <div className="mb-4 flex gap-1 border-b overflow-x-auto overflow-y-hidden scrollbar-none">
+        {sections.map((sec) => (
+          <button
+            key={sec}
+            type="button"
+            onClick={() => setSearchParams({ tab: sec })}
+            className={`whitespace-nowrap px-4 py-2 text-sm font-medium border-b-2 transition-colors -mb-px ${
+              section === sec
+                ? 'border-primary-600 text-primary-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            {t(`aiAccess.sections.${sec}.title`)}
+          </button>
+        ))}
+      </div>
+
+      <div className="max-w-4xl space-y-4">
         {section === 'sites' ? (
           <>
             <SitesPanel />
