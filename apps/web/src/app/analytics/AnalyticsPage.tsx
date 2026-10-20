@@ -9,12 +9,13 @@ import { Pagination } from '@/shared/components/Pagination'
 import { DateRangePicker, useDateRangeParam } from '@/shared/components/DateRangePicker'
 import { JourneyDrawer, place } from './Journey'
 import { AnomalyIcons, type Anomaly } from './AnomalyIcons'
+import { CountryFlag } from './CountryFlag'
 
 interface SiteOption { id: string; name: string; domain: string | null; isActive: boolean; lastSeenAt: string | null }
 interface Visitor {
   id: string; siteId: string; firstSeenAt: string; lastSeenAt: string; visitCount: number; pageviewCount: number
   firstChannel: string | null; firstUtmSource: string | null; firstUtmCampaign: string | null; firstLanding: string | null
-  deviceType: string | null; os: string | null; browser: string | null; region: string | null; city: string | null; isp: string | null
+  deviceType: string | null; os: string | null; browser: string | null; country: string | null; region: string | null; city: string | null; isp: string | null
   leadId: string | null; leadName: string | null; keyActions: number; lastIp: string | null
   anomalies?: Anomaly[]
 }
@@ -117,7 +118,8 @@ function VisitorsPanel() {
                   </span>
                   <span className="shrink-0 text-xs text-gray-400">{formatDate(v.lastSeenAt)}</span>
                 </div>
-                <p className="mt-1 truncate text-xs text-gray-500">
+                <p className="mt-1 flex items-center gap-1 truncate text-xs text-gray-500">
+                  <CountryFlag code={v.country} />
                   {[v.deviceType && t(`analytics.devices.${v.deviceType}`), v.browser, place(v), v.lastIp].filter(Boolean).join(' · ')}
                 </p>
                 <div className="mt-1.5 flex items-center gap-2 text-xs">
@@ -152,7 +154,8 @@ function VisitorsPanel() {
                     {(v.lastIp || !!v.anomalies?.length) && (
                       <span className="flex items-center gap-1 font-mono text-xs text-gray-700">{v.lastIp}<AnomalyIcons items={v.anomalies} /></span>
                     )}
-                    {place(v)}{v.isp && <span className="block text-xs text-gray-400">{v.isp}</span>}
+                    <span className="inline-flex items-center gap-1"><CountryFlag code={v.country} />{place(v)}</span>
+                    {v.isp && <span className="block text-xs text-gray-400">{v.isp}</span>}
                   </td>
                   <td className="px-4 py-2.5">{v.keyActions > 0 ? <span className="rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-700">{v.keyActions}</span> : <span className="text-gray-300">—</span>}</td>
                   <td className="px-4 py-2.5">{v.leadId

@@ -1290,7 +1290,8 @@
       "firstSeen": "首次访问",
       "visits": "访问次数",
       "visitsValue": "{{visits}} 次访问，浏览 {{pages}} 页",
-      "ip": "最近访问 IP"
+      "ip": "最近访问 IP",
+      "location": "地区"
     },
     "anomaly": {
       "bot": "疑似机器人",
