@@ -80,8 +80,8 @@ export function ApiFailuresPanel({ source }: { source?: 'site' | 'api' } = {}) {
       <div className="rounded-lg border bg-white overflow-hidden">
         <div className="flex items-center justify-between px-4 py-3 border-b bg-gray-50">
           <div>
-            <h2 className="font-semibold text-gray-800 text-sm">{t('settings.apiFailures.title')}</h2>
-            <p className="text-xs text-gray-400 mt-0.5">{t('settings.apiFailures.subtitle')}</p>
+            <h2 className="font-semibold text-gray-800 text-sm">{t(source === 'site' ? 'settings.apiFailures.siteTitle' : 'settings.apiFailures.title')}</h2>
+            <p className="text-xs text-gray-400 mt-0.5">{t(source === 'site' ? 'settings.apiFailures.siteSubtitle' : 'settings.apiFailures.subtitle')}</p>
           </div>
           <span className="text-xs text-gray-400">{items.length} {t('common.items')}</span>
         </div>
