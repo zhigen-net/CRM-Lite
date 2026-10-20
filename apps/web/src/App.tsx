@@ -27,7 +27,7 @@ export default function App() {
       <Suspense fallback={<LoadingSpinner fullScreen />}>
         <Routes>
           {/* 根路径重定向 */}
-          <Route path="/" element={<Navigate to="/app/leads" replace />} />
+          <Route path="/" element={<Navigate to="/app/dashboard" replace />} />
 
           {/* 内部 CRM */}
           <Route
@@ -44,6 +44,7 @@ export default function App() {
                       </CrmGuard>
                     }
                   >
+                    <Route path="dashboard" element={<P.dashboard />} />
                     <Route path="leads" element={<P.leads />} />
                     <Route path="leads/:id" element={<P.leadDetail />} />
                     <Route path="clients" element={<P.clients />} />
@@ -62,7 +63,7 @@ export default function App() {
                     <Route path="ai-access" element={<P.aiAccess />} />
                     <Route path="ai-access/sites/:id" element={<P.siteRedirect />} />
                     <Route path="analytics" element={<P.analytics />} />
-                    <Route index element={<Navigate to="leads" replace />} />
+                    <Route index element={<Navigate to="dashboard" replace />} />
                   </Route>
                 </Routes>
               </CrmAuthProvider>

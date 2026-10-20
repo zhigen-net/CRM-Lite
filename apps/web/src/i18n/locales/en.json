@@ -84,6 +84,7 @@
     "brand": "Kelu"
   },
   "nav": {
+    "dashboard": "Dashboard",
     "leads": "Leads",
     "clients": "Customers",
     "activities": "Follow-ups",
@@ -1660,6 +1661,62 @@
     },
     "records": {
       "submissions": "Form submissions"
+    }
+  },
+  "dateRange": {
+    "presets": {
+      "all": "All time",
+      "today": "Today",
+      "yesterday": "Yesterday",
+      "7d": "Last 7 days",
+      "30d": "Last 30 days",
+      "90d": "Last 90 days",
+      "thisMonth": "This month",
+      "lastMonth": "Last month"
+    },
+    "custom": "Custom",
+    "from": "Start date",
+    "to": "End date",
+    "apply": "Apply"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "subtitle": "Leads, clients, follow-ups and website visitors for the selected period",
+    "subtitleSales": "Your leads, clients and follow-ups for the selected period",
+    "vsPrev": "vs previous period",
+    "flat": "No change",
+    "noData": "No data for this period",
+    "other": "Other",
+    "kpi": {
+      "newLeads": "New leads",
+      "newClients": "New clients",
+      "conversion": "Lead conversion",
+      "conversionHint": "{{converted}} converted / {{total}} new",
+      "followups": "Follow-ups",
+      "visitors": "Website visitors",
+      "siteRate": "Website lead rate",
+      "siteRateHint": "{{leads}} website leads"
+    },
+    "trend": {
+      "leads": "New leads per day",
+      "visitors": "Website visitors per day"
+    },
+    "todo": {
+      "title": "To follow up",
+      "overdueLeads": "Overdue leads",
+      "todayLeads": "Leads to contact today",
+      "overdueClients": "Overdue clients",
+      "todayClients": "Clients to contact today",
+      "hint": "Based on the next contact date, not the selected period"
+    },
+    "sources": "Lead sources",
+    "statuses": "Lead status",
+    "leaderboard": {
+      "title": "Sales leaderboard",
+      "name": "Sales rep",
+      "leads": "New leads assigned",
+      "followups": "Follow-ups",
+      "clients": "New clients"
     }
   }
 }

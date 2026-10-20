@@ -50,3 +50,8 @@ export function formatFileSize(bytes: number): string {
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`
 }
+
+/** app 时区（系统设置）下的今天 YYYY-MM-DD */
+export function todayInApp(): string {
+  return new Date().toLocaleDateString('en-CA', { timeZone: _timezone })
+}

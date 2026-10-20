@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { crmApi } from '@/shared/utils/request'
 import { Badge } from '@/shared/components/Badge'
@@ -25,11 +25,13 @@ export default function ClientsPage() {
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [page, setPage] = useState(1)
   const [followUpTarget, setFollowUpTarget] = useState<Client | null>(null)
-  const [showFilterPanel, setShowFilterPanel] = useState(false)
+  const [searchParams] = useSearchParams()
+  const [showFilterPanel, setShowFilterPanel] = useState(() => !!searchParams.get('nextContact'))
   const [contractStatusFilter, setContractStatusFilter] = useState('')
   const [assignedUserFilter, setAssignedUserFilter] = useState('')
   const [createdAtFilter, setCreatedAtFilter] = useState('')
-  const [nextContactFilter, setNextContactFilter] = useState('')
+  // 仪表盘「待跟进」跳转时带 ?nextContact=overdue / today
+  const [nextContactFilter, setNextContactFilter] = useState(() => searchParams.get('nextContact') ?? '')
   const filterPanelRef = useRef<HTMLDivElement>(null)
 
   const { options: contractStatusOpts } = useOptionGroup('contract_status')
