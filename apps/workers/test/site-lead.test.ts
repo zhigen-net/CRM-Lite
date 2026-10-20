@@ -86,6 +86,18 @@ describe('网站表单留资', () => {
     expect(await (await siteLead(evil, { type: 'application/x-www-form-urlencoded' })).text()).not.toContain('evil.example')
   })
 
+  it('原生表单多选意向服务：同名字段合并为数组，未收录的记为兜底服务', async () => {
+    const svc = `表单服务-${Date.now()}`
+    await env.DB.prepare('INSERT INTO services (id, name) VALUES (?, ?)').bind(`svc-form-${Date.now()}`, svc).run()
+    const body = new URLSearchParams([['name', '多选服务'], ['phone', '13700000021'], ['intendedServices', svc], ['intendedServices', '火星旅行']]).toString()
+    expect((await siteLead(body, { type: 'application/x-www-form-urlencoded' })).status).toBe(200)
+    const row = await leadRow("contact_info = '13700000021'")
+    const services = JSON.parse(String(row?.intended_services)) as string[]
+    expect(services).toContain(svc)
+    expect(services).toHaveLength(2)
+    expect(String(row?.notes)).toContain('火星旅行')
+  })
+
   it('缺少联系方式：400 并说明原因；密钥错误 401', async () => {
     const res = await siteLead({ name: '没留电话' })
     expect(res.status).toBe(400)
