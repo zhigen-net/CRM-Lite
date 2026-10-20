@@ -1291,6 +1291,18 @@
       "visits": "Visits",
       "visitsValue": "{{visits}} visits, {{pages}} pages viewed",
       "ip": "Last IP"
+    },
+    "anomaly": {
+      "bot": "Likely bot",
+      "datacenter": "Data center / cloud IP",
+      "vpn": "Likely VPN / proxy",
+      "signals": {
+        "hostingIsp": "IP belongs to {{detail}}, usually a server or crawler rather than a home or mobile network",
+        "vpnIsp": "IP belongs to {{detail}}, a common VPN / proxy exit",
+        "posixLocale": "Browser language is {{detail}}, a server environment setting",
+        "uaScreenMismatch": "Claims to be a phone but the screen is a desktop resolution ({{detail}})",
+        "headlessScreen": "Screen {{detail}} is a headless browser's default window"
+      }
     }
   },
   "workflowHelp": {
