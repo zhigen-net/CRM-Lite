@@ -7,11 +7,12 @@ import { zValidator } from '@hono/zod-validator'
 import { z } from 'zod'
 import { requireAdmin, requireAuth, requireNotSales } from '../middleware/auth'
 import { TRACKER_SCRIPT } from '../../domain/tracking/script'
-import { findSiteByKey, getSite, listSiteSubmissions, listSites, createSite, updateSite, rotateSiteKey } from '../../domain/tracking/sites'
+import { findSiteByKey, getSite, getSiteDetail, listSiteSubmissions, listSites, createSite, updateSite, rotateSiteKey } from '../../domain/tracking/sites'
 import { ingestEvents, parseGeoHeader, type CollectPayload } from '../../domain/tracking/ingest'
 import { getVisitorJourney, listVisitors } from '../../domain/tracking/queries'
 import { integrationTemplates } from '../../domain/tracking/integration'
-import { checkSiteIntegration, normalizeHost } from '../../domain/tracking/check'
+import { checkSiteIntegration, detectSitePlatform, normalizeHost } from '../../domain/tracking/check'
+import { platformTemplates, PROXY_SPEC } from '../../domain/tracking/platforms'
 import { submitSiteLead, type SiteLeadResult } from '../../domain/tracking/siteLead'
 import { depsFrom } from '../../domain/actor'
 
@@ -112,7 +113,11 @@ trackingSitesAdminRoutes.use('*', requireAuth, requireAdmin)
 trackingSitesAdminRoutes.get('/', async (c) => c.json({ data: await listSites(c.env.DB) }))
 
 // 网站接入代码模板（转发代码、脚本标签）
-trackingSitesAdminRoutes.get('/integration', (c) => c.json({ data: integrationTemplates() }))
+trackingSitesAdminRoutes.get('/integration', (c) => c.json({ data: { ...integrationTemplates(), platforms: platformTemplates(), proxySpec: PROXY_SPEC } }))
+
+// 识别网站的部署平台（只作推荐）
+trackingSitesAdminRoutes.post('/detect', zValidator('json', z.object({ domain: z.string().max(200) })), async (c) =>
+  c.json({ data: await detectSitePlatform(normalizeHost(c.req.valid('json').domain)) }))
 
 trackingSitesAdminRoutes.post('/', zValidator('json', z.object({
   name: z.string().min(1, '请填写站点名称').max(50),
@@ -126,6 +131,8 @@ trackingSitesAdminRoutes.patch('/:id', zValidator('json', z.object({
   name: z.string().max(50).optional(),
   domain: z.string().max(200).nullable().optional(),
   isActive: z.boolean().optional(),
+  platform: z.string().max(40).nullable().optional(),
+  features: z.object({ forms: z.boolean().optional(), connect: z.enum(['binding', 'url']).optional() }).optional(),
 })), async (c) => {
   await updateSite(c.env.DB, c.req.param('id'), c.req.valid('json'))
   return c.json({ data: { success: true } })
@@ -142,6 +149,9 @@ trackingSitesAdminRoutes.post('/:id/check', zValidator('json', z.object({
   if (host !== site.domain) await updateSite(c.env.DB, site.id, { domain: host })
   return c.json({ data: await checkSiteIntegration(site, host) })
 })
+
+// 站点详情（含接入状态）
+trackingSitesAdminRoutes.get('/:id', async (c) => c.json({ data: await getSiteDetail(c.env.DB, c.req.param('id')) }))
 
 // 最近的表单提交记录（含被拦截的）
 trackingSitesAdminRoutes.get('/:id/submissions', async (c) => c.json({ data: await listSiteSubmissions(c.env.DB, c.req.param('id')) }))

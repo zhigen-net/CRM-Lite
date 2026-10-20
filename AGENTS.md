@@ -52,6 +52,7 @@
 ## 访客统计
 
 - 网站只通过同域 `/_t/*` 接入，由网站的 Pages Function / Worker 在服务器端带站点密钥转发到 CRM 的 `/api/t/*`（模板见 `domain/tracking/integration.ts`）。**采集脚本和网站前端里不能出现 CRM 地址或任何密钥**；`/api/t/*` 不开放跨域。
+- 各部署平台的转发模板在 `domain/tracking/platforms.ts`，都必须遵守同一份转发协议 `PROXY_SPEC`（转发到 `/api/t/*`、带 `X-Site-Key` 与 `X-Visitor-Geo`、不转发 Cookie）；新增或修改模板后要实际跑通 `t.js` 与 `collect` / `lead` 的 `{"ping":1}` 探测。接入提示词由前端 `app/sites/prompt.ts` 按平台和功能拼装。
 - 访客 IP 保存完整值（用户决定，长期保留），只给管理员、运营查看；销售查看线索 / 客户来源时去掉 IP，API / MCP 无 `contacts:read` 时打码。浏览器上报的字段一律截断、校验，视为不可信。
 
 ## Workers 运行时
