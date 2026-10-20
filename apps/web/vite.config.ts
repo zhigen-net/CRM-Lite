@@ -19,6 +19,8 @@ export default defineConfig({
     },
   },
   build: {
+    // 国旗 SVG 不内联进 JS（约 270 个文件），按需下载
+    assetsInlineLimit: (file: string) => (file.includes('flag-icons') ? false : undefined),
     rollupOptions: {
       output: {
         manualChunks: {

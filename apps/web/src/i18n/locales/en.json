@@ -1290,7 +1290,8 @@
       "firstSeen": "First visit",
       "visits": "Visits",
       "visitsValue": "{{visits}} visits, {{pages}} pages viewed",
-      "ip": "Last IP"
+      "ip": "Last IP",
+      "location": "Location"
     },
     "anomaly": {
       "bot": "Likely bot",
