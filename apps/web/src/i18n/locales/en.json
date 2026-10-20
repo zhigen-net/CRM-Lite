@@ -1501,14 +1501,11 @@
     "keyNotice": "Copy the site key now; it will not be shown again after you leave this page. Keep it on the website's server side only (encrypted environment variable or server config). Do not give it to the AI or commit it.",
     "tabs": {
       "overview": "Overview",
-      "features": "Features",
       "connect": "Connect",
       "records": "Records"
     },
     "overview": {
       "status": "Status (last 24 hours)",
-      "setup": "Setup",
-      "noPlatform": "Not selected",
       "goConnect": "View setup steps"
     },
     "groups": {
@@ -1567,26 +1564,22 @@
       "url": "Calls the CRM address stored in an encrypted variable"
     },
     "features": {
-      "title": "Features",
       "platform": "Hosting platform",
-      "platformHint": "Enter the website domain to detect the hosting platform (a suggestion only), or pick it directly. Setup steps are generated for the platform.",
       "detect": "Detect",
       "detected": "Detected: {{name}}",
       "useDetected": "Use this",
       "detectUnknown": "Could not detect the platform. Pick it manually; if unsure, choose Other / not sure and the AI will implement the proxy protocol.",
       "detectUnreachable": "Could not reach the website. Check the domain or pick the platform manually.",
       "staticNotice": "Static hosting cannot proxy requests on the server, so same-origin proxying is not available yet. Move the site to a platform with functions (EdgeOne Pages, Vercel, Cloudflare Pages, etc.) or wait for the upcoming subdomain mode.",
-      "account": "Is the website in the same Cloudflare account as the CRM?",
       "tracking": "Visitor tracking",
       "trackingHint": "Sources, page journeys, phone clicks, WeChat copies, form submissions and more. Always on.",
       "forms": "Form leads",
       "formsHint": "Website forms submit to /_t/lead and go straight into the CRM with the visitor source linked. No API key needed.",
       "widgets": "Conversion widgets",
       "widgetsHint": "Floating contact button, mobile contact bar, lead popups and more, configured in the CRM with no website code changes.",
-      "soon": "Coming soon",
-      "save": "Save and view setup steps"
+      "soon": "Coming soon"
     },
-    "needPlatform": "Pick the website's hosting platform under Features first.",
+    "needPlatform": "Pick the website's hosting platform under Overview → Site settings first.",
     "goFeatures": "Pick now",
     "promptTitle": "Prompt for your AI agent",
     "promptHint": "Copy it to a coding AI (Claude Code, Cursor, etc.) in the website repository. It is generated for the hosting platform and enabled features, and includes the proxy code, page script, settings to configure and self-checks.",
@@ -1648,6 +1641,21 @@
       "checkTitle": "Self-check when done and report back",
       "check": "After deploying, https://<website domain>/_t/t.js should return JavaScript, and POST {\"ping\":1} (Content-Type: application/json) to /_t/collect and /_t/lead should both return {\"data\":{\"siteId\":\"...\"}}. Then list the files you changed and tell me which dashboard or server settings I still need to configure.",
       "checkForms": "After deploying, POST {\"ping\":1} (Content-Type: application/json) to /_t/lead should return {\"data\":{\"siteId\":\"...\"}}; then submit a form once with test data and confirm the success message. Finally list the pages you changed."
+    },
+    "settings": {
+      "title": "Site settings",
+      "domain": "Website domain",
+      "domainHint": "Used to detect the hosting platform and check the connection",
+      "choosePlatform": "Choose a hosting platform",
+      "status": "Status",
+      "active": "Receiving",
+      "activeHint": "When disabled, visits and leads from the website are rejected",
+      "inactiveHint": "Disabled: visits and leads from the website are rejected",
+      "key": "Site key",
+      "keyHint": "Shown only when created or rotated; rotating invalidates the old key immediately, so update CRM_SITE_KEY on the website"
+    },
+    "records": {
+      "submissions": "Form submissions"
     }
   }
 }

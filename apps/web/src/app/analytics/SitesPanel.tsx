@@ -38,7 +38,7 @@ export function SitesPanel() {
     onSuccess: (res) => {
       refresh(); setCreating(false); setForm({ name: '', domain: '' })
       const d = res.data.data
-      openSite(d.id, 'features', d.key)
+      openSite(d.id, 'overview', d.key)
     },
   })
   const toggleMutation = useMutation({

@@ -1501,14 +1501,11 @@
     "keyNotice": "请立即复制站点密钥，离开页面后不再显示。它只能放在网站服务器端（加密环境变量或服务器配置），不要发给 AI，也不要提交到代码仓库。",
     "tabs": {
       "overview": "概览",
-      "features": "功能",
       "connect": "接入",
       "records": "记录"
     },
     "overview": {
       "status": "接入状态（近 24 小时）",
-      "setup": "接入设置",
-      "noPlatform": "未选择",
       "goConnect": "查看接入方式"
     },
     "groups": {
@@ -1567,26 +1564,22 @@
       "url": "通过 CRM 地址访问，地址放在加密变量里"
     },
     "features": {
-      "title": "功能",
       "platform": "部署平台",
-      "platformHint": "填入网站域名可以自动识别部署平台（仅作推荐），也可以直接选择。接入方式会按平台生成。",
       "detect": "识别",
       "detected": "识别为：{{name}}",
       "useDetected": "使用识别结果",
       "detectUnknown": "没能识别出部署平台，请手动选择；不确定时选「其它 / 不确定」，AI 会按转发协议实现。",
       "detectUnreachable": "无法访问网站，请确认域名正确，或直接手动选择平台。",
       "staticNotice": "纯静态托管无法在服务器端转发请求，暂时不能用同域转发接入。可以把网站放到支持函数的平台（EdgeOne Pages、Vercel、Cloudflare Pages 等），或者等待后续的「子域名接入」。",
-      "account": "网站与 CRM 是否在同一个 Cloudflare 账号",
       "tracking": "访客统计",
       "trackingHint": "访问来源、浏览轨迹、点击电话、复制微信、表单提交等行为。基础功能，始终开启。",
       "forms": "表单留资",
       "formsHint": "网站表单提交到 /_t/lead 直接进 CRM，自动关联访客来源，不需要 API Key。",
       "widgets": "转化组件",
       "widgetsHint": "悬浮咨询按钮、手机底部咨询栏、留资弹窗等，在 CRM 里配置，网站不用改代码。",
-      "soon": "即将推出",
-      "save": "保存并查看接入方式"
+      "soon": "即将推出"
     },
-    "needPlatform": "请先在「功能」里选择网站的部署平台。",
+    "needPlatform": "请先在「概览 → 站点设置」里选择网站的部署平台。",
     "goFeatures": "去选择",
     "promptTitle": "交给 AI 的接入提示词",
     "promptHint": "复制后交给编码 AI（Claude Code、Cursor 等），在网站仓库里执行。提示词按部署平台和开启的功能生成，包含转发代码、页面脚本、需要设置的配置和自检方法。",
@@ -1648,6 +1641,21 @@
       "checkTitle": "完成后自检并告诉我",
       "check": "部署后访问 https://网站域名/_t/t.js，应返回 JavaScript；分别向 /_t/collect 和 /_t/lead 发送 POST {\"ping\":1}（Content-Type: application/json），都应返回 {\"data\":{\"siteId\":\"...\"}}。最后列出改动的文件，并告诉我还需要在控制台或服务器上做哪些设置。",
       "checkForms": "部署后向 /_t/lead 发送 POST {\"ping\":1}（Content-Type: application/json），应返回 {\"data\":{\"siteId\":\"...\"}}；再用测试数据提交一次表单，确认页面提示提交成功。最后列出改动的页面。"
+    },
+    "settings": {
+      "title": "站点设置",
+      "domain": "网站域名",
+      "domainHint": "用于识别部署平台和检测接入",
+      "choosePlatform": "请选择部署平台",
+      "status": "站点状态",
+      "active": "接收中",
+      "activeHint": "停用后网站发来的访问和留资都会被拒绝",
+      "inactiveHint": "已停用：网站发来的访问和留资都会被拒绝",
+      "key": "站点密钥",
+      "keyHint": "只在新建或更换时显示一次；更换后旧密钥立即失效，需要同步更新网站的 CRM_SITE_KEY"
+    },
+    "records": {
+      "submissions": "表单提交记录"
     }
   }
 }
