@@ -1714,8 +1714,8 @@
       "siteRateHint": "{{leads}} website leads"
     },
     "trend": {
-      "leads": "New leads per day",
-      "visitors": "Website visitors per day"
+      "both": "Website visitors and new leads per day",
+      "leads": "New leads per day"
     },
     "todo": {
       "title": "To follow up",
@@ -1733,7 +1733,10 @@
       "leads": "New leads assigned",
       "followups": "Follow-ups",
       "clients": "New clients"
-    }
+    },
+    "source": "Lead source",
+    "allSources": "All sources",
+    "day": "Date"
   },
   "eventCleanup": {
     "title": "Clean up page events",

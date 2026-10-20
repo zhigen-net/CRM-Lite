@@ -103,3 +103,20 @@ describe('访客列表的时间范围', () => {
     expect(data.trend.find((d: { day: string }) => d.day === '2020-03-02').visitors).toBe(1)
   })
 })
+
+describe('按来源筛选', () => {
+  it('线索、转化、排行只统计该来源；来源不是网站时不返回访客，是网站时只统计该网站的访客', async () => {
+    const { data } = await dash(admin, `from=${FROM}&to=${TO}&source=${encodeURIComponent('广告')}`)
+    expect(data.source).toBe('广告')
+    expect(data.kpis).toMatchObject({ newLeads: { value: 1 }, convertedLeads: 1 })
+    expect(data.kpis.visitors).toBeUndefined()
+    expect(data.sources).toEqual([{ source: '广告', count: 1 }])
+    expect(data.leaderboard.find((r: { userId: string }) => r.userId === salesA.id)).toMatchObject({ leads: 1, followups: 0 })
+
+    // 上一个用例建了「范围测试站」，范围内有 1 位访客
+    const site = (await dash(admin, `from=${FROM}&to=${TO}&source=${encodeURIComponent('范围测试站')}`)).data
+    expect(site.kpis.newLeads.value).toBe(0)
+    expect(site.kpis.visitors.value).toBe(1)
+    expect(site.visitorSite).toBeTruthy()
+  })
+})
