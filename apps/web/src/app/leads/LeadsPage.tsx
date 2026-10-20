@@ -261,14 +261,14 @@ export default function LeadsPage() {
   const renderTd = (lead: Lead, key: ColKey) => {
     switch (key) {
       case 'leadNo':
-        return <td key={key} className="px-4 py-3 text-gray-400 text-xs font-mono">L-{String(lead.leadNo ?? '').padStart(4, '0')}</td>
+        return <td key={key} className="px-4 py-3 text-gray-400 text-xs font-mono whitespace-nowrap">L-{String(lead.leadNo ?? '').padStart(4, '0')}</td>
       case 'name':
-        return <td key={key} className="px-4 py-3 font-medium text-gray-900">{lead.name}</td>
+        return <td key={key} className="px-4 py-3 font-medium text-gray-900 min-w-[7rem]">{lead.name}</td>
       case 'contactInfo':
-        return <td key={key} className="px-4 py-3 text-gray-600">{lead.contactInfo}</td>
+        return <td key={key} className="px-4 py-3 text-gray-600 break-all min-w-[8rem]">{lead.contactInfo}</td>
       case 'intendedServices':
         return (
-          <td key={key} className="px-4 py-3">
+          <td key={key} className="px-4 py-3 min-w-[7rem]">
             <div className="flex flex-wrap gap-1">
               {(lead.intendedServices ?? []).map((svc) => <Badge key={svc} variant="blue">{svc}</Badge>)}
             </div>
@@ -281,12 +281,12 @@ export default function LeadsPage() {
           </td>
         )
       case 'source':
-        return <td key={key} className="px-4 py-3 text-gray-600">{lead.source}</td>
+        return <td key={key} className="px-4 py-3 text-gray-600 min-w-[6rem]">{lead.source}</td>
       case 'assignedToName':
-        return <td key={key} className="px-4 py-3 text-gray-600">{lead.assignedToName ?? <span className="text-gray-400">{t('leads.detail.unassigned')}</span>}</td>
+        return <td key={key} className="px-4 py-3 text-gray-600 whitespace-nowrap">{lead.assignedToName ?? <span className="text-gray-400">{t('leads.detail.unassigned')}</span>}</td>
       case 'nextContactDate':
         return (
-          <td key={key} className="px-4 py-3 text-xs">
+          <td key={key} className="px-4 py-3 text-xs whitespace-nowrap">
             {lead.nextContactDate
               ? <span className={new Date(lead.nextContactDate) < new Date() ? 'text-red-500 font-medium' : 'text-gray-500'}>{formatDate(lead.nextContactDate)}</span>
               : <span className="text-gray-300">—</span>}
@@ -295,7 +295,7 @@ export default function LeadsPage() {
       case 'activityCount':
         return <td key={key} className="px-4 py-3 text-gray-500 text-xs">{lead.activityCount ?? 0}</td>
       case 'createdAt':
-        return <td key={key} className="px-4 py-3 text-gray-500">{formatDate(lead.createdAt)}</td>
+        return <td key={key} className="px-4 py-3 text-gray-500 whitespace-nowrap">{formatDate(lead.createdAt)}</td>
     }
   }
 
@@ -416,7 +416,16 @@ export default function LeadsPage() {
         <div className="py-12 text-center text-sm text-gray-500">{search ? t('leads.noMatch') : t('leads.empty')}</div>
       ) : (
         <>
-          <div className="hidden sm:block rounded-lg border bg-white overflow-visible">
+          {/* 窄屏时表格横向滚动；列设置弹窗放在滚动区域外，避免被裁切 */}
+          <div className="relative hidden sm:block rounded-lg border bg-white">
+            {showColSettings && (
+              <div className="absolute right-2 top-10 z-50">
+                <div className="relative">
+                  <ColSettingsPanel config={colConfig} colLabels={colLabels} onChange={updateColConfig} onClose={() => setShowColSettings(false)} />
+                </div>
+              </div>
+            )}
+            <div className="overflow-x-auto rounded-lg">
             <table className="w-full text-sm">
               <thead className="bg-gray-50 border-b">
                 <tr>
@@ -425,26 +434,24 @@ export default function LeadsPage() {
                       {colLabels[c.key]}
                     </th>
                   ))}
-                  <th className="px-4 py-3 rounded-tr-lg">
+                  <th className="sticky right-0 bg-gray-50 px-4 py-3 rounded-tr-lg shadow-[-6px_0_6px_-6px_rgba(0,0,0,0.12)]">
                     <div className="flex items-center justify-end gap-1 relative">
                       <button onClick={() => setShowColSettings((v) => !v)} className="text-gray-400 hover:text-gray-600 transition-colors">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                         </svg>
                       </button>
-                      {showColSettings && (
-                        <ColSettingsPanel config={colConfig} colLabels={colLabels} onChange={updateColConfig} onClose={() => setShowColSettings(false)} />
-                      )}
                     </div>
                   </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {filtered.map((lead) => (
-                  <tr key={lead.id} className="hover:bg-gray-50">
+                  <tr key={lead.id} className="group hover:bg-gray-50">
                     {visibleCols.map((c) => renderTd(lead, c.key))}
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
+                    {/* 操作列固定在右侧，表格横向滚动时也能看到 */}
+                    <td className="sticky right-0 bg-white px-4 py-3 whitespace-nowrap shadow-[-6px_0_6px_-6px_rgba(0,0,0,0.12)] group-hover:bg-gray-50">
+                      <div className="flex items-center justify-end gap-2">
                         <button onClick={(e) => openFollowUp(lead, e)} className="text-xs text-primary-600 hover:text-primary-800 font-medium">{t('leads.addActivity')}</button>
                         <span className="text-gray-300">|</span>
                         <Link to={`/app/leads/${lead.id}`} className="text-xs text-gray-500 hover:text-gray-700">{t('common.detail')}</Link>
@@ -460,6 +467,7 @@ export default function LeadsPage() {
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
 
           <div className="sm:hidden space-y-2">
