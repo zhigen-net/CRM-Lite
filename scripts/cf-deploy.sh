@@ -94,6 +94,16 @@ sed -e "s/placeholder-worker/$NAME/" \
     wrangler.toml > "$DEPLOY_CONFIG"
 trap 'rm -f "$WORKERS_DIR/$DEPLOY_CONFIG"' EXIT
 
+# 可选：Workers 日志采样比例（构建变量 LOG_SAMPLING_RATE，0–1）。访客统计流量大、日志条数接近免费额度时调低；不设置时全部记录
+if [ -n "${LOG_SAMPLING_RATE:-}" ]; then
+  if [[ "$LOG_SAMPLING_RATE" =~ ^(0(\.[0-9]+)?|1(\.0+)?)$ ]]; then
+    sed -i "/^\[observability\]/a head_sampling_rate = $LOG_SAMPLING_RATE" "$DEPLOY_CONFIG"
+    echo "✔ 日志采样比例 $LOG_SAMPLING_RATE"
+  else
+    echo "⚠ LOG_SAMPLING_RATE 应为 0–1 之间的数字，已忽略：$LOG_SAMPLING_RATE"
+  fi
+fi
+
 # ── 2. 构建前端（VITE_API_BASE_URL 可选，默认同源 /api）──────────────
 echo "▶ 构建前端"
 (cd "$ROOT" && pnpm --filter web build)

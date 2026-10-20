@@ -132,6 +132,7 @@
 |---|---|
 | `VITE_API_BASE_URL` | 让前端调用其它地址的 API；不设置时使用同源 `/api`（推荐） |
 | `APP_NAME` | 一般无需设置：Workers Builds 会自动提供 Worker 名（`WRANGLER_CI_OVERRIDE_NAME`） |
+| `LOG_SAMPLING_RATE` | 可选，Workers 日志采样比例（0–1，如 `0.3`）。网站访问量大、日志条数接近免费额度（约每天 20 万条）时调低；不设置时全部记录 |
 
 ---
 
