@@ -2,6 +2,7 @@
 // 只允许检测公网域名（不接受 IP、localhost），避免被用来探测内网
 import { badRequest } from '../errors'
 import type { TrackingSite } from './sites'
+import { detectFromHeaders } from './platforms'
 
 export type CheckReason =
   | 'ok' | 'unreachable' | 'not_found' | 'html' | 'redirect' | 'bad_key' | 'wrong_site' | 'server_error' | 'unexpected'
@@ -69,4 +70,11 @@ export async function checkSiteIntegration(site: TrackingSite, host: string, fet
   const lead = await probe('lead')
 
   return { host, script, collect, lead }
+}
+
+/** 访问网站首页，根据响应头推荐部署平台 */
+export async function detectSitePlatform(host: string, fetcher: typeof fetch = fetch) {
+  const res = await tryFetch(fetcher, `https://${host}/`, { headers: { 'User-Agent': 'CRM-Integration-Check/1.0' } })
+  if (!res) return { host, reachable: false, platform: null, evidence: [] as string[], behindCloudflare: false }
+  return { host, reachable: true, ...detectFromHeaders(res.headers) }
 }

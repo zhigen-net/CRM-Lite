@@ -27,7 +27,7 @@ interface ApiFailureRequestBody {
 }
 
 /** source：site 只看网站表单的失败，api 只看对外接口的失败，不传显示全部 */
-export function ApiFailuresPanel({ source }: { source?: 'site' | 'api' } = {}) {
+export function ApiFailuresPanel({ source, siteId }: { source?: 'site' | 'api'; siteId?: string } = {}) {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -73,7 +73,7 @@ export function ApiFailuresPanel({ source }: { source?: 'site' | 'api' } = {}) {
     return parts.join(' · ') || '—'
   }
 
-  const items = (data ?? []).filter((f) => !source || (source === 'site' ? !!f.siteId : !f.siteId))
+  const items = (data ?? []).filter((f) => (!source || (source === 'site' ? !!f.siteId : !f.siteId)) && (!siteId || f.siteId === siteId))
 
   return (
     <div className="space-y-4">
