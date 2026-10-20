@@ -1,5 +1,5 @@
-// 站点详情：概览（接入状态）、功能（部署平台与功能开关）、接入（提示词与检测）、记录（表单提交与失败）
-import { useEffect, useState } from 'react'
+// 站点详情：概览（接入状态 + 站点设置：名称、域名、部署平台、功能、启停）、接入（提示词与检测）、记录（表单提交与失败）
+import { useEffect, useState, type ReactNode } from 'react'
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
@@ -14,7 +14,7 @@ import {
   type Platform, type SiteDetail, type SiteFeatures,
 } from './ui'
 
-const TABS = ['overview', 'features', 'connect', 'records'] as const
+const TABS = ['overview', 'connect', 'records'] as const
 type Tab = typeof TABS[number]
 
 interface Submission { id: string; status: string; createdAt: string; leadId: string | null; leadName: string | null }
@@ -35,8 +35,9 @@ export default function SiteDetailPage() {
     queryFn: () => crmApi.get<{ data: SiteDetail }>(`/admin/tracking-sites/${id}`).then((r) => r.data.data),
     refetchInterval: 15_000,
   })
-  const tabParam = searchParams.get('tab') as Tab | null
-  const tab: Tab = tabParam && TABS.includes(tabParam) ? tabParam : site && !site.platform ? 'features' : 'overview'
+  // 旧的 ?tab=features 并入概览
+  const tabParam = searchParams.get('tab')
+  const tab: Tab = (TABS as readonly string[]).includes(tabParam ?? '') ? tabParam as Tab : 'overview'
 
   const refresh = () => {
     queryClient.invalidateQueries({ queryKey: ['tracking-site', id] })
@@ -68,12 +69,6 @@ export default function SiteDetailPage() {
               {site.platform && <> · {t(`siteConnect.platforms.${site.platform}.name`)}</>}
             </p>
           </div>
-          <div className="flex items-center gap-3 text-sm">
-            <button className="text-gray-600 hover:text-gray-900" onClick={() => { if (confirm(t('analytics.sites.rotateConfirm', { name: site.name }))) rotate.mutate() }}>{t('analytics.sites.rotate')}</button>
-            <button className={site.isActive ? 'text-red-500 hover:text-red-700' : 'text-green-600 hover:text-green-800'} onClick={() => toggle.mutate()}>
-              {site.isActive ? t('analytics.sites.disable') : t('analytics.sites.enable')}
-            </button>
-          </div>
         </div>
 
         {siteKey && (
@@ -92,138 +87,162 @@ export default function SiteDetailPage() {
           ))}
         </div>
 
-        {tab === 'overview' && <Overview site={site} onGo={(k) => setSearchParams({ tab: k })} />}
-        {tab === 'features' && <Features site={site} onSaved={() => { refresh(); setSearchParams({ tab: 'connect' }) }} />}
-        {tab === 'connect' && <SiteConnect site={site} siteKey={siteKey} onRotate={() => rotate.mutate()} rotating={rotate.isPending} onGoFeatures={() => setSearchParams({ tab: 'features' })} />}
+        {tab === 'overview' && (
+          <div className="space-y-4">
+            <Overview site={site} />
+            <Settings site={site} onSaved={refresh} onGoConnect={() => setSearchParams({ tab: 'connect' })}
+              onToggle={() => toggle.mutate()} toggling={toggle.isPending}
+              onRotate={() => { if (confirm(t('analytics.sites.rotateConfirm', { name: site.name }))) rotate.mutate() }} rotating={rotate.isPending} />
+          </div>
+        )}
+        {tab === 'connect' && <SiteConnect site={site} siteKey={siteKey} onRotate={() => rotate.mutate()} rotating={rotate.isPending} onGoFeatures={() => setSearchParams({ tab: 'overview' })} />}
         {tab === 'records' && <Records site={site} />}
       </div>
     </div>
   )
 }
 
-function Overview({ site, onGo }: { site: SiteDetail; onGo: (tab: Tab) => void }) {
+function Overview({ site }: { site: SiteDetail }) {
   const { t } = useTranslation()
   return (
-    <div className="space-y-4">
-      <Section title={t('siteConnect.overview.status')}>
-        <div className="flex flex-wrap items-center gap-1.5 text-xs">
-          <Stat label={t('analytics.sites.stat.visitors')} value={site.visitorsDay ?? 0} />
-          <Stat label={t('analytics.sites.stat.leads')} value={site.leadsDay ?? 0} tone={(site.leadsDay ?? 0) > 0 ? 'green' : 'gray'} />
-          <Stat label={t('analytics.sites.stat.blocked')} value={site.blockedDay ?? 0} tone={(site.blockedDay ?? 0) > 0 ? 'amber' : 'gray'} />
-          {(site.openFailures ?? 0) > 0 && <Stat label={t('analytics.sites.stat.failures')} value={site.openFailures ?? 0} tone="red" />}
-        </div>
-        <p className="text-xs text-gray-500">
+    <Section title={t('siteConnect.overview.status')}>
+      <div className="flex flex-wrap items-center gap-1.5 text-xs">
+        <Stat label={t('analytics.sites.stat.visitors')} value={site.visitorsDay ?? 0} />
+        <Stat label={t('analytics.sites.stat.leads')} value={site.leadsDay ?? 0} tone={(site.leadsDay ?? 0) > 0 ? 'green' : 'gray'} />
+        <Stat label={t('analytics.sites.stat.blocked')} value={site.blockedDay ?? 0} tone={(site.blockedDay ?? 0) > 0 ? 'amber' : 'gray'} />
+        {(site.openFailures ?? 0) > 0 && <Stat label={t('analytics.sites.stat.failures')} value={site.openFailures ?? 0} tone="red" />}
+        <span className="text-gray-500">
           {site.lastSeenAt ? t('analytics.sites.lastSeen', { time: formatDate(site.lastSeenAt) }) : t('analytics.sites.noData')}
           {' · '}{t('analytics.sites.visitors', { count: site.visitorCount })}
-        </p>
-        {site.isActive && isStale(site.lastSeenAt) && <Note tone="amber">{site.lastSeenAt ? t('analytics.sites.stale') : t('analytics.sites.neverSeen')}</Note>}
-      </Section>
-      <Section title={t('siteConnect.overview.setup')} aside={<Button size="sm" variant="secondary" onClick={() => onGo('features')}>{t('common.edit')}</Button>}>
-        <dl className="grid gap-2 text-sm sm:grid-cols-2">
-          <div><dt className="text-xs text-gray-400">{t('siteConnect.features.platform')}</dt><dd>{site.platform ? t(`siteConnect.platforms.${site.platform}.name`) : t('siteConnect.overview.noPlatform')}</dd></div>
-          <div><dt className="text-xs text-gray-400">{t('siteConnect.features.title')}</dt>
-            <dd>{[t('siteConnect.features.tracking'), ...(site.features.forms ? [t('siteConnect.features.forms')] : [])].join('、')}</dd></div>
-        </dl>
-        <Button size="sm" onClick={() => onGo('connect')}>{t('siteConnect.overview.goConnect')}</Button>
-      </Section>
+        </span>
+      </div>
+      {site.isActive && isStale(site.lastSeenAt) && <Note tone="amber">{site.lastSeenAt ? t('analytics.sites.stale') : t('analytics.sites.neverSeen')}</Note>}
+    </Section>
+  )
+}
+
+/** 一行设置：左侧标题与说明，右侧控件 */
+function Row({ label, hint, children }: { label: string; hint?: string | undefined; children: ReactNode }) {
+  return (
+    <div className="flex flex-col gap-2 py-3 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
+      <div className="min-w-0 sm:w-48 sm:flex-none">
+        <p className="text-sm font-medium text-gray-800">{label}</p>
+        {hint && <p className="mt-0.5 text-xs text-gray-500">{hint}</p>}
+      </div>
+      <div className="min-w-0 flex-1">{children}</div>
     </div>
   )
 }
 
-function Features({ site, onSaved }: { site: SiteDetail; onSaved: () => void }) {
+function Toggle({ on, disabled, onClick }: { on: boolean; disabled?: boolean; onClick?: () => void }) {
+  return (
+    <button type="button" disabled={disabled} onClick={onClick}
+      className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors ${on ? 'bg-primary-600' : 'bg-gray-200'} ${disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}>
+      <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${on ? 'translate-x-6' : 'translate-x-1'}`} />
+    </button>
+  )
+}
+
+const selectCls = 'w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500'
+
+function Settings({ site, onSaved, onGoConnect, onToggle, toggling, onRotate, rotating }: {
+  site: SiteDetail; onSaved: () => void; onGoConnect: () => void
+  onToggle: () => void; toggling: boolean; onRotate: () => void; rotating: boolean
+}) {
   const { t } = useTranslation()
+  const [name, setName] = useState(site.name)
+  const [domain, setDomain] = useState(site.domain ?? '')
   const [platform, setPlatform] = useState<Platform | null>(site.platform)
   const [features, setFeatures] = useState<SiteFeatures>(site.features)
-  const [domain, setDomain] = useState(site.domain ?? '')
   const [detected, setDetected] = useState<DetectResult | null>(null)
-  useEffect(() => { setPlatform(site.platform); setFeatures(site.features) }, [site.id]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    setName(site.name); setDomain(site.domain ?? ''); setPlatform(site.platform); setFeatures(site.features)
+  }, [site.id]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const dirty = name.trim() !== site.name || (domain.trim() || null) !== site.domain || platform !== site.platform
+    || features.forms !== site.features.forms || features.connect !== site.features.connect
 
   const detect = useMutation({
     mutationFn: () => crmApi.post<{ data: DetectResult }>('/admin/tracking-sites/detect', { domain }).then((r) => r.data.data),
-    onSuccess: (r) => { setDetected(r); setDomain(r.host) },
+    onSuccess: (r) => { setDetected(r); setDomain(r.host); if (r.platform && !platform) setPlatform(r.platform) },
   })
   const save = useMutation({
-    mutationFn: () => crmApi.patch(`/admin/tracking-sites/${site.id}`, { platform, features, ...(domain.trim() && domain.trim() !== site.domain ? { domain: domain.trim() } : {}) }),
+    mutationFn: () => crmApi.patch(`/admin/tracking-sites/${site.id}`, {
+      name: name.trim(), domain: domain.trim() || null, platform, features,
+    }),
     onSuccess: onSaved,
   })
 
   return (
-    <div className="space-y-4">
-      <Section title={t('siteConnect.features.platform')}>
-        <p className="text-xs text-gray-500">{t('siteConnect.features.platformHint')}</p>
-        <div className="flex items-end gap-2">
-          <div className="flex-1"><Input placeholder="www.example.com" value={domain} onChange={(e) => setDomain(e.target.value)} /></div>
-          <Button variant="secondary" loading={detect.isPending} disabled={!domain.trim()} onClick={() => detect.mutate()}>{t('siteConnect.features.detect')}</Button>
-        </div>
-        {detect.isError && <Note tone="red">{(detect.error as { response?: { data?: { message?: string } } }).response?.data?.message ?? t('common.opFailed')}</Note>}
-        {detected && (
-          <Note tone={detected.platform ? 'green' : 'amber'}>
-            {!detected.reachable ? t('siteConnect.features.detectUnreachable')
-              : detected.platform ? <>
-                {t('siteConnect.features.detected', { name: t(`siteConnect.platforms.${detected.platform}.name`) })}
-                <span className="ml-1 text-gray-500">（{detected.evidence.join('；')}）</span>
-                {detected.platform !== platform && <button type="button" className="ml-2 font-medium underline" onClick={() => setPlatform(detected.platform)}>{t('siteConnect.features.useDetected')}</button>}
-              </> : t('siteConnect.features.detectUnknown')}
-          </Note>
-        )}
-        {PLATFORM_GROUPS.map((g) => (
-          <div key={g.key}>
-            <p className="mb-1.5 mt-2 text-xs font-medium text-gray-500">{t(`siteConnect.groups.${g.key}`)}</p>
-            <div className="grid gap-2 sm:grid-cols-2">
-              {g.items.map((p) => (
-                <button key={p} type="button" onClick={() => setPlatform(p)}
-                  className={`rounded-lg border p-3 text-left ${platform === p ? 'border-primary-500 bg-primary-50 ring-1 ring-primary-500' : 'border-gray-200 hover:border-gray-300'}`}>
-                  <p className="text-sm font-medium text-gray-900">{t(`siteConnect.platforms.${p}.name`)}</p>
-                  <p className="mt-0.5 text-xs text-gray-500">{t(`siteConnect.platforms.${p}.hint`)}</p>
-                </button>
-              ))}
-            </div>
+    <Section title={t('siteConnect.settings.title')}
+      aside={site.platform ? <Button size="sm" variant="secondary" onClick={onGoConnect}>{t('siteConnect.overview.goConnect')}</Button> : undefined}>
+      <div className="divide-y">
+        <Row label={t('analytics.sites.name')}>
+          <Input value={name} onChange={(e) => setName(e.target.value)} />
+        </Row>
+        <Row label={t('siteConnect.settings.domain')} hint={t('siteConnect.settings.domainHint')}>
+          <div className="flex gap-2">
+            <div className="flex-1"><Input placeholder="www.example.com" value={domain} onChange={(e) => setDomain(e.target.value)} /></div>
+            <Button variant="secondary" loading={detect.isPending} disabled={!domain.trim()} onClick={() => detect.mutate()}>{t('siteConnect.features.detect')}</Button>
           </div>
-        ))}
-        {platform === 'static' && <Note tone="amber">{t('siteConnect.features.staticNotice')}</Note>}
-        {isCloudflare(platform) && (
-          <div>
-            <p className="mb-1.5 mt-2 text-xs font-medium text-gray-500">{t('siteConnect.features.account')}</p>
-            <div className="grid gap-2 sm:grid-cols-2">
+          {detect.isError && <p className="mt-1 text-xs text-red-600">{(detect.error as { response?: { data?: { message?: string } } }).response?.data?.message ?? t('common.opFailed')}</p>}
+          {detected && (
+            <p className={`mt-1 text-xs ${detected.platform ? 'text-green-700' : 'text-amber-700'}`}>
+              {!detected.reachable ? t('siteConnect.features.detectUnreachable')
+                : detected.platform ? <>
+                  {t('siteConnect.features.detected', { name: t(`siteConnect.platforms.${detected.platform}.name`) })}
+                  <span className="text-gray-500">（{detected.evidence.join('；')}）</span>
+                  {detected.platform !== platform && <button type="button" className="ml-1 font-medium underline" onClick={() => setPlatform(detected.platform)}>{t('siteConnect.features.useDetected')}</button>}
+                </> : t('siteConnect.features.detectUnknown')}
+            </p>
+          )}
+        </Row>
+        <Row label={t('siteConnect.features.platform')}>
+          <select className={selectCls} value={platform ?? ''} onChange={(e) => setPlatform((e.target.value || null) as Platform | null)}>
+            <option value="">{t('siteConnect.settings.choosePlatform')}</option>
+            {PLATFORM_GROUPS.map((g) => (
+              <optgroup key={g.key} label={t(`siteConnect.groups.${g.key}`)}>
+                {g.items.map((p) => <option key={p} value={p}>{t(`siteConnect.platforms.${p}.name`)}</option>)}
+              </optgroup>
+            ))}
+          </select>
+          {platform && <p className="mt-1 text-xs text-gray-500">{t(`siteConnect.platforms.${platform}.hint`)}</p>}
+          {platform === 'static' && <p className="mt-1 text-xs text-amber-700">{t('siteConnect.features.staticNotice')}</p>}
+          {isCloudflare(platform) && (
+            <div className="mt-2 flex flex-wrap gap-4 text-sm">
               {(['binding', 'url'] as const).map((m) => (
-                <button key={m} type="button" onClick={() => setFeatures({ ...features, connect: m })}
-                  className={`rounded-lg border p-3 text-left ${features.connect === m ? 'border-primary-500 bg-primary-50 ring-1 ring-primary-500' : 'border-gray-200 hover:border-gray-300'}`}>
-                  <p className="text-sm font-medium text-gray-900">{t(`siteConnect.connect.${m}`)}</p>
-                  <p className="mt-0.5 text-xs text-gray-500">{t(`siteConnect.connectHint.${m}`)}</p>
-                </button>
+                <label key={m} className="flex cursor-pointer items-center gap-1.5" title={t(`siteConnect.connectHint.${m}`)}>
+                  <input type="radio" checked={features.connect === m} onChange={() => setFeatures({ ...features, connect: m })} />
+                  {t(`siteConnect.connect.${m}`)}
+                </label>
               ))}
             </div>
+          )}
+        </Row>
+        <Row label={t('siteConnect.features.tracking')} hint={t('siteConnect.features.trackingHint')}><Toggle on disabled /></Row>
+        <Row label={t('siteConnect.features.forms')} hint={t('siteConnect.features.formsHint')}>
+          <Toggle on={features.forms} onClick={() => setFeatures({ ...features, forms: !features.forms })} />
+        </Row>
+        <Row label={t('siteConnect.features.widgets')} hint={t('siteConnect.features.widgetsHint')}>
+          <span className="flex items-center gap-2"><Toggle on={false} disabled /><span className="text-xs text-gray-400">{t('siteConnect.features.soon')}</span></span>
+        </Row>
+        <Row label={t('siteConnect.settings.status')} hint={t(site.isActive ? 'siteConnect.settings.activeHint' : 'siteConnect.settings.inactiveHint')}>
+          <div className="flex flex-wrap items-center gap-2">
+            <Toggle on={site.isActive} disabled={toggling} onClick={onToggle} />
+            <span className="text-sm text-gray-600">{site.isActive ? t('siteConnect.settings.active') : t('analytics.sites.disabled')}</span>
           </div>
-        )}
-      </Section>
-
-      <Section title={t('siteConnect.features.title')}>
-        {[
-          { key: 'tracking', on: true, locked: true },
-          { key: 'forms', on: features.forms, locked: false },
-          { key: 'widgets', on: false, locked: true, soon: true },
-        ].map((f) => (
-          <div key={f.key} className="flex items-center justify-between gap-4">
-            <div>
-              <p className="text-sm font-medium text-gray-800">
-                {t(`siteConnect.features.${f.key}`)}
-                {f.soon && <span className="ml-2 rounded bg-gray-100 px-1.5 py-0.5 text-xs font-normal text-gray-500">{t('siteConnect.features.soon')}</span>}
-              </p>
-              <p className="mt-0.5 text-xs text-gray-500">{t(`siteConnect.features.${f.key}Hint`)}</p>
-            </div>
-            <button type="button" disabled={f.locked}
-              onClick={() => f.key === 'forms' && setFeatures({ ...features, forms: !features.forms })}
-              className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors ${f.on ? 'bg-primary-600' : 'bg-gray-200'} ${f.locked ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}>
-              <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${f.on ? 'translate-x-6' : 'translate-x-1'}`} />
-            </button>
+        </Row>
+        <Row label={t('siteConnect.settings.key')} hint={t('siteConnect.settings.keyHint')}>
+          <div className="flex items-center gap-3">
+            <span className="font-mono text-sm text-gray-600">{site.keyPrefix}…</span>
+            <Button size="sm" variant="secondary" loading={rotating} onClick={onRotate}>{t('analytics.sites.rotate')}</Button>
           </div>
-        ))}
-      </Section>
-
-      <div className="flex justify-end">
-        <Button loading={save.isPending} disabled={!platform} onClick={() => save.mutate()}>{t('siteConnect.features.save')}</Button>
+        </Row>
       </div>
-    </div>
+      <div className="flex justify-end gap-2 border-t pt-3">
+        <Button disabled={!dirty || !name.trim()} loading={save.isPending} onClick={() => save.mutate()}>{t('common.save')}</Button>
+      </div>
+    </Section>
   )
 }
 
