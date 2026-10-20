@@ -1154,7 +1154,7 @@
         "source": "首次来源",
         "visits": "访问 / 浏览",
         "device": "设备",
-        "location": "地区 / 运营商",
+        "location": "IP / 地区 / 运营商",
         "actions": "关键行为",
         "lead": "线索"
       }
@@ -1307,7 +1307,8 @@
       "referrer": "来源网址",
       "firstSeen": "首次访问",
       "visits": "访问次数",
-      "visitsValue": "{{visits}} 次访问，浏览 {{pages}} 页"
+      "visitsValue": "{{visits}} 次访问，浏览 {{pages}} 页",
+      "ip": "最近访问 IP"
     }
   },
   "workflowHelp": {

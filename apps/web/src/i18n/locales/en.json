@@ -1154,7 +1154,7 @@
         "source": "First source",
         "visits": "Visits / views",
         "device": "Device",
-        "location": "Location / ISP",
+        "location": "IP / location / ISP",
         "actions": "Key actions",
         "lead": "Lead"
       }
@@ -1307,7 +1307,8 @@
       "referrer": "Referrer",
       "firstSeen": "First visit",
       "visits": "Visits",
-      "visitsValue": "{{visits}} visits, {{pages}} pages viewed"
+      "visitsValue": "{{visits}} visits, {{pages}} pages viewed",
+      "ip": "Last IP"
     }
   },
   "workflowHelp": {

@@ -121,3 +121,49 @@ describe('线索 / 客户详情的来源与轨迹', () => {
     expect(client.visitorSource).toMatchObject({ channel: 'paid' })
   })
 })
+
+describe('访客 IP 的可见范围', () => {
+  let leadId: string
+  const ownSales = { u: null as TestUser | null }
+
+  beforeAll(async () => {
+    const v = uuid()
+    await exports.default.fetch('http://crm.test/api/t/collect', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json', 'User-Agent': UA, 'X-Site-Key': siteKey,
+        'X-Visitor-Geo': encodeURIComponent(JSON.stringify({ ip: '198.51.100.23', city: '杭州' })),
+      },
+      body: JSON.stringify({ v, s: uuid(), e: [{ id: uuid(), t: 'pageview', p: '/', h: 'site.test' }] }),
+    })
+    await waitFor(() => visitorLead(v), (r) => r !== null)
+    leadId = await leadIdOf(await pushLead({ crm_vid: v }))
+    // 把线索分给一位销售，让他能看到这条线索
+    ownSales.u = await createUser('sales', await createTeam())
+    await env.DB.prepare('UPDATE leads SET assigned_to_userId = ? WHERE id = ?').bind(ownSales.u.id, leadId).run()
+  })
+
+  it('运营看得到完整 IP；负责的销售能看来源但看不到 IP', async () => {
+    const opsData = ((await (await api(ops, 'GET', `/api/leads/${leadId}/attribution`)).json()) as { data: { visitor: Record<string, unknown>; visits: Record<string, unknown>[] } }).data
+    expect(opsData.visitor.lastIp).toBe('198.51.100.23')
+    expect(opsData.visits[0]?.ip).toBe('198.51.100.23')
+
+    const res = await api(ownSales.u!, 'GET', `/api/leads/${leadId}/attribution`)
+    expect(res.status).toBe(200)
+    const text = await res.text()
+    expect(text).toContain('杭州')
+    expect(text).not.toContain('198.51.100.23')
+  })
+
+  it('MCP 没有 contacts:read 时 IP 打码；销售通过 AI 读取也没有 IP', async () => {
+    const deps = { db: env.DB, env, waitUntil: () => {} }
+    const mcp = { userId: admin.id, role: admin.role, teamId: null, via: 'mcp' as const, apiKeyId: 'ak-ip' }
+    const masked = (await invokeCapability(deps, mcp, 'get_lead', { id: leadId }, ['leads:read'])) as { visitorSource: { ip: string } }
+    expect(masked.visitorSource.ip).toBe('198.51.*.*')
+    const full = (await invokeCapability(deps, mcp, 'get_lead', { id: leadId }, ['leads:read', 'contacts:read'])) as { visitorSource: { ip: string } }
+    expect(full.visitorSource.ip).toBe('198.51.100.23')
+    const s = ownSales.u!
+    const salesView = (await invokeCapability(deps, { userId: s.id, role: 'sales', teamId: s.teamId, via: 'assistant' as const }, 'get_lead', { id: leadId })) as { visitorSource: Record<string, unknown> }
+    expect(salesView.visitorSource).not.toHaveProperty('ip')
+  })
+})

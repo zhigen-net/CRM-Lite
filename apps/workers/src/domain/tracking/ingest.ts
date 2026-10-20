@@ -1,5 +1,6 @@
 // 采集写入：网站服务器端转发来的一批行为事件 → 访客 / 访问 / 事件
-// 浏览器传来的内容一律视为不可信：字段截断、ID 格式校验、事件数量上限；IP 只存哈希
+// 浏览器传来的内容一律视为不可信：字段截断、ID 格式校验、事件数量上限
+// IP 来自网站转发代码（Cloudflare 的 CF-Connecting-IP），保存完整值与哈希；只接受 IPv4 / IPv6 格式
 import { classifySource, isInternalReferrer, UTM_PARAMS } from './channel'
 import { isBotUA, parseUserAgent } from './userAgent'
 import type { TrackingSite } from './sites'
@@ -44,6 +45,16 @@ async function hashIp(ip: string | null | undefined, salt: string): Promise<stri
   return [...new Uint8Array(sig)].slice(0, 16).map((b) => b.toString(16).padStart(2, '0')).join('')
 }
 
+const IPV4_RE = /^(?:(?:25[0-5]|2[0-4]\d|1?\d?\d)\.){3}(?:25[0-5]|2[0-4]\d|1?\d?\d)$/
+const IPV6_RE = /^[0-9a-f:.]{2,45}$/i
+
+/** 只保留格式正确的 IP，其它一律丢弃 */
+export function validIp(v: unknown): string | null {
+  if (typeof v !== 'string') return null
+  const ip = v.trim()
+  return IPV4_RE.test(ip) || (ip.includes(':') && IPV6_RE.test(ip)) ? ip : null
+}
+
 function cleanParams(q: unknown): Record<string, string> {
   if (!q || typeof q !== 'object' || Array.isArray(q)) return {}
   const out: Record<string, string> = {}
@@ -80,7 +91,8 @@ export async function ingestEvents(db: D1Database, site: TrackingSite, payload: 
   const now = nowSql()
   const ua = parseUserAgent(ctx.userAgent)
   const geo = ctx.geo
-  const ipHash = await hashIp(geo.ip, ctx.ipSalt)
+  const ip = validIp(geo.ip)
+  const ipHash = await hashIp(ip, ctx.ipSalt)
   const pageviews = events.filter((e) => e.t === 'pageview')
   const durationSec = Math.round(events.filter((e) => e.t === 'leave').reduce((s, e) => s + (int(e.d, 6 * 3600 * 1000) ?? 0), 0) / 1000)
 
@@ -101,29 +113,30 @@ export async function ingestEvents(db: D1Database, site: TrackingSite, payload: 
     stmts.push(db.prepare(`
       INSERT INTO visits (id, site_id, visitor_id, started_at, ended_at, pageviews, duration_sec, landing_path, referrer, channel,
         utm_source, utm_medium, utm_campaign, utm_term, utm_content, click_id_type, click_id,
-        device_type, os, browser, screen, language, network, country, region, city, isp, ip_hash)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        device_type, os, browser, screen, language, network, country, region, city, isp, ip_hash, ip)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(id) DO UPDATE SET ended_at = excluded.ended_at, pageviews = visits.pageviews + excluded.pageviews,
         duration_sec = visits.duration_sec + excluded.duration_sec`,
     ).bind(
       visitId, site.id, visitorId, now, now, pageviews.length, durationSec, landing, externalReferrer, src.channel,
       ...utm, src.clickIdType, src.clickId,
       ua.deviceType, ua.os, ua.browser, str(payload.scr, 20), str(payload.lg, 20), str(payload.net, 10),
-      geo.country ?? null, geo.region ?? null, geo.city ?? null, geo.isp ?? null, ipHash,
+      geo.country ?? null, geo.region ?? null, geo.city ?? null, geo.isp ?? null, ipHash, ip,
     ))
     stmts.push(db.prepare(`
       INSERT INTO visitors (site_id, id, first_seen_at, last_seen_at, visit_count, pageview_count,
         first_channel, first_referrer, first_landing, first_utm_source, first_utm_medium, first_utm_campaign, first_click_id_type,
-        last_channel, device_type, os, browser, country, region, city, isp)
-      VALUES (?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        last_channel, device_type, os, browser, country, region, city, isp, last_ip)
+      VALUES (?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(site_id, id) DO UPDATE SET last_seen_at = excluded.last_seen_at, visit_count = visitors.visit_count + 1,
         pageview_count = visitors.pageview_count + excluded.pageview_count, last_channel = excluded.last_channel,
         device_type = excluded.device_type, os = excluded.os, browser = excluded.browser,
-        country = excluded.country, region = excluded.region, city = excluded.city, isp = excluded.isp`,
+        country = excluded.country, region = excluded.region, city = excluded.city, isp = excluded.isp,
+        last_ip = COALESCE(excluded.last_ip, visitors.last_ip)`,
     ).bind(
       site.id, visitorId, now, now, pageviews.length,
       src.channel, externalReferrer, landing, utm[0], utm[1], utm[2], src.clickIdType,
-      src.channel, ua.deviceType, ua.os, ua.browser, geo.country ?? null, geo.region ?? null, geo.city ?? null, geo.isp ?? null,
+      src.channel, ua.deviceType, ua.os, ua.browser, geo.country ?? null, geo.region ?? null, geo.city ?? null, geo.isp ?? null, ip,
     ))
   } else {
     stmts.push(db.prepare('UPDATE visits SET ended_at = ?, pageviews = pageviews + ?, duration_sec = duration_sec + ? WHERE id = ?')
