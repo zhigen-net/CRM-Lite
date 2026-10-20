@@ -155,36 +155,35 @@ export default function AiAccessPage() {
   const view = (k: ApiKey) => setIntegration({ name: k.name, key: null, scopes: k.scopes ?? [] })
   const revoke = (k: ApiKey) => { if (confirm(t('profile.api.revokeConfirm', { name: k.name }))) deleteMutation.mutate(k.id) }
 
-  const sectionCard = (s: Section, icon: string) => (
-    <button
-      type="button"
-      onClick={() => setSearchParams({ tab: s })}
-      className={`flex-1 rounded-lg border p-4 text-left transition-colors ${section === s
-        ? 'border-primary-500 bg-primary-50/50 ring-1 ring-primary-500'
-        : 'border-gray-200 bg-white hover:border-gray-300'}`}
-    >
-      <p className="text-sm font-medium text-gray-900"><span className="mr-1.5">{icon}</span>{t(`aiAccess.sections.${s}.title`)}</p>
-      <p className="mt-1 text-xs text-gray-500">{t(`aiAccess.sections.${s}.desc`)}</p>
-      <p className="mt-2 text-xs text-gray-400">{s === 'sites'
-        ? t('aiAccess.sections.siteCount', { count: siteCount })
-        : t('aiAccess.sections.keyCount', { count: s === 'mcp' ? mcpKeys.length : pushKeys.length })}</p>
-    </button>
-  )
+  // 顶部用标签切换三类接入，只显示当前一类的说明，节省空间
+  const sectionTab = (sec: Section, icon: string) => {
+    const count = sec === 'sites' ? siteCount : sec === 'mcp' ? mcpKeys.length : pushKeys.length
+    return (
+      <button
+        key={sec}
+        type="button"
+        onClick={() => setSearchParams({ tab: sec })}
+        className={`-mb-px flex flex-none items-center gap-1.5 border-b-2 px-3 py-2 text-sm font-medium transition-colors ${section === sec
+          ? 'border-primary-600 text-primary-600'
+          : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+      >
+        <span>{icon}</span>{t(`aiAccess.sections.${sec}.title`)}
+        <span className={`rounded-full px-1.5 text-xs ${section === sec ? 'bg-primary-50 text-primary-600' : 'bg-gray-100 text-gray-500'}`}>{count}</span>
+      </button>
+    )
+  }
 
   return (
     <div className="p-4 sm:p-6">
-      <div className="max-w-4xl space-y-5">
-        <div className="flex flex-wrap items-end justify-between gap-2">
-          <div>
-            <h1 className="text-lg sm:text-xl font-semibold text-gray-900">{t('aiAccess.title')}</h1>
-            <p className="mt-0.5 text-sm text-gray-500">{t('aiAccess.subtitle')}</p>
+      <div className="max-w-4xl space-y-4">
+        <div>
+          <h1 className="text-lg sm:text-xl font-semibold text-gray-900">{t('aiAccess.title')}</h1>
+          <div className="mt-2 flex overflow-x-auto border-b">
+            {isAdmin && sectionTab('sites', '🌐')}
+            {sectionTab('push', '🔗')}
+            {sectionTab('mcp', '🤖')}
           </div>
-        </div>
-
-        <div className="flex flex-col gap-3 sm:flex-row">
-          {isAdmin && sectionCard('sites', '🌐')}
-          {sectionCard('push', '🔗')}
-          {sectionCard('mcp', '🤖')}
+          <p className="mt-2 text-xs text-gray-500">{t(`aiAccess.sections.${section}.desc`)}</p>
         </div>
 
         {section === 'sites' ? (
