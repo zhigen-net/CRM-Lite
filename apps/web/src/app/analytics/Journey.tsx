@@ -93,7 +93,8 @@ export function JourneyDrawer({ url, onClose }: { url: string; onClose: () => vo
                 </div>
                 <ul className="divide-y divide-gray-50">
                   {v.events.filter((e) => e.type !== 'leave').map((e) => {
-                    const leave = v.events.find((x) => x.type === 'leave' && x.path === e.path && x.createdAt >= e.createdAt)
+                    // 新版脚本把停留时长写在浏览记录上；旧数据在单独的离开事件里
+                    const leave = e.durationMs != null ? e : v.events.find((x) => x.type === 'leave' && x.path === e.path && x.createdAt >= e.createdAt)
                     return (
                       <li key={e.id} className="flex items-start gap-2 px-3 py-1.5 text-xs">
                         <span className={`mt-0.5 shrink-0 rounded px-1.5 py-0.5 ${e.type === 'pageview' ? 'bg-gray-100 text-gray-600' : 'bg-amber-100 text-amber-700'}`}>

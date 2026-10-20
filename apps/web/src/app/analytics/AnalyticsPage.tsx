@@ -9,7 +9,7 @@ import { Pagination } from '@/shared/components/Pagination'
 import { DateRangePicker, useDateRangeParam } from '@/shared/components/DateRangePicker'
 import { JourneyDrawer, place } from './Journey'
 
-interface SiteOption { id: string; name: string; domain: string | null; isActive: boolean; visitorCount: number }
+interface SiteOption { id: string; name: string; domain: string | null; isActive: boolean }
 interface Visitor {
   id: string; siteId: string; firstSeenAt: string; lastSeenAt: string; visitCount: number; pageviewCount: number
   firstChannel: string | null; firstUtmSource: string | null; firstUtmCampaign: string | null; firstLanding: string | null

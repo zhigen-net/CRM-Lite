@@ -13,6 +13,8 @@ export const MAX_EVENTS_PER_REQUEST = 20
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 export interface RawEvent {
+  /** leave 事件对应的浏览事件 ID：停留时长写回那条浏览记录，不再新增事件 */
+  pv?: unknown
   id?: unknown; t?: unknown; p?: unknown; ti?: unknown; r?: unknown; h?: unknown
   d?: unknown; sc?: unknown; q?: unknown; m?: unknown
 }
@@ -103,14 +105,32 @@ export async function ingestEvents(db: D1Database, site: TrackingSite, payload: 
   const ip = validIp(geo.ip)
   const ipHash = await hashIp(ip, ctx.ipSalt)
   const pageviews = events.filter((e) => e.t === 'pageview')
-  const durationSec = Math.round(events.filter((e) => e.t === 'leave').reduce((s, e) => s + (int(e.d, 6 * 3600 * 1000) ?? 0), 0) / 1000)
+  // 新版脚本的离开事件带 pv（浏览事件 ID）：把累计停留时长写回浏览记录；旧版脚本的离开事件照旧单独记一条
+  const leaves = events.filter((e) => e.t === 'leave' && typeof e.pv === 'string' && UUID_RE.test(e.pv))
+  const inserts = events.filter((e) => !leaves.includes(e))
+  const keyActions = inserts.filter((e) => e.t === 'tel' || e.t === 'wechat' || e.t === 'form').length
 
   const existing = await db.prepare('SELECT 1 AS ok FROM visits WHERE id = ? AND site_id = ?').bind(visitId, site.id).first<{ ok: number }>()
   const stmts: D1PreparedStatement[] = []
 
+  // 离开：用累计时长减去已记录的时长得到增量，重复上报不会多算
+  let leaveSec = 0
+  for (const e of leaves) {
+    const pvId = (e.pv as string).toLowerCase()
+    const d = int(e.d, 6 * 3600 * 1000) ?? 0
+    const prev = await db.prepare("SELECT duration_ms FROM track_events WHERE id = ? AND site_id = ? AND type = 'pageview'").bind(pvId, site.id).first<{ duration_ms: number | null }>()
+    if (!prev) continue
+    if (d > (prev.duration_ms ?? 0)) {
+      leaveSec += Math.round((d - (prev.duration_ms ?? 0)) / 1000)
+      stmts.push(db.prepare('UPDATE track_events SET duration_ms = ?, scroll_pct = MAX(COALESCE(scroll_pct, 0), ?) WHERE id = ?')
+        .bind(d, int(e.sc, 100) ?? 0, pvId))
+    }
+  }
+  const durationSec = leaveSec + Math.round(inserts.filter((e) => e.t === 'leave').reduce((sum, e) => sum + (int(e.d, 6 * 3600 * 1000) ?? 0), 0) / 1000)
+
   if (!existing) {
     // 新会话：来源以第一个浏览事件为准（没有浏览事件时以第一个事件为准）
-    const first = pageviews[0] ?? events[0]!
+    const first = pageviews[0] ?? inserts[0] ?? events[0]!
     const params = cleanParams(first.q)
     const referrer = str(first.r, 500)
     const pageHost = validHost(first.h) ?? undefined
@@ -135,9 +155,10 @@ export async function ingestEvents(db: D1Database, site: TrackingSite, payload: 
     stmts.push(db.prepare(`
       INSERT INTO visitors (site_id, id, first_seen_at, last_seen_at, visit_count, pageview_count,
         first_channel, first_referrer, first_landing, first_utm_source, first_utm_medium, first_utm_campaign, first_click_id_type,
-        last_channel, device_type, os, browser, country, region, city, isp, last_ip, first_host)
-      VALUES (?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        last_channel, device_type, os, browser, country, region, city, isp, last_ip, first_host, key_actions)
+      VALUES (?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(site_id, id) DO UPDATE SET last_seen_at = excluded.last_seen_at, visit_count = visitors.visit_count + 1,
+        key_actions = visitors.key_actions + excluded.key_actions,
         pageview_count = visitors.pageview_count + excluded.pageview_count, last_channel = excluded.last_channel,
         device_type = excluded.device_type, os = excluded.os, browser = excluded.browser,
         country = excluded.country, region = excluded.region, city = excluded.city, isp = excluded.isp,
@@ -145,18 +166,21 @@ export async function ingestEvents(db: D1Database, site: TrackingSite, payload: 
     ).bind(
       site.id, visitorId, now, now, pageviews.length,
       src.channel, externalReferrer, landing, utm[0], utm[1], utm[2], src.clickIdType,
-      src.channel, ua.deviceType, ua.os, ua.browser, geo.country ?? null, geo.region ?? null, geo.city ?? null, geo.isp ?? null, ip, pageHost ?? null,
+      src.channel, ua.deviceType, ua.os, ua.browser, geo.country ?? null, geo.region ?? null, geo.city ?? null, geo.isp ?? null, ip, pageHost ?? null, keyActions,
     ))
   } else {
     stmts.push(db.prepare('UPDATE visits SET ended_at = ?, pageviews = pageviews + ?, duration_sec = duration_sec + ? WHERE id = ?')
       .bind(now, pageviews.length, durationSec, visitId))
-    stmts.push(db.prepare('UPDATE visitors SET last_seen_at = ?, pageview_count = pageview_count + ? WHERE site_id = ? AND id = ?')
-      .bind(now, pageviews.length, site.id, visitorId))
+    // 只有离开事件时不更新访客（少写一次，访客的最近访问时间以浏览为准）
+    if (inserts.length > 0) {
+      stmts.push(db.prepare('UPDATE visitors SET last_seen_at = ?, pageview_count = pageview_count + ?, key_actions = key_actions + ? WHERE site_id = ? AND id = ?')
+        .bind(now, pageviews.length, keyActions, site.id, visitorId))
+    }
   }
   // 只在新访问或提交表单时补关联线索（线索可能先于访客数据写入）
   if (!existing || events.some((e) => e.t === 'form')) stmts.push(backfillLeadStatement(db, site.id, visitorId))
 
-  for (const e of events) {
+  for (const e of inserts) {
     const meta = e.m && typeof e.m === 'object' ? JSON.stringify(e.m).slice(0, 500) : null
     stmts.push(db.prepare(`
       INSERT OR IGNORE INTO track_events (id, site_id, visitor_id, visit_id, type, path, title, duration_ms, scroll_pct, meta, created_at, host)
@@ -166,7 +190,8 @@ export async function ingestEvents(db: D1Database, site: TrackingSite, payload: 
       int(e.d, 6 * 3600 * 1000), int(e.sc, 100), meta, now, validHost(e.h),
     ))
   }
-  stmts.push(db.prepare('UPDATE tracking_sites SET last_seen_at = ? WHERE id = ?').bind(now, site.id))
+  // 站点「最近数据」时间 5 分钟最多更新一次（条件不满足时不产生写入）
+  stmts.push(db.prepare("UPDATE tracking_sites SET last_seen_at = ? WHERE id = ? AND (last_seen_at IS NULL OR last_seen_at < datetime('now', '-5 minutes'))").bind(now, site.id))
 
   await db.batch(stmts)
   return { accepted: events.length }

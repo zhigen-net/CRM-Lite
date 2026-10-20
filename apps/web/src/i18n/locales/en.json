@@ -1718,5 +1718,19 @@
       "followups": "Follow-ups",
       "clients": "New clients"
     }
+  },
+  "eventCleanup": {
+    "title": "Clean up page events",
+    "subtitle": "Manually delete older page view and click details to save database space",
+    "hint": "Only per-page view and click details are deleted; visits and each visitor's source, first landing page, IP and lead link are kept. Deleting also uses database write quota, so large cleanups run in batches and can be continued.",
+    "keep": "Keep the last",
+    "days": "{{count}} days",
+    "check": "Check",
+    "stats": "There are {{total}} event details; the oldest is from {{oldest}}.",
+    "older": "{{count}} are older than {{days}} days.",
+    "purge": "Clean up",
+    "continue": "Continue",
+    "confirm": "Delete {{count}} event details older than {{days}} days? This cannot be undone.",
+    "done": "Deleted {{deleted}}; {{remaining}} left to clean up."
   }
 }

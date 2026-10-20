@@ -47,7 +47,8 @@ export async function getSite(db: D1Database, id: string) {
   return { id: row.id, name: row.name, domain: row.domain, isActive: !!row.is_active }
 }
 
-export async function listSites(db: D1Database) {
+/** 站点列表（含访客数与近 24 小时状态）；传 id 时只统计这一个站点 */
+export async function listSites(db: D1Database, id?: string) {
   const rows = await db.prepare(`
     SELECT s.id, s.name, s.domain, s.key_prefix, s.is_active, s.created_at, s.last_seen_at, s.platform, s.features,
       (SELECT COUNT(*) FROM visitors v WHERE v.site_id = s.id) AS visitor_count,
@@ -58,8 +59,15 @@ export async function listSites(db: D1Database) {
       (SELECT COUNT(*) FROM site_lead_submissions b WHERE b.site_id = s.id AND b.status IN ('spam', 'rate_limited', 'invalid')
         AND b.created_at > datetime('now', '-1 day')) AS blocked_day,
       (SELECT COUNT(*) FROM api_lead_failures f WHERE f.site_id = s.id AND f.resolved_at IS NULL) AS open_failures
-    FROM tracking_sites s ORDER BY s.created_at DESC`).all<Record<string, unknown>>()
+    FROM tracking_sites s ${id ? 'WHERE s.id = ?' : ''} ORDER BY s.created_at DESC`).bind(...(id ? [id] : [])).all<Record<string, unknown>>()
   return toCamelList<SiteRow>(rows.results).map((r) => ({ ...r, isActive: !!r.isActive, features: parseFeatures(r.features) }))
+}
+
+/** 站点选项（访客页选择站点用）：只读站点表，不做统计 */
+export async function listSiteOptions(db: D1Database) {
+  const rows = await db.prepare('SELECT id, name, domain, is_active, last_seen_at FROM tracking_sites ORDER BY created_at DESC')
+    .all<{ id: string; name: string; domain: string | null; is_active: number; last_seen_at: string | null }>()
+  return rows.results.map((r) => ({ id: r.id, name: r.name, domain: r.domain, isActive: !!r.is_active, lastSeenAt: r.last_seen_at }))
 }
 
 /** 新建站点，返回明文密钥（只显示一次） */
@@ -112,7 +120,7 @@ export async function listSiteSubmissions(db: D1Database, siteId: string) {
 
 /** 单个站点（含接入状态），站点详情页使用 */
 export async function getSiteDetail(db: D1Database, id: string) {
-  const site = (await listSites(db)).find((s) => s.id === id)
+  const [site] = await listSites(db, id)
   if (!site) throw notFound('站点不存在')
   return site
 }

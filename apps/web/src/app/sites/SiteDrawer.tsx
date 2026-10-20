@@ -46,7 +46,8 @@ export function SiteDrawer({ id, tab, onTab, initialKey, onClose }: {
   const { data: site, isLoading } = useQuery({
     queryKey: ['tracking-site', id],
     queryFn: () => crmApi.get<{ data: SiteDetail }>(`/admin/tracking-sites/${id}`).then((r) => r.data.data),
-    refetchInterval: 15_000,
+    // 还没收到数据时每 30 秒刷新一次，方便接入时看到首条数据；收到后不再自动刷新（每次刷新都要统计访客）
+    refetchInterval: (q) => (q.state.data?.lastSeenAt ? false : 30_000),
   })
 
   const refresh = () => {

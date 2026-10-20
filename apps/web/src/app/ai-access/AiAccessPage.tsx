@@ -18,6 +18,7 @@ import { ApiScopePicker, ScopeSummary, SCOPE_PRESETS, type ApiScope } from './Ap
 import { ApiFailuresPanel } from './ApiFailuresPanel'
 import { AuditLogPanel } from './AuditLogPanel'
 import { SitesPanel } from '@/app/analytics/SitesPanel'
+import { EventsCleanupPanel } from '@/app/sites/EventsCleanupPanel'
 
 const apiKeySchema = z.object({
   name: z.string().min(1).max(50),
@@ -181,6 +182,7 @@ export default function AiAccessPage() {
           <>
             <SitesPanel />
             <ApiFailuresPanel source="site" />
+            <EventsCleanupPanel />
           </>
         ) : section === 'mcp' ? (
           <>
