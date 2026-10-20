@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { crmApi } from '@/shared/utils/request'
 import { ASK_AI_EVENT } from './AskAiButton'
@@ -6,6 +7,10 @@ import { ASK_AI_EVENT } from './AskAiButton'
 interface Message {
   role: 'user' | 'assistant'
   content: string
+}
+interface AgentModels {
+  models: { id: string; displayName: string; providerType: string; isDefault: boolean }[]
+  usage: { neurons: number; calls: number; limit: number }
 }
 
 export function AiAgentChat() {
@@ -18,6 +23,16 @@ export function AiAgentChat() {
   const [error, setError] = useState<string | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
+  const queryClient = useQueryClient()
+  // 可选模型与今天的 Workers AI 免费额度用量；默认用系统设置的模型（未设置时用最省额度的）
+  const { data: agent } = useQuery({
+    queryKey: ['ai-agent-models'],
+    queryFn: () => crmApi.get<{ data: AgentModels }>('/ai-agent/models').then((r) => r.data.data),
+    enabled: open,
+  })
+  const [modelId, setModelId] = useState('')
+  const current = agent?.models.find((m) => m.id === modelId) ?? agent?.models.find((m) => m.isDefault)
+  const usageRatio = agent ? agent.usage.neurons / agent.usage.limit : 0
 
   useEffect(() => {
     if (open) {
@@ -41,17 +56,18 @@ export function AiAgentChat() {
 
     try {
       const res = await crmApi.post<{ data: { message: string } }>('/ai-agent/chat', {
-        messages: newMessages,
+        messages: newMessages, modelId: current?.id,
       })
       setMessages((prev) => [...prev, { role: 'assistant', content: res.data.data.message }])
     } catch (err) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
       setError(msg ?? t('ai.agent.error'))
     } finally {
+      queryClient.invalidateQueries({ queryKey: ['ai-agent-models'] })
       setLoading(false)
       setTimeout(() => inputRef.current?.focus(), 50)
     }
-  }, [messages, loading])
+  }, [messages, loading, current?.id])
 
   // 其它页面通过 askAi() 打开助手并发送问题（如详情页的「让 AI 分析」）
   useEffect(() => {
@@ -119,6 +135,26 @@ export function AiAgentChat() {
               </button>
             )}
           </div>
+
+          {/* 模型选择与免费额度提醒 */}
+          {agent && agent.models.length > 0 && (
+            <div className="flex items-center justify-between gap-2 border-b bg-gray-50 px-3 py-1.5 text-xs">
+              <select value={current?.id ?? ''} onChange={(e) => setModelId(e.target.value)} aria-label={t('ai.agent.model')}
+                className="min-w-0 max-w-[60%] truncate rounded border border-gray-200 bg-white px-1.5 py-0.5 text-gray-700">
+                {agent.models.map((m) => <option key={m.id} value={m.id}>{m.displayName}</option>)}
+              </select>
+              {current?.providerType === 'cloudflare' && (
+                <span className={usageRatio >= 0.8 ? 'font-medium text-amber-600' : 'text-gray-400'}>
+                  {t('ai.agent.quota', { pct: Math.min(100, Math.round(usageRatio * 100)) })}
+                </span>
+              )}
+            </div>
+          )}
+          {current?.providerType === 'cloudflare' && usageRatio >= 0.8 && (
+            <div className="border-b border-amber-100 bg-amber-50 px-3 py-1.5 text-xs text-amber-700">
+              {t(usageRatio >= 1 ? 'ai.agent.quotaOut' : 'ai.agent.quotaWarn')}
+            </div>
+          )}
 
           {/* 消息区 */}
           <div className="flex-1 overflow-y-auto p-3 space-y-3">

@@ -35,17 +35,19 @@ export const TRACKER_SCRIPT = `(function () {
       fetch(ENDPOINT, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body, keepalive: true }).catch(function () {})
     } catch (e) {}
   }
-  var pageStart = Date.now(), maxScroll = 0, lastPath = null
+  var pageStart = Date.now(), maxScroll = 0, lastPath = null, pvId = null, leaveSent = 0
   function pageview() {
     var path = location.pathname + location.search
     if (path === lastPath) return
-    lastPath = path; pageStart = Date.now(); maxScroll = 0
-    send([{ id: uuid(), t: 'pageview', p: path, ti: document.title, r: document.referrer, h: location.hostname, q: params() }])
+    lastPath = path; pageStart = Date.now(); maxScroll = 0; pvId = uuid(); leaveSent = 0
+    send([{ id: pvId, t: 'pageview', p: path, ti: document.title, r: document.referrer, h: location.hostname, q: params() }])
   }
-  function leave() {
-    if (!lastPath) return
-    send([{ id: uuid(), t: 'leave', p: lastPath, d: Date.now() - pageStart, sc: maxScroll }], true)
-    pageStart = Date.now()
+  // 离开：上报这个页面累计的停留时长（写回浏览记录，不新增事件）；来回切换标签页时 30 秒内只报一次
+  function leave(force) {
+    if (!lastPath || !pvId) return
+    if (!force && leaveSent && Date.now() - leaveSent < 30000) return
+    leaveSent = Date.now()
+    send([{ id: uuid(), t: 'leave', pv: pvId, p: lastPath, d: Date.now() - pageStart, sc: maxScroll }], true)
   }
   window.addEventListener('scroll', function () {
     var h = document.documentElement.scrollHeight - innerHeight
@@ -55,9 +57,9 @@ export const TRACKER_SCRIPT = `(function () {
   // 单页应用：路由变化时记一次离开 + 一次浏览
   ;['pushState', 'replaceState'].forEach(function (fn) {
     var orig = history[fn]
-    history[fn] = function () { var r = orig.apply(this, arguments); setTimeout(function () { if (location.pathname + location.search !== lastPath) { leave(); pageview() } }, 0); return r }
+    history[fn] = function () { var r = orig.apply(this, arguments); setTimeout(function () { if (location.pathname + location.search !== lastPath) { leave(true); pageview() } }, 0); return r }
   })
-  window.addEventListener('popstate', function () { leave(); pageview() })
+  window.addEventListener('popstate', function () { leave(true); pageview() })
   // 关键行为：点击电话、复制微信号（不上报复制的内容）
   document.addEventListener('click', function (e) {
     var a = e.target && e.target.closest && e.target.closest('a[href^="tel:"]')

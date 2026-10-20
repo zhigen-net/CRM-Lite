@@ -84,6 +84,7 @@
     "brand": "客路"
   },
   "nav": {
+    "dashboard": "仪表盘",
     "leads": "线索",
     "clients": "客户",
     "activities": "跟进记录",
@@ -774,6 +775,18 @@
         "client": "客户"
       },
       "input": "参数"
+    },
+    "aiUsage": {
+      "title": "AI 助手模型与免费额度",
+      "defaultModel": "助手默认模型",
+      "defaultModelHint": "对话框里也可以临时切换。Workers AI 小模型（如 8B）最省免费额度，复杂问题再切到大模型。",
+      "auto": "自动（Workers AI 里最省额度的模型）",
+      "today": "今天 Workers AI 用量（估算）",
+      "calls": "{{count}} 次调用",
+      "hint": "Cloudflare 免费额度每天 10,000 neurons，UTC 0 点（北京时间 8 点）重置。这里按各模型价格估算，以 Cloudflare 控制台为准；外部模型（Anthropic、OpenAI 等）不占用这个额度。",
+      "day": "日期",
+      "model": "模型",
+      "callsCol": "调用次数"
     }
   },
   "profile": {
@@ -944,7 +957,11 @@
         "今天需要联系哪些客户？",
         "有哪些已逾期的线索？",
         "帮我查一下最近新建的线索"
-      ]
+      ],
+      "model": "模型",
+      "quota": "今日免费额度已用 {{pct}}%",
+      "quotaWarn": "今天的 Workers AI 免费额度快用完了，可以切换到更小的模型，或使用外部模型。",
+      "quotaOut": "今天的 Workers AI 免费额度可能已用完（北京时间 8 点重置），可以切换到外部模型。"
     },
     "ask": {
       "hint": "让 AI 助手结合资料、跟进记录和网站来源，分析意向并建议下一步。",
@@ -1661,5 +1678,75 @@
     "records": {
       "submissions": "表单提交记录"
     }
+  },
+  "dateRange": {
+    "presets": {
+      "all": "全部时间",
+      "today": "今天",
+      "yesterday": "昨天",
+      "7d": "近 7 天",
+      "30d": "近 30 天",
+      "90d": "近 90 天",
+      "thisMonth": "本月",
+      "lastMonth": "上月"
+    },
+    "custom": "自定义",
+    "from": "开始日期",
+    "to": "结束日期",
+    "apply": "应用"
+  },
+  "dashboard": {
+    "title": "仪表盘",
+    "subtitle": "所选时间段内的线索、客户、跟进与网站访客概况",
+    "subtitleSales": "所选时间段内你负责的线索、客户与跟进概况",
+    "vsPrev": "较上一周期",
+    "flat": "持平",
+    "noData": "这段时间没有数据",
+    "other": "其它",
+    "kpi": {
+      "newLeads": "新增线索",
+      "newClients": "新增客户",
+      "conversion": "线索转化率",
+      "conversionHint": "已转化 {{converted}} / 新增 {{total}}",
+      "followups": "跟进次数",
+      "visitors": "网站访客",
+      "siteRate": "网站留资率",
+      "siteRateHint": "网站留资 {{leads}} 条"
+    },
+    "trend": {
+      "leads": "每日新增线索",
+      "visitors": "每日网站访客"
+    },
+    "todo": {
+      "title": "待跟进",
+      "overdueLeads": "逾期未联系的线索",
+      "todayLeads": "今天要联系的线索",
+      "overdueClients": "逾期未联系的客户",
+      "todayClients": "今天要联系的客户",
+      "hint": "按「下次联系」日期统计，不受时间段影响"
+    },
+    "sources": "线索来源",
+    "statuses": "线索状态",
+    "leaderboard": {
+      "title": "销售排行",
+      "name": "销售",
+      "leads": "新分配线索",
+      "followups": "跟进次数",
+      "clients": "新增客户"
+    }
+  },
+  "eventCleanup": {
+    "title": "浏览明细清理",
+    "subtitle": "手动删除较早的页面浏览、点击明细，节省数据库空间",
+    "hint": "只删除每一页的浏览、点击明细；访问记录、访客的来源、首次落地页、IP 和线索关联都会保留。删除也会消耗数据库写入额度，数据多时会分批进行，可以多次继续清理。",
+    "keep": "保留最近",
+    "days": "{{count}} 天",
+    "check": "查询",
+    "stats": "当前共有 {{total}} 条明细，最早一条在 {{oldest}}。",
+    "older": "早于 {{days}} 天的有 {{count}} 条。",
+    "purge": "清理",
+    "continue": "继续清理",
+    "confirm": "确定删除 {{count}} 条早于 {{days}} 天的浏览明细吗？删除后无法恢复。",
+    "done": "已删除 {{deleted}} 条，还剩 {{remaining}} 条可清理。"
   }
 }

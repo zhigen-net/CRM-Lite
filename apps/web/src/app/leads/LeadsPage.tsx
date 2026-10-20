@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -108,7 +108,9 @@ export default function LeadsPage() {
   const [statusFilter, setStatusFilter] = useState('')
   const [sourceFilter, setSourceFilter] = useState('')
   const [assignedToFilter, setAssignedToFilter] = useState('')
-  const [nextContactFilter, setNextContactFilter] = useState('')
+  // 仪表盘「待跟进」跳转时带 ?nextContact=overdue / today
+  const [searchParams] = useSearchParams()
+  const [nextContactFilter, setNextContactFilter] = useState(() => searchParams.get('nextContact') ?? '')
   const [createdAtFilter, setCreatedAtFilter] = useState('')
   const [activityCountFilter, setActivityCountFilter] = useState('')
   const [serviceFilter, setServiceFilter] = useState('')
@@ -119,7 +121,7 @@ export default function LeadsPage() {
   const [followUpTarget, setFollowUpTarget] = useState<Lead | null>(null)
   const [colConfig, setColConfig] = useState<ColConfig[]>(DEFAULT_COLS)
   const [showColSettings, setShowColSettings] = useState(false)
-  const [showFilterPanel, setShowFilterPanel] = useState(false)
+  const [showFilterPanel, setShowFilterPanel] = useState(() => !!searchParams.get('nextContact'))
   const filterPanelRef = useRef<HTMLDivElement>(null)
 
   const colLabels: Record<ColKey, string> = {

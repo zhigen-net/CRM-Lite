@@ -7,7 +7,7 @@ import { zValidator } from '@hono/zod-validator'
 import { z } from 'zod'
 import { requireAdmin, requireAuth, requireNotSales } from '../middleware/auth'
 import { TRACKER_SCRIPT } from '../../domain/tracking/script'
-import { findSiteByKey, getSite, getSiteDetail, listSiteSubmissions, listSites, createSite, updateSite, rotateSiteKey } from '../../domain/tracking/sites'
+import { findSiteByKey, getSite, getSiteDetail, listSiteOptions, listSiteSubmissions, listSites, createSite, updateSite, rotateSiteKey } from '../../domain/tracking/sites'
 import { ingestEvents, parseGeoHeader, type CollectPayload } from '../../domain/tracking/ingest'
 import { getVisitorJourney, listVisitors } from '../../domain/tracking/queries'
 import { integrationTemplates } from '../../domain/tracking/integration'
@@ -15,6 +15,8 @@ import { checkSiteIntegration, detectSitePlatform, normalizeHost } from '../../d
 import { platformTemplates, PROXY_SPEC } from '../../domain/tracking/platforms'
 import { submitSiteLead, type SiteLeadResult } from '../../domain/tracking/siteLead'
 import { depsFrom } from '../../domain/actor'
+import { resolveRange, systemTimezone } from '../../domain/timeRange'
+import { purgeTrackEvents, trackEventStats } from '../../domain/tracking/retention'
 
 const MAX_BODY_BYTES = 16 * 1024
 
@@ -121,6 +123,11 @@ trackingSitesAdminRoutes.get('/', async (c) => c.json({ data: await listSites(c.
 // 网站接入代码模板（转发代码、脚本标签）
 trackingSitesAdminRoutes.get('/integration', (c) => c.json({ data: { ...integrationTemplates(), platforms: platformTemplates(), proxySpec: PROXY_SPEC } }))
 
+// 浏览事件明细的手动清理（必须写在 /:id 之前）
+trackingSitesAdminRoutes.get('/events-stats', async (c) => c.json({ data: await trackEventStats(c.env.DB, Number(c.req.query('days') ?? 180)) }))
+trackingSitesAdminRoutes.post('/purge-events', zValidator('json', z.object({ days: z.number().int() })), async (c) =>
+  c.json({ data: await purgeTrackEvents(c.env.DB, c.req.valid('json').days) }))
+
 // 识别网站的部署平台（只作推荐）
 trackingSitesAdminRoutes.post('/detect', zValidator('json', z.object({ domain: z.string().max(200) })), async (c) =>
   c.json({ data: await detectSitePlatform(normalizeHost(c.req.valid('json').domain)) }))
@@ -169,13 +176,14 @@ trackingRoutes.use('*', requireAuth, requireNotSales)
 
 // 运营也需要选择站点（只返回名称等基本信息，不含密钥）
 trackingRoutes.get('/sites', async (c) => {
-  const sites = await listSites(c.env.DB)
-  return c.json({ data: sites.map(({ id, name, domain, isActive, visitorCount, lastSeenAt }) => ({ id, name, domain, isActive, visitorCount, lastSeenAt })) })
+  return c.json({ data: await listSiteOptions(c.env.DB) })
 })
 
 trackingRoutes.get('/visitors', async (c) => {
   const q = c.req.query()
+  const range = q.from || q.to ? resolveRange(await systemTimezone(c.env.DB), q.from, q.to) : null
   return c.json(await listVisitors(c.env.DB, {
+    startUtc: range?.startUtc, endUtc: range?.endUtc,
     siteId: q.siteId ?? '',
     channel: q.channel || undefined,
     withLead: q.withLead === 'true' ? true : q.withLead === 'false' ? false : undefined,

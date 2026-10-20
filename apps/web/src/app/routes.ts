@@ -5,6 +5,7 @@ import { lazy, type ComponentType, type LazyExoticComponent } from 'react'
 type Loader = () => Promise<{ default: ComponentType }>
 
 const loaders = {
+  dashboard: () => import('@/app/dashboard/DashboardPage'),
   leads: () => import('@/app/leads/LeadsPage'),
   leadDetail: () => import('@/app/leads/LeadDetailPage'),
   clients: () => import('@/app/clients/ClientsPage'),
@@ -28,6 +29,7 @@ for (const k of keys) pages[k] = lazy<ComponentType>(loaders[k])
 
 /** 导航地址对应的页面（列表页进入详情页的也一起预加载） */
 const byPath: Record<string, PageKey[]> = {
+  '/app/dashboard': ['dashboard'],
   '/app/leads': ['leads', 'leadDetail'],
   '/app/clients': ['clients', 'clientDetail'],
   '/app/products': ['products'],

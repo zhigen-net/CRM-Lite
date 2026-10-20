@@ -1,4 +1,4 @@
-// 访客分析：访客列表、访问轨迹；管理员还可以管理站点
+// 访客分析：按时间段、站点、来源筛选访客，查看访问轨迹
 import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
@@ -6,9 +6,10 @@ import { Link, Navigate, useSearchParams } from 'react-router-dom'
 import { crmApi } from '@/shared/utils/request'
 import { formatDate } from '@/shared/utils/format'
 import { Pagination } from '@/shared/components/Pagination'
+import { DateRangePicker, useDateRangeParam } from '@/shared/components/DateRangePicker'
 import { JourneyDrawer, place } from './Journey'
 
-interface SiteOption { id: string; name: string; domain: string | null; isActive: boolean; visitorCount: number }
+interface SiteOption { id: string; name: string; domain: string | null; isActive: boolean }
 interface Visitor {
   id: string; siteId: string; firstSeenAt: string; lastSeenAt: string; visitCount: number; pageviewCount: number
   firstChannel: string | null; firstUtmSource: string | null; firstUtmCampaign: string | null; firstLanding: string | null
@@ -26,6 +27,8 @@ function VisitorsPanel() {
   const [withLead, setWithLead] = useState('')
   const [page, setPage] = useState(1)
   const [openVisitor, setOpenVisitor] = useState<string | null>(null)
+  // 时间段：默认不限，选择后只看该时间段内有访问的访客
+  const [range, setRange] = useDateRangeParam('all')
 
   const { data: sites } = useQuery({
     queryKey: ['tracking-sites'],
@@ -34,12 +37,13 @@ function VisitorsPanel() {
   useEffect(() => { if (!siteId && sites?.length) setSiteId(sites[0]!.id) }, [sites, siteId])
 
   const { data, isLoading } = useQuery({
-    queryKey: ['tracking-visitors', siteId, channel, withLead, page],
+    queryKey: ['tracking-visitors', siteId, channel, withLead, range.from, range.to, page],
     enabled: !!siteId,
     queryFn: () => {
       const p = new URLSearchParams({ siteId, page: String(page), pageSize: String(PAGE_SIZE) })
       if (channel) p.set('channel', channel)
       if (withLead) p.set('withLead', withLead)
+      if (range.from && range.to) { p.set('from', range.from); p.set('to', range.to) }
       return crmApi.get<{ data: Visitor[]; total: number }>(`/tracking/visitors?${p}`).then((r) => r.data)
     },
   })
@@ -56,6 +60,7 @@ function VisitorsPanel() {
   return (
     <div className="overflow-hidden rounded-lg border bg-white">
       <div className="flex flex-wrap items-center gap-2 border-b px-4 py-3">
+        <DateRangePicker value={range} onChange={(v) => { setRange(v); setPage(1) }} allowAll />
         <select className={selectCls} value={siteId} onChange={(e) => { setSiteId(e.target.value); setPage(1) }}>
           {(sites ?? []).map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
         </select>

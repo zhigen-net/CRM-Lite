@@ -3,6 +3,10 @@
 // 约定的环境变量 / 绑定：CRM_SITE_KEY（站点密钥，Secret）、CRM（服务绑定，同一 Cloudflare 账号时）或 CRM_URL（不同账号时，Secret）
 
 const FORWARD_BODY = `  const url = new URL(request.url)
+  // 采集脚本在网站这边缓存 1 小时，少转发一次（不支持缓存的环境自动跳过）
+  const cache = request.method === 'GET' && url.pathname === '/_t/t.js' && typeof caches !== 'undefined' ? caches.default : null
+  const cached = cache && await cache.match(request)
+  if (cached) return cached
   const cf = request.cf || {}
   const headers = new Headers({
     'Content-Type': request.headers.get('Content-Type') || 'application/json',
@@ -17,7 +21,9 @@ const FORWARD_BODY = `  const url = new URL(request.url)
   const init = { method: request.method, headers, body: ['GET', 'HEAD'].includes(request.method) ? undefined : await request.arrayBuffer() }
   // 同一账号：服务绑定 CRM（不经公网）；不同账号：CRM_URL
   const res = env.CRM ? await env.CRM.fetch(new Request('https://crm' + path, init)) : await fetch(env.CRM_URL + path, init)
-  return new Response(res.body, { status: res.status, headers: { 'Content-Type': res.headers.get('Content-Type') || 'text/plain', 'Cache-Control': res.headers.get('Cache-Control') || 'no-store' } })`
+  const out = new Response(res.body, { status: res.status, headers: { 'Content-Type': res.headers.get('Content-Type') || 'text/plain', 'Cache-Control': res.headers.get('Cache-Control') || 'no-store' } })
+  if (cache && res.ok) await cache.put(request, out.clone())
+  return out`
 
 /** Pages 网站：保存为 functions/_t/[[path]].js */
 export const PAGES_FUNCTION = `// 访客统计转发（CRM）：浏览器只访问本站 /_t/*，这里在服务器端转发给 CRM

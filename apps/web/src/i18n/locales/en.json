@@ -84,6 +84,7 @@
     "brand": "Kelu"
   },
   "nav": {
+    "dashboard": "Dashboard",
     "leads": "Leads",
     "clients": "Customers",
     "activities": "Follow-ups",
@@ -774,6 +775,18 @@
         "client": "Client"
       },
       "input": "Parameters"
+    },
+    "aiUsage": {
+      "title": "AI assistant model and free quota",
+      "defaultModel": "Default assistant model",
+      "defaultModelHint": "You can also switch in the chat box. Small Workers AI models (e.g. 8B) use the least free quota; switch to a larger model for complex questions.",
+      "auto": "Automatic (cheapest Workers AI model)",
+      "today": "Workers AI usage today (estimated)",
+      "calls": "{{count}} calls",
+      "hint": "The Cloudflare free quota is 10,000 neurons per day and resets at 00:00 UTC. This is estimated from each model's pricing; the Cloudflare dashboard is authoritative. External models (Anthropic, OpenAI, etc.) don't use this quota.",
+      "day": "Date",
+      "model": "Model",
+      "callsCol": "Calls"
     }
   },
   "profile": {
@@ -944,7 +957,11 @@
         "Which clients need to be contacted today?",
         "Show me overdue leads",
         "List recently created leads"
-      ]
+      ],
+      "model": "Model",
+      "quota": "{{pct}}% of today's free quota used",
+      "quotaWarn": "Today's Workers AI free quota is almost used up. Switch to a smaller model or use an external model.",
+      "quotaOut": "Today's Workers AI free quota may be used up (resets at 00:00 UTC). Switch to an external model."
     },
     "ask": {
       "hint": "Let the AI assistant review the profile, follow-ups and website source, assess intent and suggest next steps.",
@@ -1661,5 +1678,75 @@
     "records": {
       "submissions": "Form submissions"
     }
+  },
+  "dateRange": {
+    "presets": {
+      "all": "All time",
+      "today": "Today",
+      "yesterday": "Yesterday",
+      "7d": "Last 7 days",
+      "30d": "Last 30 days",
+      "90d": "Last 90 days",
+      "thisMonth": "This month",
+      "lastMonth": "Last month"
+    },
+    "custom": "Custom",
+    "from": "Start date",
+    "to": "End date",
+    "apply": "Apply"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "subtitle": "Leads, clients, follow-ups and website visitors for the selected period",
+    "subtitleSales": "Your leads, clients and follow-ups for the selected period",
+    "vsPrev": "vs previous period",
+    "flat": "No change",
+    "noData": "No data for this period",
+    "other": "Other",
+    "kpi": {
+      "newLeads": "New leads",
+      "newClients": "New clients",
+      "conversion": "Lead conversion",
+      "conversionHint": "{{converted}} converted / {{total}} new",
+      "followups": "Follow-ups",
+      "visitors": "Website visitors",
+      "siteRate": "Website lead rate",
+      "siteRateHint": "{{leads}} website leads"
+    },
+    "trend": {
+      "leads": "New leads per day",
+      "visitors": "Website visitors per day"
+    },
+    "todo": {
+      "title": "To follow up",
+      "overdueLeads": "Overdue leads",
+      "todayLeads": "Leads to contact today",
+      "overdueClients": "Overdue clients",
+      "todayClients": "Clients to contact today",
+      "hint": "Based on the next contact date, not the selected period"
+    },
+    "sources": "Lead sources",
+    "statuses": "Lead status",
+    "leaderboard": {
+      "title": "Sales leaderboard",
+      "name": "Sales rep",
+      "leads": "New leads assigned",
+      "followups": "Follow-ups",
+      "clients": "New clients"
+    }
+  },
+  "eventCleanup": {
+    "title": "Clean up page events",
+    "subtitle": "Manually delete older page view and click details to save database space",
+    "hint": "Only per-page view and click details are deleted; visits and each visitor's source, first landing page, IP and lead link are kept. Deleting also uses database write quota, so large cleanups run in batches and can be continued.",
+    "keep": "Keep the last",
+    "days": "{{count}} days",
+    "check": "Check",
+    "stats": "There are {{total}} event details; the oldest is from {{oldest}}.",
+    "older": "{{count}} are older than {{days}} days.",
+    "purge": "Clean up",
+    "continue": "Continue",
+    "confirm": "Delete {{count}} event details older than {{days}} days? This cannot be undone.",
+    "done": "Deleted {{deleted}}; {{remaining}} left to clean up."
   }
 }

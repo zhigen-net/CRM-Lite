@@ -19,6 +19,7 @@ export default function CrmLayout() {
 
   // 主导航按 访客 → 线索 → 客户 的流程排列；roles 为空表示所有角色可见
   const navItems: { to: string; label: string; icon: string; roles?: string[] }[] = [
+    { to: '/app/dashboard', icon: 'dashboard', label: t('nav.dashboard') },
     { to: '/app/analytics', icon: 'analytics', label: t('nav.analytics'), roles: ['admin', 'operations'] },
     { to: '/app/leads', icon: 'leads', label: t('nav.leads') },
     { to: '/app/clients', icon: 'clients', label: t('nav.clients') },
@@ -42,8 +43,9 @@ export default function CrmLayout() {
       crmApi.get<{ total: number }>('/leads/new-count').then((r) => r.data.total),
     // 每个打开的页面都会轮询：间隔过短会大量消耗 Workers 请求数和 D1 读取额度
     // （页面在后台时 React Query 默认暂停轮询）
-    refetchInterval: 60_000,
-    staleTime: 30_000,
+    // 2 分钟一次足够提醒新线索
+    refetchInterval: 120_000,
+    staleTime: 60_000,
   })
 
   const handleLogout = () => {

@@ -177,6 +177,20 @@ describe('采集', () => {
     expect(visitor.first_channel).toBe('direct')
   })
 
+  it('新版离开事件把累计停留时长写回浏览记录，不新增事件；重复上报只算增量；关键行为计入访客', async () => {
+    const v = uuid(), s = uuid(), pv = uuid()
+    await collect(siteKey, { v, s, e: [{ id: pv, t: 'pageview', p: '/a', h: 'site.test' }] })
+    await waitFor(() => visitRow(s))
+    await collect(siteKey, { v, s, e: [{ id: uuid(), t: 'leave', pv, p: '/a', d: 10_000, sc: 40 }] })
+    await waitFor(() => visitRow(s), (r) => r.duration_sec === 10)
+    await collect(siteKey, { v, s, e: [{ id: uuid(), t: 'leave', pv, p: '/a', d: 25_000, sc: 90 }] })
+    await waitFor(() => visitRow(s), (r) => r.duration_sec === 25)
+    const rows = await env.DB.prepare('SELECT type, duration_ms, scroll_pct FROM track_events WHERE visit_id = ?').bind(s).all<Record<string, unknown>>()
+    expect(rows.results).toEqual([{ type: 'pageview', duration_ms: 25_000, scroll_pct: 90 }])
+    await collect(siteKey, { v, s, e: [{ id: uuid(), t: 'tel', p: '/a' }, { id: uuid(), t: 'wechat', p: '/a' }] })
+    await waitFor(() => visitorRow(v), (r) => r.key_actions === 2)
+  })
+
   it('爬虫、自动化浏览器、非法 ID 的请求不写入', async () => {
     const s1 = uuid(), s2 = uuid(), s3 = uuid()
     expect((await collect(siteKey, { v: uuid(), s: s1, e: [{ id: uuid(), t: 'pageview', p: '/' }] }, { 'User-Agent': UA.bot })).status).toBe(204)
@@ -206,5 +220,27 @@ describe('查询', () => {
     expect(list.data.find((x) => x.id === v)?.keyActions).toBe(1)
     const journey = (await (await api(ops, 'GET', `/api/tracking/visitors/${siteId}/${v}`)).json()) as { data: { visits: { events: { type: string }[] }[] } }
     expect(journey.data.visits[0]?.events.map((e) => e.type)).toEqual(['pageview', 'wechat'])
+  })
+})
+
+describe('浏览明细手动清理', () => {
+  it('只有管理员可以；只删早于保留天数的事件，访问与访客保留；天数不合法时 400', async () => {
+    const v = uuid(), s = uuid(), oldId = uuid(), newId = uuid()
+    await collect(siteKey, { v, s, e: [{ id: oldId, t: 'pageview', p: '/old', h: 'site.test' }, { id: newId, t: 'pageview', p: '/new', h: 'site.test' }] })
+    await waitFor(() => visitRow(s))
+    await env.DB.prepare("UPDATE track_events SET created_at = datetime('now', '-400 days') WHERE id = ?").bind(oldId).run()
+
+    expect((await api(ops, 'GET', '/api/admin/tracking-sites/events-stats?days=365')).status).toBe(403)
+    expect((await api(admin, 'GET', '/api/admin/tracking-sites/events-stats?days=7')).status).toBe(400)
+    const stats = ((await (await api(admin, 'GET', '/api/admin/tracking-sites/events-stats?days=365')).json()) as { data: { older: number } }).data
+    expect(stats.older).toBeGreaterThanOrEqual(1)
+
+    const res = ((await (await api(admin, 'POST', '/api/admin/tracking-sites/purge-events', { days: 365 })).json()) as { data: { deleted: number; remaining: number } }).data
+    expect(res.deleted).toBeGreaterThanOrEqual(1)
+    expect(res.remaining).toBe(0)
+    const left = await env.DB.prepare('SELECT id FROM track_events WHERE visit_id = ?').bind(s).all<{ id: string }>()
+    expect(left.results.map((r) => r.id)).toEqual([newId])
+    expect(await visitRow(s)).not.toBeNull()
+    expect(await visitorRow(v)).not.toBeNull()
   })
 })
