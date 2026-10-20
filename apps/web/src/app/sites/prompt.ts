@@ -13,6 +13,8 @@ export interface PromptContext {
   siteName: string
   origin: string
   workerName: string | null
+  /** CRM「产品与服务」里的服务名：表单的意向服务只能用这些值 */
+  services: string[]
 }
 
 /** 把模板里的 {{CRM_URL}} / {{CRM_HOST}} 换成当前 CRM 地址 */
@@ -43,8 +45,29 @@ export function varsText(ctx: PromptContext) {
 
 const fence = (code: string, lang = '') => `\`\`\`${lang}\n${code.trimEnd()}\n\`\`\``
 
+// 与后端 pickFallbackService 一致：未收录的意向服务记为系统里的「其他 / Other」，都没有时为「其他」
+const fallbackService = (services: string[]) =>
+  services.find((n) => ['其他', '其它', 'other', 'others'].includes(n.trim().toLowerCase())) ?? '其他'
+
+/** 表单留资：字段说明、可选的意向服务与示例 */
+function formsBody(ctx: PromptContext): string {
+  const { t, tpl, siteName, services } = ctx
+  const parts = [
+    t('siteConnect.prompt.forms'),
+    `${t('siteConnect.prompt.fieldsTitle')}\n${t('siteConnect.prompt.fields', { name: siteName, fallback: fallbackService(services) })}`,
+  ]
+  if (services.length > 0) {
+    const options = services.map((s) => `  <label><input type="checkbox" name="intendedServices" value="${s}"> ${s}</label>`).join('\n')
+    parts.push(`${t('siteConnect.prompt.services', { list: services.map((s) => `「${s}」`).join('、') })}\n${fence(options, 'html')}`)
+  } else {
+    parts.push(t('siteConnect.prompt.servicesNone'))
+  }
+  parts.push(`${t('siteConnect.prompt.formHtml')}\n${fence(tpl.formHtml, 'html')}`, `${t('siteConnect.prompt.formJs')}\n${fence(tpl.formJs, 'js')}`)
+  return parts.join('\n\n')
+}
+
 export function buildPrompt(ctx: PromptContext, scope: PromptScope): string {
-  const { t, tpl, platform, features, siteName } = ctx
+  const { t, tpl, platform, features } = ctx
   const lines: string[] = []
   let n = 0
   const section = (title: string, body: string) => { n += 1; lines.push(`${n}. ${title}\n${body}`) }
@@ -68,7 +91,7 @@ export function buildPrompt(ctx: PromptContext, scope: PromptScope): string {
   }
 
   if (scope === 'forms' || features.forms) {
-    section(t('siteConnect.prompt.formsTitle'), `${t('siteConnect.prompt.forms', { name: siteName })}\n\n${t('siteConnect.prompt.formHtml')}\n${fence(tpl.formHtml, 'html')}\n\n${t('siteConnect.prompt.formJs')}\n${fence(tpl.formJs, 'js')}`)
+    section(t('siteConnect.prompt.formsTitle'), formsBody(ctx))
   }
   if (scope === 'full') section(t('siteConnect.prompt.varsTitle'), varsText(ctx))
   section(t('siteConnect.prompt.checkTitle'), t(scope === 'forms' ? 'siteConnect.prompt.checkForms' : 'siteConnect.prompt.check'))
