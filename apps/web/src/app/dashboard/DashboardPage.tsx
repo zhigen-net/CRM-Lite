@@ -26,7 +26,7 @@ const pct = (a: number, b: number) => (b > 0 ? Math.round((a / b) * 1000) / 10 :
 
 function Card({ title, children, className }: { title: string; children: React.ReactNode; className?: string }) {
   return (
-    <section className={cn('rounded-lg border bg-white', className)}>
+    <section className={cn('min-w-0 rounded-lg border bg-white', className)}>
       <h2 className="border-b px-3 py-2.5 text-sm font-medium text-gray-900 sm:px-4 sm:py-3">{title}</h2>
       <div className="p-3 sm:p-4">{children}</div>
     </section>
