@@ -1291,6 +1291,18 @@
       "visits": "访问次数",
       "visitsValue": "{{visits}} 次访问，浏览 {{pages}} 页",
       "ip": "最近访问 IP"
+    },
+    "anomaly": {
+      "bot": "疑似机器人",
+      "datacenter": "机房 / 云服务器 IP",
+      "vpn": "疑似 VPN / 代理",
+      "signals": {
+        "hostingIsp": "IP 属于 {{detail}}，一般是服务器或爬虫，不是家庭或手机网络",
+        "vpnIsp": "IP 属于 {{detail}}，常见的 VPN / 代理出口",
+        "posixLocale": "浏览器语言为 {{detail}}，是服务器环境的设置",
+        "uaScreenMismatch": "自称手机，但屏幕是 {{detail}} 的电脑分辨率",
+        "headlessScreen": "屏幕 {{detail}} 是无头浏览器的默认窗口"
+      }
     }
   },
   "workflowHelp": {

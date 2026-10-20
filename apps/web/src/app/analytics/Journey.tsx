@@ -1,5 +1,6 @@
 // 访问轨迹：访客分析页、线索 / 客户详情的「网站来源」共用
 import { useState } from 'react'
+import { AnomalyIcons, type Anomaly } from './AnomalyIcons'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
@@ -13,6 +14,7 @@ export interface JourneyVisitor {
   firstUtmSource: string | null; firstUtmMedium: string | null; firstUtmCampaign: string | null; firstClickIdType: string | null
   deviceType: string | null; region: string | null; city: string | null
   leadId: string | null; leadName: string | null
+  anomalies?: Anomaly[]
   /** 只有管理员、运营能看到 */
   lastIp?: string | null
 }
@@ -22,6 +24,7 @@ export interface Visit {
   referrer: string | null; channel: string | null; utmSource: string | null; utmCampaign: string | null; clickIdType: string | null
   deviceType: string | null; os: string | null; browser: string | null; screen: string | null; network: string | null
   region: string | null; city: string | null; isp: string | null; ip?: string | null; events: TrackEvent[]
+  anomalies?: Anomaly[]
 }
 
 export interface Journey { siteId?: string; siteName?: string; visitor: JourneyVisitor; visits: Visit[] }
@@ -86,7 +89,7 @@ export function JourneyDrawer({ url, onClose }: { url: string; onClose: () => vo
             {data.visits.map((v) => (
               <div key={v.id} className="rounded-lg border">
                 <div className="border-b bg-gray-50 px-3 py-2 text-xs">
-                  <p className="font-medium text-gray-800">{formatDate(v.startedAt)} · {ch(v.channel)}{v.utmSource ? ` · ${v.utmSource}` : ''}{v.utmCampaign ? ` / ${v.utmCampaign}` : ''}</p>
+                  <p className="font-medium text-gray-800">{formatDate(v.startedAt)} · {ch(v.channel)}{v.utmSource ? ` · ${v.utmSource}` : ''}{v.utmCampaign ? ` / ${v.utmCampaign}` : ''} <AnomalyIcons items={v.anomalies} /></p>
                   <p className="mt-0.5 text-gray-500">
                     {t('analytics.journey.visitSummary', { pages: v.pageviews, time: duration(v.durationSec) })} · {[v.deviceType && t(`analytics.devices.${v.deviceType}`), v.os, v.browser].filter(Boolean).join(' / ')}
                     {' · '}{v.ip ? `${v.ip} · ` : ''}{place(v)}{v.isp ? ` · ${v.isp}` : ''}{v.network ? ` · ${v.network}` : ''}

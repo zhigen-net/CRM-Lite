@@ -8,6 +8,7 @@ import { formatDate } from '@/shared/utils/format'
 import { Pagination } from '@/shared/components/Pagination'
 import { DateRangePicker, useDateRangeParam } from '@/shared/components/DateRangePicker'
 import { JourneyDrawer, place } from './Journey'
+import { AnomalyIcons, type Anomaly } from './AnomalyIcons'
 
 interface SiteOption { id: string; name: string; domain: string | null; isActive: boolean; lastSeenAt: string | null }
 interface Visitor {
@@ -15,6 +16,7 @@ interface Visitor {
   firstChannel: string | null; firstUtmSource: string | null; firstUtmCampaign: string | null; firstLanding: string | null
   deviceType: string | null; os: string | null; browser: string | null; region: string | null; city: string | null; isp: string | null
   leadId: string | null; leadName: string | null; keyActions: number; lastIp: string | null
+  anomalies?: Anomaly[]
 }
 const CHANNELS = ['paid', 'search', 'social', 'referral', 'direct'] as const
 const PAGE_SIZE = 30
@@ -106,10 +108,12 @@ function VisitorsPanel() {
         <ul className="divide-y divide-gray-100 sm:hidden">
           {data.data.map((v) => (
             <li key={v.id}>
-              <button type="button" onClick={() => setOpenVisitor(v.id)} className="block w-full px-3 py-3 text-left active:bg-gray-50">
+              <div role="button" tabIndex={0} onClick={() => setOpenVisitor(v.id)} onKeyDown={(e) => { if (e.key === 'Enter') setOpenVisitor(v.id) }}
+                className="block w-full cursor-pointer px-3 py-3 text-left active:bg-gray-50">
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-sm font-medium text-gray-900">{v.firstChannel ? t(`analytics.channels.${v.firstChannel}`, { defaultValue: v.firstChannel }) : '—'}
                     {(v.firstUtmSource || v.firstUtmCampaign) && <span className="ml-1 text-xs font-normal text-gray-400">{[v.firstUtmSource, v.firstUtmCampaign].filter(Boolean).join(' / ')}</span>}
+                    <span className="ml-1"><AnomalyIcons items={v.anomalies} /></span>
                   </span>
                   <span className="shrink-0 text-xs text-gray-400">{formatDate(v.lastSeenAt)}</span>
                 </div>
@@ -121,7 +125,7 @@ function VisitorsPanel() {
                   {v.keyActions > 0 && <span className="rounded bg-amber-100 px-1.5 py-0.5 text-amber-700">{t('analytics.visitors.cols.actions')} {v.keyActions}</span>}
                   {v.leadId && <span className="ml-auto rounded bg-green-50 px-1.5 py-0.5 text-green-700">{v.leadName ?? t('analytics.journey.viewLead')}</span>}
                 </div>
-              </button>
+              </div>
             </li>
           ))}
         </ul>
@@ -145,7 +149,9 @@ function VisitorsPanel() {
                   <td className="whitespace-nowrap px-4 py-2.5 text-gray-600">{v.visitCount} / {v.pageviewCount}</td>
                   <td className="whitespace-nowrap px-4 py-2.5 text-gray-600">{[v.deviceType && t(`analytics.devices.${v.deviceType}`), v.browser].filter(Boolean).join(' · ')}</td>
                   <td className="px-4 py-2.5 text-gray-600">
-                    {v.lastIp && <span className="block font-mono text-xs text-gray-700">{v.lastIp}</span>}
+                    {(v.lastIp || !!v.anomalies?.length) && (
+                      <span className="flex items-center gap-1 font-mono text-xs text-gray-700">{v.lastIp}<AnomalyIcons items={v.anomalies} /></span>
+                    )}
                     {place(v)}{v.isp && <span className="block text-xs text-gray-400">{v.isp}</span>}
                   </td>
                   <td className="px-4 py-2.5">{v.keyActions > 0 ? <span className="rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-700">{v.keyActions}</span> : <span className="text-gray-300">—</span>}</td>
