@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
+import { Link } from 'react-router-dom'
 import { crmApi } from '@/shared/utils/request'
 import { formatDate } from '@/shared/utils/format'
 import { Button } from '@/shared/components/Button'
@@ -9,9 +10,55 @@ import { Input } from '@/shared/components/Input'
 import { Modal } from '@/shared/components/Modal'
 import { IntegrationGuide } from './IntegrationGuide'
 
+const STAT_TONE = { gray: 'bg-gray-100 text-gray-600', green: 'bg-green-50 text-green-700', amber: 'bg-amber-50 text-amber-700', red: 'bg-red-50 text-red-700' }
+function Stat({ label, value, tone = 'gray' }: { label: string; value: number; tone?: keyof typeof STAT_TONE }) {
+  return <span className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 ${STAT_TONE[tone]}`}>{label}<b className="font-semibold">{value}</b></span>
+}
+
+/** 超过 24 小时没有收到数据（时间为 UTC 的 YYYY-MM-DD HH:MM:SS） */
+function isStale(lastSeenAt: string | null) {
+  if (!lastSeenAt) return true
+  const ts = Date.parse(lastSeenAt.includes('T') ? lastSeenAt : `${lastSeenAt.replace(' ', 'T')}Z`)
+  return Number.isFinite(ts) && Date.now() - ts > 24 * 3600 * 1000
+}
+
+interface Submission { id: string; status: string; createdAt: string; leadId: string | null; leadName: string | null }
+
+/** 最近的表单提交记录：包括成功的和被拦截的，用于排查「网站说提交了、CRM 里没有」 */
+function SubmissionsModal({ site, onClose }: { site: { id: string; name: string }; onClose: () => void }) {
+  const { t } = useTranslation()
+  const { data, isLoading } = useQuery({
+    queryKey: ['site-submissions', site.id],
+    queryFn: () => crmApi.get<{ data: Submission[] }>(`/admin/tracking-sites/${site.id}/submissions`).then((r) => r.data.data),
+  })
+  return (
+    <Modal title={t('analytics.sites.submissions.title', { name: site.name })} onClose={onClose}>
+      <p className="mb-3 text-xs text-gray-500">{t('analytics.sites.submissions.hint')}</p>
+      {isLoading ? <p className="text-sm text-gray-400">{t('common.loading')}</p> : !data?.length ? (
+        <p className="py-6 text-center text-sm text-gray-400">{t('analytics.sites.submissions.empty')}</p>
+      ) : (
+        <ul className="divide-y text-sm">
+          {data.map((x) => (
+            <li key={x.id} className="flex items-center justify-between gap-3 py-2">
+              <span className="text-xs text-gray-500">{formatDate(x.createdAt)}</span>
+              <span className="min-w-0 flex-1 truncate">
+                {x.leadId ? <Link to={`/app/leads/${x.leadId}`} className="text-primary-600 hover:underline">{x.leadName ?? x.leadId}</Link> : <span className="text-gray-400">—</span>}
+              </span>
+              <span className={`rounded px-1.5 py-0.5 text-xs ${x.status === 'ok' ? 'bg-green-50 text-green-700' : x.status === 'error' ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-700'}`}>
+                {t(`analytics.sites.submissions.status.${x.status}`, { defaultValue: x.status })}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Modal>
+  )
+}
+
 interface Site {
   id: string; name: string; domain: string | null; keyPrefix: string; isActive: boolean
   createdAt: string; lastSeenAt: string | null; visitorCount: number
+  visitorsDay?: number; leadsDay?: number; blockedDay?: number; openFailures?: number
 }
 export function SitesPanel() {
   const { t } = useTranslation()
@@ -19,6 +66,7 @@ export function SitesPanel() {
   const [creating, setCreating] = useState(false)
   const [form, setForm] = useState({ name: '', domain: '' })
   const [dialog, setDialog] = useState<{ site: Site; key: string | null } | null>(null)
+  const [submissions, setSubmissions] = useState<Site | null>(null)
 
   const { data: sites, isLoading } = useQuery({
     queryKey: ['tracking-sites-admin'],
@@ -72,6 +120,18 @@ export function SitesPanel() {
                   {s.domain ?? '—'} · <span className="font-mono">{s.keyPrefix}…</span> · {t('analytics.sites.visitors', { count: s.visitorCount })} ·{' '}
                   {s.lastSeenAt ? t('analytics.sites.lastSeen', { time: formatDate(s.lastSeenAt) }) : t('analytics.sites.noData')}
                 </p>
+                {/* 近 24 小时接入状态 */}
+                <div className="mt-2 flex flex-wrap items-center gap-1.5 text-xs">
+                  <Stat label={t('analytics.sites.stat.visitors')} value={s.visitorsDay ?? 0} />
+                  <Stat label={t('analytics.sites.stat.leads')} value={s.leadsDay ?? 0} tone={(s.leadsDay ?? 0) > 0 ? 'green' : 'gray'} />
+                  <button type="button" onClick={() => setSubmissions(s)} className="hover:opacity-80">
+                    <Stat label={t('analytics.sites.stat.blocked')} value={s.blockedDay ?? 0} tone={(s.blockedDay ?? 0) > 0 ? 'amber' : 'gray'} />
+                  </button>
+                  {(s.openFailures ?? 0) > 0 && <Stat label={t('analytics.sites.stat.failures')} value={s.openFailures ?? 0} tone="red" />}
+                  {s.isActive && isStale(s.lastSeenAt) && (
+                    <span className="rounded bg-amber-50 px-1.5 py-0.5 text-amber-700">{s.lastSeenAt ? t('analytics.sites.stale') : t('analytics.sites.neverSeen')}</span>
+                  )}
+                </div>
               </div>
               <div className="flex items-center gap-3 text-xs">
                 <button className="text-primary-600 hover:text-primary-800" onClick={() => setDialog({ site: s, key: null })}>{t('analytics.sites.viewCode')}</button>
@@ -98,6 +158,7 @@ export function SitesPanel() {
         </Modal>
       )}
       {dialog && <IntegrationGuide site={dialog.site} siteKey={dialog.key} onClose={() => setDialog(null)} />}
+      {submissions && <SubmissionsModal site={submissions} onClose={() => setSubmissions(null)} />}
     </div>
   )
 }

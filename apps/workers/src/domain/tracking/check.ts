@@ -7,7 +7,7 @@ export type CheckReason =
   | 'ok' | 'unreachable' | 'not_found' | 'html' | 'redirect' | 'bad_key' | 'wrong_site' | 'server_error' | 'unexpected'
 
 export interface CheckStep { ok: boolean; status: number | null; reason: CheckReason }
-export interface CheckResult { host: string; script: CheckStep; collect: CheckStep }
+export interface CheckResult { host: string; script: CheckStep; collect: CheckStep; lead: CheckStep }
 
 const HOST_RE = /^(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/
 
@@ -53,20 +53,20 @@ export async function checkSiteIntegration(site: TrackingSite, host: string, fet
       : { ok: false, status: 200, reason: /<html|<!doctype/i.test(body) ? 'html' : 'unexpected' }
   }
 
-  // 2. 上报：发送探测请求（不写入数据），确认转发带上了这个站点的密钥
-  let collect: CheckStep
-  const cRes = await tryFetch(fetcher, `${base}/collect`, {
-    method: 'POST', headers: { ...headers, 'Content-Type': 'application/json' }, body: JSON.stringify({ ping: 1 }),
-  })
-  if (!cRes) collect = { ok: false, status: null, reason: 'unreachable' }
-  else if (cRes.status === 401) collect = { ok: false, status: 401, reason: 'bad_key' }
-  else if (cRes.status === 200) {
-    const data = await cRes.json<{ data?: { siteId?: string } }>().catch(() => null)
+  // 2. 上报、3. 表单留资：发送探测请求（不写入数据），确认转发带上了这个站点的密钥
+  const probe = async (path: string): Promise<CheckStep> => {
+    const res = await tryFetch(fetcher, `${base}/${path}`, {
+      method: 'POST', headers: { ...headers, 'Content-Type': 'application/json' }, body: JSON.stringify({ ping: 1 }),
+    })
+    if (!res) return { ok: false, status: null, reason: 'unreachable' }
+    if (res.status === 401) return { ok: false, status: 401, reason: 'bad_key' }
+    if (res.status !== 200) return { ok: false, status: res.status, reason: statusReason(res.status) }
+    const data = await res.json<{ data?: { siteId?: string } }>().catch(() => null)
     const siteId = data?.data?.siteId
-    collect = siteId === site.id
-      ? { ok: true, status: 200, reason: 'ok' }
-      : { ok: false, status: 200, reason: siteId ? 'wrong_site' : 'html' }
-  } else collect = { ok: false, status: cRes.status, reason: statusReason(cRes.status) }
+    return siteId === site.id ? { ok: true, status: 200, reason: 'ok' } : { ok: false, status: 200, reason: siteId ? 'wrong_site' : 'html' }
+  }
+  const collect = await probe('collect')
+  const lead = await probe('lead')
 
-  return { host, script, collect }
+  return { host, script, collect, lead }
 }

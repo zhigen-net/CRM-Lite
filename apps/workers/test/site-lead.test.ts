@@ -115,3 +115,38 @@ describe('网站表单留资', () => {
     expect(js).toContain("hp.name = '_hp'")
   })
 })
+
+describe('站点接入状态', () => {
+  it('站点列表带近 24 小时访客、留资、被拦截次数；提交记录可查；探测请求不计入', async () => {
+    const before = await env.DB.prepare('SELECT COUNT(*) AS n FROM site_lead_submissions WHERE site_id = ?').bind(siteId).first<{ n: number }>()
+    expect((await siteLead({ ping: 1 })).status).toBe(200)
+    const after = await env.DB.prepare('SELECT COUNT(*) AS n FROM site_lead_submissions WHERE site_id = ?').bind(siteId).first<{ n: number }>()
+    expect(after?.n).toBe(before?.n)
+
+    // 先有访问，再留资，留资计入该站点
+    const v = uuid()
+    await exports.default.fetch('http://crm.test/api/t/collect', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'User-Agent': UA, 'X-Site-Key': siteKey },
+      body: JSON.stringify({ v, s: uuid(), e: [{ id: uuid(), t: 'pageview', p: '/', h: 'site.test' }] }),
+    })
+    for (let i = 0; i < 50 && !(await env.DB.prepare('SELECT 1 FROM visitors WHERE id = ?').bind(v).first()); i++) await new Promise((r) => setTimeout(r, 20))
+    await siteLead({ name: '计数', phone: '13700000050', crm_vid: v })
+
+    const sites = ((await (await api(admin, 'GET', '/api/admin/tracking-sites')).json()) as { data: Record<string, number | string>[] }).data
+    const me = sites.find((x) => x.id === siteId)!
+    expect(Number(me.visitorsDay)).toBeGreaterThanOrEqual(1)
+    expect(Number(me.leadsDay)).toBeGreaterThanOrEqual(1)
+    expect(Number(me.blockedDay)).toBeGreaterThanOrEqual(2) // 前面的蜜罐与频率限制
+
+    const subs = ((await (await api(admin, 'GET', `/api/admin/tracking-sites/${siteId}/submissions`)).json()) as { data: { status: string; leadName: string | null }[] }).data
+    expect(subs.some((x) => x.status === 'spam')).toBe(true)
+    expect(subs.some((x) => x.status === 'ok' && x.leadName === '计数')).toBe(true)
+    expect((await api(ops, 'GET', `/api/admin/tracking-sites/${siteId}/submissions`)).status).toBe(403)
+  })
+
+  it('失败记录带来源站点名称', async () => {
+    await env.DB.prepare("INSERT INTO api_lead_failures (id, request_body, error_message, site_id) VALUES (?, '{}', 'x', ?)").bind(`f-${Date.now()}`, siteId).run()
+    const list = ((await (await api(admin, 'GET', '/api/admin/api-failures')).json()) as { data: { siteId: string | null; siteName: string | null }[] }).data
+    expect(list.find((f) => f.siteId === siteId)?.siteName).toBe('留资测试站')
+  })
+})

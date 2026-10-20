@@ -93,7 +93,7 @@
     "logout": "Logout",
     "profile": "Profile",
     "language": "语言",
-    "aiAccess": "AI Access",
+    "aiAccess": "Integrations",
     "analytics": "Visitors",
     "groupSettings": "Settings",
     "collapse": "Collapse sidebar",
@@ -724,10 +724,10 @@
       "dismissed": "Dismissed",
       "cols": {
         "time": "Submitted At",
-        "keyPrefix": "API Key",
         "contact": "Submitted Data",
         "error": "Error",
-        "actions": "Actions"
+        "actions": "Actions",
+        "source": "Source"
       }
     },
     "timezones": {
@@ -1064,18 +1064,23 @@
     "notesHint": "Notes (optional)"
   },
   "aiAccess": {
-    "title": "AI Access",
-    "subtitle": "Connect AI agents (Claude Code, Cursor, etc.) or external systems to the CRM. Keys act as you and never exceed your role.",
+    "title": "Integrations",
+    "subtitle": "Connect websites, external systems and AI tools to the CRM. Websites use a site key (visitor tracking + form leads); external systems and AI tools use API keys.",
     "sections": {
       "mcp": {
         "title": "AI tools (MCP)",
         "desc": "Use natural language in AI tools such as Claude Code, Cursor or Claude Desktop to read and maintain clients and leads. Made for admins and customer service."
       },
       "push": {
-        "title": "Push leads from external systems",
-        "desc": "Website forms, ad platforms and other external systems push new leads into the CRM automatically."
+        "title": "External systems",
+        "desc": "Ad platforms and business systems push leads through the API, with the same processing rules as website forms."
       },
-      "keyCount": "Keys: {{count}}"
+      "keyCount": "Keys: {{count}}",
+      "sites": {
+        "title": "Websites",
+        "desc": "Visitor tracking and form leads for your websites: one site key per website, set up once."
+      },
+      "siteCount": "{{count}} websites connected"
     },
     "mcp": {
       "stepsTitle": "Set up in three steps",
@@ -1121,10 +1126,6 @@
   "analytics": {
     "title": "Visitors",
     "subtitle": "Where website visitors come from, what they view and do, and whether they have become leads.",
-    "tabs": {
-      "visitors": "Visitors",
-      "sites": "Sites"
-    },
     "channels": {
       "paid": "Paid",
       "search": "Search",
@@ -1152,7 +1153,7 @@
       "withoutLead": "Not yet leads",
       "total": "Visitors: {{count}}",
       "empty": "No visitor data yet. Once a website is connected, visits will appear here.",
-      "noSites": "No websites connected yet. An admin can add a site under Sites and deploy the integration code.",
+      "noSites": "No websites connected yet.",
       "cols": {
         "lastSeen": "Last visit",
         "source": "First source",
@@ -1161,7 +1162,8 @@
         "location": "IP / location / ISP",
         "actions": "Key actions",
         "lead": "Lead"
-      }
+      },
+      "goSites": "Connect a website"
     },
     "journey": {
       "title": "Visitor journey",
@@ -1190,7 +1192,27 @@
       "rotate": "Rotate key",
       "rotateConfirm": "Rotate the site key for \"{{name}}\"? The old key stops working immediately; update the website's CRM_SITE_KEY.",
       "disable": "Disable",
-      "enable": "Enable"
+      "enable": "Enable",
+      "stat": {
+        "visitors": "24h visitors",
+        "leads": "Leads",
+        "blocked": "Blocked",
+        "failures": "Open failures"
+      },
+      "stale": "No data for over 24 hours",
+      "neverSeen": "No data received yet",
+      "submissions": {
+        "title": "Form submissions for \"{{name}}\"",
+        "hint": "The last 50 website form submissions, including those blocked by spam protection. Click a lead name to open it.",
+        "empty": "No form submissions yet",
+        "status": {
+          "ok": "Lead created",
+          "invalid": "Incomplete",
+          "rate_limited": "Too frequent",
+          "spam": "Likely bot",
+          "error": "Failed"
+        }
+      }
     },
     "guide": {
       "title": "Connect “{{name}}”",
@@ -1277,7 +1299,8 @@
         "checkHint": "The CRM calls the website's /_t/t.js and /_t/collect from its server to check the proxy code and site key. No visitor data is created. The domain is saved to the site.",
         "rows": {
           "script": "Tracking script /_t/t.js",
-          "collect": "Proxy and site key /_t/collect"
+          "collect": "Proxy and site key /_t/collect",
+          "lead": "Form leads /_t/lead"
         },
         "reasons": {
           "ok": "OK",

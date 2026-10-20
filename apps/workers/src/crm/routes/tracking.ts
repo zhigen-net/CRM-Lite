@@ -7,7 +7,7 @@ import { zValidator } from '@hono/zod-validator'
 import { z } from 'zod'
 import { requireAdmin, requireAuth, requireNotSales } from '../middleware/auth'
 import { TRACKER_SCRIPT } from '../../domain/tracking/script'
-import { findSiteByKey, getSite, listSites, createSite, updateSite, rotateSiteKey } from '../../domain/tracking/sites'
+import { findSiteByKey, getSite, listSiteSubmissions, listSites, createSite, updateSite, rotateSiteKey } from '../../domain/tracking/sites'
 import { ingestEvents, parseGeoHeader, type CollectPayload } from '../../domain/tracking/ingest'
 import { getVisitorJourney, listVisitors } from '../../domain/tracking/queries'
 import { integrationTemplates } from '../../domain/tracking/integration'
@@ -89,6 +89,8 @@ trackingCollectRoutes.post('/lead', async (c) => {
   const contentType = c.req.header('Content-Type') ?? ''
   const raw = await parseLeadBody(contentType, buf)
   if (!raw) return c.json({ ok: false, message: '请求格式错误' }, 400)
+  // 接入检测的探测请求：只回报密钥对应的站点，不建线索、不计入提交频率
+  if ('ping' in raw) return c.json({ data: { siteId: site.id } })
 
   const result = await submitSiteLead(depsFrom(c), { id: site.id, name: site.name, ownerId: site.ownerId ?? null }, raw, {
     geo: parseGeoHeader(c.req.header('X-Visitor-Geo')), ipSalt: c.env.JWT_SECRET,
@@ -140,6 +142,9 @@ trackingSitesAdminRoutes.post('/:id/check', zValidator('json', z.object({
   if (host !== site.domain) await updateSite(c.env.DB, site.id, { domain: host })
   return c.json({ data: await checkSiteIntegration(site, host) })
 })
+
+// 最近的表单提交记录（含被拦截的）
+trackingSitesAdminRoutes.get('/:id/submissions', async (c) => c.json({ data: await listSiteSubmissions(c.env.DB, c.req.param('id')) }))
 
 trackingSitesAdminRoutes.post('/:id/rotate-key', async (c) => c.json({ data: await rotateSiteKey(c.env.DB, c.req.param('id')) }))
 
