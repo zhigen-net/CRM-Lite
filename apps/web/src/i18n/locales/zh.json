@@ -1250,8 +1250,8 @@
         "aiHint": "把提示词交给编码 AI（Claude Code、Cursor 等），在网站仓库中执行。密钥请自己在 Cloudflare 控制台填写，不要发给 AI，也不要提交到代码仓库。"
       },
       "aiConnect": {
-        "binding": "网站与 CRM 在同一个 Cloudflare 账号：使用服务绑定 CRM（变量名大写）。",
-        "url": "网站与 CRM 不在同一个 Cloudflare 账号：使用加密环境变量 CRM_URL（CRM 地址，末尾不带 /）。"
+        "binding": "网站与 CRM 在同一个 Cloudflare 账号：使用服务绑定，变量名 CRM（大写），指向 CRM 的 Worker：{{worker}}。",
+        "url": "网站与 CRM 不在同一个 Cloudflare 账号：使用加密环境变量 CRM_URL，值为 {{origin}}（末尾不带 /）。这个地址只能在 Cloudflare 控制台设置为 Secret，不要写进代码、配置文件或仓库。"
       },
       "aiPlace": {
         "pages": "新建文件 functions/_t/[[path]].js（项目根目录）；如果有自定义 _routes.json，确保 /_t/* 被包含。",
