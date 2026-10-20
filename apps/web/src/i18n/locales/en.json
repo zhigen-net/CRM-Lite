@@ -1067,7 +1067,6 @@
   },
   "aiAccess": {
     "title": "Integrations",
-    "subtitle": "Connect websites, external systems and AI tools to the CRM. Websites use a site key (visitor tracking + form leads); external systems and AI tools use API keys.",
     "sections": {
       "mcp": {
         "title": "AI tools (MCP)",
@@ -1077,12 +1076,10 @@
         "title": "External systems",
         "desc": "Ad platforms and business systems push leads through the API, with the same processing rules as website forms."
       },
-      "keyCount": "Keys: {{count}}",
       "sites": {
         "title": "Websites",
         "desc": "Visitor tracking and form leads for your websites: one site key per website, set up once."
-      },
-      "siteCount": "{{count}} websites connected"
+      }
     },
     "mcp": {
       "stepsTitle": "Set up in three steps",

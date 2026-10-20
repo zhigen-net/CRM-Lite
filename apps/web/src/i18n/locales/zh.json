@@ -1067,7 +1067,6 @@
   },
   "aiAccess": {
     "title": "接入",
-    "subtitle": "网站、外部系统和 AI 工具接入 CRM 都在这里：网站用站点密钥（访客统计 + 表单留资），外部系统和 AI 工具用 API Key。",
     "sections": {
       "mcp": {
         "title": "AI 工具（MCP）",
@@ -1077,12 +1076,10 @@
         "title": "外部系统",
         "desc": "广告平台、业务系统等通过接口推送线索，与网站表单用同一套处理规则。"
       },
-      "keyCount": "已有 {{count}} 把密钥",
       "sites": {
         "title": "网站",
         "desc": "网站访客统计与表单留资，一个网站一把站点密钥，一次接好。"
-      },
-      "siteCount": "已接入 {{count}} 个网站"
+      }
     },
     "mcp": {
       "stepsTitle": "三步接入",
