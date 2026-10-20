@@ -11,6 +11,8 @@ interface ApiFailure {
   requestBody: string
   errorMessage: string | null
   apiKeyPrefix: string | null
+  siteId: string | null
+  siteName: string | null
   createdAt: string
   resolvedAt: string | null
   resolution: 'created_lead' | 'dismissed' | null
@@ -24,7 +26,8 @@ interface ApiFailureRequestBody {
   [key: string]: unknown
 }
 
-export function ApiFailuresPanel() {
+/** source：site 只看网站表单的失败，api 只看对外接口的失败，不传显示全部 */
+export function ApiFailuresPanel({ source }: { source?: 'site' | 'api' } = {}) {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -70,7 +73,7 @@ export function ApiFailuresPanel() {
     return parts.join(' · ') || '—'
   }
 
-  const items = data ?? []
+  const items = (data ?? []).filter((f) => !source || (source === 'site' ? !!f.siteId : !f.siteId))
 
   return (
     <div className="space-y-4">
@@ -92,7 +95,7 @@ export function ApiFailuresPanel() {
             <thead className="bg-gray-50 border-b">
               <tr>
                 <th className="px-4 py-3 text-left font-medium text-gray-700 whitespace-nowrap">{t('settings.apiFailures.cols.time')}</th>
-                <th className="px-4 py-3 text-left font-medium text-gray-700 whitespace-nowrap">{t('settings.apiFailures.cols.keyPrefix')}</th>
+                <th className="px-4 py-3 text-left font-medium text-gray-700 whitespace-nowrap">{t('settings.apiFailures.cols.source')}</th>
                 <th className="px-4 py-3 text-left font-medium text-gray-700">{t('settings.apiFailures.cols.contact')}</th>
                 <th className="px-4 py-3 text-left font-medium text-gray-700">{t('settings.apiFailures.cols.error')}</th>
                 <th className="px-4 py-3 text-left font-medium text-gray-700 whitespace-nowrap">{t('settings.apiFailures.cols.actions')}</th>
@@ -110,7 +113,7 @@ export function ApiFailuresPanel() {
                       {formatDate(item.createdAt)}
                     </td>
                     <td className="px-4 py-3 text-gray-500 font-mono text-xs whitespace-nowrap">
-                      {item.apiKeyPrefix ?? '—'}
+                      {item.siteId ? (item.siteName ?? item.siteId) : (item.apiKeyPrefix ?? '—')}
                     </td>
                     <td className="px-4 py-3 text-gray-700 text-xs max-w-xs">
                       {contactInfo}

@@ -12,9 +12,11 @@ apiFailuresRoutes.use('*', requireAuth, requireAdmin)
 // GET /api/admin/api-failures?resolved=false
 apiFailuresRoutes.get('/', async (c) => {
   const showResolved = c.req.query('resolved') === 'true'
+  // 来源：网站表单记站点，对外接口记 API Key 前缀
+  const base = 'SELECT f.*, s.name AS site_name FROM api_lead_failures f LEFT JOIN tracking_sites s ON s.id = f.site_id'
   const sql = showResolved
-    ? 'SELECT * FROM api_lead_failures ORDER BY created_at DESC LIMIT 200'
-    : 'SELECT * FROM api_lead_failures WHERE resolved_at IS NULL ORDER BY created_at DESC'
+    ? `${base} ORDER BY f.created_at DESC LIMIT 200`
+    : `${base} WHERE f.resolved_at IS NULL ORDER BY f.created_at DESC`
   const results = await c.env.DB.prepare(sql).all<Record<string, unknown>>()
   return c.json({ data: toCamelList(results.results) })
 })

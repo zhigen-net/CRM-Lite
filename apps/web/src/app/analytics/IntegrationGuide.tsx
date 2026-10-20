@@ -17,7 +17,7 @@ interface Integration {
 }
 type CheckReason = 'ok' | 'unreachable' | 'not_found' | 'html' | 'redirect' | 'bad_key' | 'wrong_site' | 'server_error' | 'unexpected'
 interface CheckStep { ok: boolean; status: number | null; reason: CheckReason }
-interface CheckResult { host: string; script: CheckStep; collect: CheckStep }
+interface CheckResult { host: string; script: CheckStep; collect: CheckStep; lead?: CheckStep }
 
 type SiteType = 'pages' | 'worker'
 type Connect = 'binding' | 'url'
@@ -276,18 +276,18 @@ export function IntegrationGuide({ site, siteKey: initialKey, onClose }: { site:
             {checkMutation.isError && <Note tone="red">{(checkMutation.error as { response?: { data?: { message?: string } } }).response?.data?.message ?? t('common.opFailed')}</Note>}
             {check && (
               <div className="divide-y rounded-lg border">
-                {(['script', 'collect'] as const).map((k) => (
+                {(['script', 'collect', 'lead'] as const).filter((k) => check[k]).map((k) => check[k] && (
                   <div key={k} className="flex gap-3 px-3 py-2">
-                    <span className={`mt-0.5 text-sm ${check[k].ok ? 'text-green-600' : 'text-red-500'}`}>{check[k].ok ? '✓' : '✗'}</span>
+                    <span className={`mt-0.5 text-sm ${check[k]!.ok ? 'text-green-600' : 'text-red-500'}`}>{check[k]!.ok ? '✓' : '✗'}</span>
                     <div className="min-w-0">
                       <p className="text-xs font-medium text-gray-800">{t(`analytics.guide.verify.rows.${k}`)}</p>
-                      <p className="text-xs text-gray-500">{reasonText(check[k])}</p>
+                      <p className="text-xs text-gray-500">{reasonText(check[k]!)}</p>
                     </div>
                   </div>
                 ))}
               </div>
             )}
-            {check?.script.ok && check.collect.ok && <Note tone="green">{t('analytics.guide.verify.allOk')}</Note>}
+            {check?.script.ok && check.collect.ok && check.lead?.ok !== false && <Note tone="green">{t('analytics.guide.verify.allOk')}</Note>}
           </div>
 
           <div className="space-y-2">

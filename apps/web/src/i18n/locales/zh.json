@@ -93,7 +93,7 @@
     "logout": "退出登录",
     "profile": "个人资料",
     "language": "Language",
-    "aiAccess": "AI 接入",
+    "aiAccess": "接入",
     "analytics": "访客",
     "groupSettings": "设置",
     "collapse": "收起导航",
@@ -724,10 +724,10 @@
       "dismissed": "已忽略",
       "cols": {
         "time": "提交时间",
-        "keyPrefix": "API Key",
         "contact": "提交信息",
         "error": "错误信息",
-        "actions": "操作"
+        "actions": "操作",
+        "source": "来源"
       }
     },
     "timezones": {
@@ -1064,18 +1064,23 @@
     "notesHint": "备注（可选）"
   },
   "aiAccess": {
-    "title": "AI 接入",
-    "subtitle": "把 AI Agent（Claude Code、Cursor 等）或外部系统接入 CRM。密钥以你的身份操作，权限不超过你的角色。",
+    "title": "接入",
+    "subtitle": "网站、外部系统和 AI 工具接入 CRM 都在这里：网站用站点密钥（访客统计 + 表单留资），外部系统和 AI 工具用 API Key。",
     "sections": {
       "mcp": {
         "title": "AI 工具（MCP）",
         "desc": "在 Claude Code、Cursor、Claude Desktop 等 AI 工具里，用自然语言查询和维护客户、线索。适合管理员、客服日常使用。"
       },
       "push": {
-        "title": "外部系统推送线索",
-        "desc": "网站表单、广告平台等外部系统把新线索自动推送进 CRM。"
+        "title": "外部系统",
+        "desc": "广告平台、业务系统等通过接口推送线索，与网站表单用同一套处理规则。"
       },
-      "keyCount": "已有 {{count}} 把密钥"
+      "keyCount": "已有 {{count}} 把密钥",
+      "sites": {
+        "title": "网站",
+        "desc": "网站访客统计与表单留资，一个网站一把站点密钥，一次接好。"
+      },
+      "siteCount": "已接入 {{count}} 个网站"
     },
     "mcp": {
       "stepsTitle": "三步接入",
@@ -1121,10 +1126,6 @@
   "analytics": {
     "title": "访客",
     "subtitle": "网站访客从哪里来、看了什么、做了什么，以及是否已经留资。",
-    "tabs": {
-      "visitors": "访客",
-      "sites": "站点管理"
-    },
     "channels": {
       "paid": "广告",
       "search": "搜索",
@@ -1152,7 +1153,7 @@
       "withoutLead": "未留资",
       "total": "共 {{count}} 位访客",
       "empty": "暂无访客数据。网站接入后，有人访问就会出现在这里。",
-      "noSites": "还没有接入网站。请管理员在「站点管理」中添加站点并部署接入代码。",
+      "noSites": "还没有接入网站。",
       "cols": {
         "lastSeen": "最近访问",
         "source": "首次来源",
@@ -1161,7 +1162,8 @@
         "location": "IP / 地区 / 运营商",
         "actions": "关键行为",
         "lead": "线索"
-      }
+      },
+      "goSites": "去接入网站"
     },
     "journey": {
       "title": "访问轨迹",
@@ -1190,7 +1192,27 @@
       "rotate": "更换密钥",
       "rotateConfirm": "更换「{{name}}」的站点密钥？旧密钥会立即失效，需要同步更新网站的 CRM_SITE_KEY。",
       "disable": "停用",
-      "enable": "启用"
+      "enable": "启用",
+      "stat": {
+        "visitors": "24 小时访客",
+        "leads": "留资",
+        "blocked": "拦截",
+        "failures": "待处理失败"
+      },
+      "stale": "超过 24 小时没有收到数据",
+      "neverSeen": "还没有收到数据",
+      "submissions": {
+        "title": "「{{name}}」的表单提交",
+        "hint": "最近 50 次网站表单提交，包括被防刷规则拦截的。点击线索名称查看详情。",
+        "empty": "还没有表单提交",
+        "status": {
+          "ok": "已建线索",
+          "invalid": "内容不完整",
+          "rate_limited": "提交过于频繁",
+          "spam": "疑似机器人",
+          "error": "处理失败"
+        }
+      }
     },
     "guide": {
       "title": "接入「{{name}}」",
@@ -1277,7 +1299,8 @@
         "checkHint": "CRM 会从服务器端访问该网站的 /_t/t.js 和 /_t/collect，检查转发代码和站点密钥，不会产生访客数据。填写的域名会保存到站点。",
         "rows": {
           "script": "采集脚本 /_t/t.js",
-          "collect": "转发与站点密钥 /_t/collect"
+          "collect": "转发与站点密钥 /_t/collect",
+          "lead": "表单留资 /_t/lead"
         },
         "reasons": {
           "ok": "正常",
