@@ -81,7 +81,7 @@ export function SiteDrawer({ id, tab, onTab, initialKey, onClose }: {
             </div>
             <button type="button" onClick={onClose} className="flex h-8 w-8 flex-none items-center justify-center rounded-full text-xl text-gray-400 hover:bg-gray-100">×</button>
           </div>
-          <div className="mt-3 flex gap-1 overflow-x-auto">
+          <div className="mt-3 flex gap-1 overflow-x-auto overflow-y-hidden scrollbar-none">
             {SITE_TABS.map((k) => (
               <button key={k} type="button" onClick={() => onTab(k)}
                 className={`-mb-px flex-none border-b-2 px-4 py-2 text-sm font-medium ${tab === k ? 'border-primary-600 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
