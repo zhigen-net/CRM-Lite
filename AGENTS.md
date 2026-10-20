@@ -55,10 +55,12 @@
 - 网站只通过同域 `/_t/*` 接入，由网站的 Pages Function / Worker 在服务器端带站点密钥转发到 CRM 的 `/api/t/*`（模板见 `domain/tracking/integration.ts`）。**采集脚本和网站前端里不能出现 CRM 地址或任何密钥**；`/api/t/*` 不开放跨域。
 - 各部署平台的转发模板在 `domain/tracking/platforms.ts`，都必须遵守同一份转发协议 `PROXY_SPEC`（转发到 `/api/t/*`、带 `X-Site-Key` 与 `X-Visitor-Geo`、不转发 Cookie）；新增或修改模板后要实际跑通 `t.js` 与 `collect` / `lead` 的 `{"ping":1}` 探测。接入提示词由前端 `app/sites/prompt.ts` 按平台和功能拼装。
 - 网站表单线索的来源记为站点域名（未填域名时用站点名称），提示词不让网站自填 source；从哪个页面提交看访问轨迹。
+- 浏览明细 `track_events` 只由管理员在「接入 → 网站」手动清理（用户决定），不要加自动清理；访问、访客汇总不删。采集写入随网站流量增长，改动采集逻辑时注意每次浏览的写入行数（D1 免费额度每天 10 万行）。
 - 访客 IP 保存完整值（用户决定，长期保留），只给管理员、运营查看；销售查看线索 / 客户来源时去掉 IP，API / MCP 无 `contacts:read` 时打码。浏览器上报的字段一律截断、校验，视为不可信。
 
 ## Workers 运行时
 
+- Workers AI 免费额度每天 10,000 neurons：助手默认用最省额度的 Workers AI 模型（可在设置中指定），每次调用记入 `ai_usage_daily`（`shared/aiUsage.ts`）；新增调用 Workers AI 的地方同样要记录。
 - Worker 有 CPU 时间限制：不要引入重 CPU 的纯 JS 库（例如已因此把 bcryptjs 换成 Web Crypto PBKDF2，见 `apps/workers/src/shared/password.ts`）。优先用 Web Crypto 等平台原生 API。
 - `JWT_SECRET` / `PORTAL_JWT_SECRET` 由部署脚本仅在不存在时生成。**任何改动都不能导致它们被重新生成或轮换**（会让所有用户登出）。
 - 可选配置（邮件 Key 等）通过控制台变量设置，部署使用 `--keep-vars` 保留；不要把配置写死在 `wrangler.toml` 的 `[vars]` 里。

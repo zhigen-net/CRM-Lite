@@ -6,6 +6,29 @@ import { requireAuth } from '../middleware/auth'
 import { CRM_TOOLS, ToolDef } from '../agent/tools'
 import { executeTool, AgentContext } from '../agent/executor'
 import { getIndustryContext, industryContextBlock } from '../../domain/templates'
+import { neuronRates, recordAiUsage, todayAiUsage } from '../../shared/aiUsage'
+
+// 外部模型（Anthropic / OpenAI 兼容）的工具调用最多几轮；Workers AI 不支持工具调用，只调用一次
+const MAX_ROUNDS = 5
+
+interface ModelRow { id: string; model_id: string; display_name: string; provider_type: string; api_key: string; base_url: string | null }
+
+/** 助手使用的模型：对话里选的 → 系统设置的默认模型 → 启用的 Workers AI 模型里最省额度的 → 第一个启用的模型 */
+async function pickAgentModel(db: D1Database, requestedId?: string | null): Promise<ModelRow | null> {
+  const rows = (await db.prepare(`
+    SELECT m.id, m.model_id, m.display_name, p.provider_type, p.api_key, p.base_url
+    FROM ai_models m JOIN ai_providers p ON m.provider_id = p.id
+    WHERE m.is_enabled = 1 AND p.is_active = 1 ORDER BY m.created_at ASC`).all<ModelRow>()).results
+  if (rows.length === 0) return null
+  const setting = await db.prepare("SELECT value FROM system_settings WHERE key = 'ai_agent_model_id'").first<{ value: string }>()
+  return rows.find((r) => r.id === requestedId) ?? rows.find((r) => r.id === setting?.value) ?? defaultModel(rows) ?? null
+}
+
+function defaultModel<T extends { model_id: string; provider_type: string }>(rows: T[]): T | undefined {
+  const cf = rows.filter((r) => r.provider_type === 'cloudflare')
+    .sort((a, b) => neuronRates(a.model_id).reduce((x, y) => x + y) - neuronRates(b.model_id).reduce((x, y) => x + y))
+  return cf[0] ?? rows[0]
+}
 
 export const aiAgentRoutes = new Hono<{ Bindings: Env }>()
 
@@ -47,7 +70,7 @@ async function runAnthropicAgent(
 ): Promise<string> {
   const msgList = [...messages]
 
-  for (let round = 0; round < 10; round++) {
+  for (let round = 0; round < MAX_ROUNDS; round++) {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -122,7 +145,7 @@ async function runOpenAiAgent(
     ...messages,
   ]
 
-  for (let round = 0; round < 10; round++) {
+  for (let round = 0; round < MAX_ROUNDS; round++) {
     const res = await fetch(`${base}/chat/completions`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${apiKey}`, 'content-type': 'application/json' },
@@ -168,24 +191,32 @@ async function runOpenAiAgent(
   return '（超出最大轮次限制）'
 }
 
+// ─── GET /api/ai-agent/models：对话框里可选的模型与今天的 Workers AI 用量 ──────────────
+
+aiAgentRoutes.get('/ai-agent/models', requireAuth, async (c) => {
+  const rows = (await c.env.DB.prepare(`
+    SELECT m.id, m.model_id, m.display_name, p.provider_type FROM ai_models m JOIN ai_providers p ON m.provider_id = p.id
+    WHERE m.is_enabled = 1 AND p.is_active = 1 ORDER BY m.created_at ASC`).all<{ id: string; model_id: string; display_name: string; provider_type: string }>()).results
+  const current = await pickAgentModel(c.env.DB)
+  return c.json({ data: {
+    models: rows.map((r) => ({ id: r.id, displayName: r.display_name, providerType: r.provider_type, isDefault: r.id === current?.id })),
+    usage: await todayAiUsage(c.env.DB),
+  } })
+})
+
 // ─── POST /api/ai-agent/chat ─────────────────────────────────────────────────
 
 aiAgentRoutes.post(
   '/ai-agent/chat', requireAuth,
   zValidator('json', z.object({
     messages: z.array(messageSchema).min(1).max(50),
+    modelId: z.string().max(100).optional(),
   })),
   async (c) => {
-    const { messages } = c.req.valid('json')
+    const { messages, modelId } = c.req.valid('json')
     const { userId, role, teamId } = c.get('jwtPayload')
 
-    const modelRow = await c.env.DB.prepare(`
-      SELECT m.model_id, m.display_name, p.provider_type, p.api_key, p.base_url
-      FROM ai_models m JOIN ai_providers p ON m.provider_id = p.id
-      WHERE m.is_enabled = 1 AND p.is_active = 1
-      ORDER BY m.created_at ASC LIMIT 1
-    `).first<{ model_id: string; display_name: string; provider_type: string; api_key: string; base_url: string | null }>()
-
+    const modelRow = await pickAgentModel(c.env.DB, modelId)
     if (!modelRow) throw new HTTPException(400, { message: '未配置可用的 AI 模型' })
 
     const agentCtx: AgentContext = {
@@ -209,6 +240,8 @@ aiAgentRoutes.post(
             ],
           },
         )
+        // 记录用量（估算 neurons），不阻塞响应
+        c.executionCtx.waitUntil(recordAiUsage(c.env.DB, modelRow.model_id, systemPrompt + userText, result).catch(() => undefined))
         finalText = typeof result === 'object' && result !== null && 'response' in result
           ? String((result as { response?: unknown }).response ?? '')
           : ''
@@ -217,9 +250,14 @@ aiAgentRoutes.post(
       } else {
         finalText = await runOpenAiAgent(modelRow.api_key, modelRow.base_url, modelRow.model_id, messages, agentCtx, systemPrompt)
       }
-      return c.json({ data: { message: finalText, model: modelRow.display_name } })
+      return c.json({ data: { message: finalText, model: modelRow.display_name, modelId: modelRow.id } })
     } catch (err) {
-      throw new HTTPException(502, { message: err instanceof Error ? err.message : 'AI 调用失败' })
+      const msg = err instanceof Error ? err.message : 'AI 调用失败'
+      // Workers AI 免费额度用完时 Cloudflare 会拒绝调用
+      if (modelRow.provider_type === 'cloudflare' && /4006|neuron|quota|limit/i.test(msg)) {
+        throw new HTTPException(429, { message: '今天的 Workers AI 免费额度已用完（UTC 0 点、北京时间 8 点重置）。可以明天再试，或在「系统设置 → AI 与自动化」接入外部模型。' })
+      }
+      throw new HTTPException(502, { message: msg })
     }
   },
 )
