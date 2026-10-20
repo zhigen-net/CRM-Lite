@@ -18,7 +18,18 @@ interface Visitor {
 }
 const CHANNELS = ['paid', 'search', 'social', 'referral', 'direct'] as const
 const PAGE_SIZE = 30
-const selectCls = 'w-full min-w-0 rounded border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-700 sm:w-auto'
+/** 筛选下拉框：统一高度和箭头样式（不用各系统自带的样式，手机上排列整齐） */
+function FilterSelect({ value, onChange, label, children }: { value: string; onChange: (v: string) => void; label: string; children: React.ReactNode }) {
+  return (
+    <div className="relative min-w-0">
+      <select value={value} onChange={(e) => onChange(e.target.value)} aria-label={label}
+        className="h-9 w-full min-w-0 appearance-none truncate rounded-md border border-gray-300 bg-white py-0 pl-2.5 pr-7 text-sm text-gray-700 shadow-sm sm:w-auto">
+        {children}
+      </select>
+      <svg className="pointer-events-none absolute right-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+    </div>
+  )
+}
 
 function VisitorsPanel() {
   const { t } = useTranslation()
@@ -64,22 +75,26 @@ function VisitorsPanel() {
 
   return (
     <div className="overflow-hidden rounded-lg border bg-white">
-      {/* 筛选：手机上两列排布 */}
-      <div className="grid grid-cols-2 items-center gap-2 border-b px-3 py-3 sm:flex sm:flex-wrap sm:px-4">
-        <div className="col-span-2 sm:col-span-1"><DateRangePicker value={range} onChange={(v) => { setRange(v); setPage(1) }} allowAll /></div>
-        <select className={selectCls} value={siteId} onChange={(e) => { setSiteId(e.target.value); setPage(1) }}>
-          {(sites ?? []).map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-        </select>
-        <select className={selectCls} value={channel} onChange={(e) => { setChannel(e.target.value); setPage(1) }}>
-          <option value="">{t('analytics.visitors.allChannels')}</option>
-          {CHANNELS.map((c) => <option key={c} value={c}>{t(`analytics.channels.${c}`)}</option>)}
-        </select>
-        <select className={selectCls} value={withLead} onChange={(e) => { setWithLead(e.target.value); setPage(1) }}>
-          <option value="">{t('analytics.visitors.allVisitors')}</option>
-          <option value="true">{t('analytics.visitors.withLead')}</option>
-          <option value="false">{t('analytics.visitors.withoutLead')}</option>
-        </select>
-        {data && <span className="col-span-2 text-xs text-gray-400 sm:ml-auto">{t('analytics.visitors.total', { count: data.total })}</span>}
+      {/* 筛选：第一行时间段 + 总数；第二行三个下拉框，手机上等宽排成一行 */}
+      <div className="space-y-2 border-b px-3 py-3 sm:flex sm:flex-wrap sm:items-center sm:gap-2 sm:space-y-0 sm:px-4">
+        <div className="flex items-center justify-between gap-2 sm:contents">
+          <DateRangePicker value={range} onChange={(v) => { setRange(v); setPage(1) }} allowAll />
+          {data && <span className="text-xs text-gray-400 sm:order-last sm:ml-auto">{t('analytics.visitors.total', { count: data.total })}</span>}
+        </div>
+        <div className="grid grid-cols-3 gap-2 sm:contents">
+          <FilterSelect value={siteId} onChange={(v) => { setSiteId(v); setPage(1) }} label={t('analytics.visitors.site')}>
+            {(sites ?? []).map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+          </FilterSelect>
+          <FilterSelect value={channel} onChange={(v) => { setChannel(v); setPage(1) }} label={t('analytics.visitors.allChannels')}>
+            <option value="">{t('analytics.visitors.allChannels')}</option>
+            {CHANNELS.map((c) => <option key={c} value={c}>{t(`analytics.channels.${c}`)}</option>)}
+          </FilterSelect>
+          <FilterSelect value={withLead} onChange={(v) => { setWithLead(v); setPage(1) }} label={t('analytics.visitors.allVisitors')}>
+            <option value="">{t('analytics.visitors.allVisitors')}</option>
+            <option value="true">{t('analytics.visitors.withLead')}</option>
+            <option value="false">{t('analytics.visitors.withoutLead')}</option>
+          </FilterSelect>
+        </div>
       </div>
       {isLoading || !siteId ? (
         <div className="px-4 py-6 text-sm text-gray-400">{t('common.loading')}</div>

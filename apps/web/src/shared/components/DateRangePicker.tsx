@@ -77,7 +77,7 @@ export function DateRangePicker({ value, onChange, allowAll = false }: {
   return (
     <div ref={ref} className="relative inline-block">
       <button type="button" onClick={() => setOpen((v) => !v)} aria-haspopup="listbox" aria-expanded={open}
-        className="inline-flex items-center gap-2 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 shadow-sm hover:border-gray-400">
+        className="inline-flex h-9 items-center gap-2 rounded-md border border-gray-300 bg-white px-3 text-sm text-gray-700 shadow-sm hover:border-gray-400">
         <svg className="h-4 w-4 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <path d="M8 2v4 M16 2v4 M3 10h18" /><rect x="3" y="4" width="18" height="18" rx="2" />
         </svg>

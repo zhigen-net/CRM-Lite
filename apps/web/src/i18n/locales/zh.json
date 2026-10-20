@@ -1179,7 +1179,8 @@
         "actions": "关键行为",
         "lead": "线索"
       },
-      "goSites": "去接入网站"
+      "goSites": "去接入网站",
+      "site": "站点"
     },
     "journey": {
       "title": "访问轨迹",
