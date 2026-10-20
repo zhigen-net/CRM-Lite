@@ -1179,7 +1179,8 @@
         "actions": "Key actions",
         "lead": "Lead"
       },
-      "goSites": "Connect a website"
+      "goSites": "Connect a website",
+      "site": "Site"
     },
     "journey": {
       "title": "Visitor journey",

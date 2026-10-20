@@ -53,7 +53,9 @@ export function duration(sec: number) {
   const m = Math.floor(sec / 60)
   return m < 60 ? `${m}m${sec % 60 ? ` ${sec % 60}s` : ''}` : `${Math.floor(m / 60)}h ${m % 60}m`
 }
-export const place = (v: { region: string | null; city: string | null }) => [v.region, v.city].filter(Boolean).join(' ') || '—'
+// 省和市相同（如 Beijing Beijing、直辖市）时只显示一次
+export const place = (v: { region: string | null; city: string | null }) =>
+  [...new Set([v.region, v.city].filter(Boolean))].join(' ') || '—'
 
 /** 访问轨迹抽屉：url 为访客轨迹或线索 / 客户来源接口（两者返回同样的 visitor + visits） */
 export function JourneyDrawer({ url, onClose }: { url: string; onClose: () => void }) {
