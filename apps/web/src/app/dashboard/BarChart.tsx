@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { cn } from '@/shared/utils/cn'
 
 export interface Series { key: string; label: string; color: string }
-const H = 190, PAD_L = 34, PAD_B = 22, PAD_T = 8, GAP = 2
+const H = 190, PAD_L = 30, PAD_B = 22, PAD_T = 8, GAP = 2
 
 /** 纵轴刻度：取整到 1 / 2 / 5 × 10^n */
 function niceMax(v: number) {
