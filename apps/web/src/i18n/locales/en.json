@@ -728,7 +728,9 @@
         "error": "Error",
         "actions": "Actions",
         "source": "Source"
-      }
+      },
+      "siteTitle": "Form lead failures",
+      "siteSubtitle": "Website form submissions that could not become leads (excluding those blocked by spam protection); create the lead or dismiss"
     },
     "timezones": {
       "Asia/Shanghai": "China Standard Time (UTC+8)",

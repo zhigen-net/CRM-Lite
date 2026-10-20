@@ -728,7 +728,9 @@
         "error": "错误信息",
         "actions": "操作",
         "source": "来源"
-      }
+      },
+      "siteTitle": "表单留资失败记录",
+      "siteSubtitle": "网站表单提交后没能建成线索的记录（不含被防刷规则拦截的），可补录或忽略"
     },
     "timezones": {
       "Asia/Shanghai": "中国标准时间 (UTC+8)",
