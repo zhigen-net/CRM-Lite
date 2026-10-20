@@ -43,8 +43,9 @@ export default function CrmLayout() {
       crmApi.get<{ total: number }>('/leads/new-count').then((r) => r.data.total),
     // 每个打开的页面都会轮询：间隔过短会大量消耗 Workers 请求数和 D1 读取额度
     // （页面在后台时 React Query 默认暂停轮询）
-    refetchInterval: 60_000,
-    staleTime: 30_000,
+    // 2 分钟一次足够提醒新线索
+    refetchInterval: 120_000,
+    staleTime: 60_000,
   })
 
   const handleLogout = () => {
