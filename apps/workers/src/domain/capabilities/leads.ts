@@ -117,6 +117,7 @@ export const createLead: Capability = {
   async run(deps, actor, input) {
     // 与对外接口、网站表单同一套处理；审计由能力注册表统一记录
     const result = await submitExternalLead(deps, actor, input, { linkCreatorTeam: true })
+    if (result.duplicate) return { success: true, leadId: result.id, duplicate: true, message: '30 天内已有同一联系方式的线索，已合并到该线索并写入跟进记录' }
     return { success: true, leadId: result.id, intendedServices: result.lead.intendedServices, message: '线索已创建' }
   },
 }

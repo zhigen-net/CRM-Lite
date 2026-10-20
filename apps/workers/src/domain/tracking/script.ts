@@ -73,6 +73,7 @@ export const TRACKER_SCRIPT = `(function () {
     var input = document.createElement('input'); input.type = 'hidden'; input.name = name; input.value = value
     form.appendChild(input); return input
   }
+  function isLeadForm(f) { return !!(f && f.getAttribute && (f.getAttribute('action') || '').indexOf('/_t/lead') !== -1) }
   function tagForms(root) {
     var forms = (root || document).querySelectorAll ? (root || document).querySelectorAll('form') : []
     for (var i = 0; i < forms.length; i++) {
@@ -86,18 +87,35 @@ export const TRACKER_SCRIPT = `(function () {
     }
   }
   document.addEventListener('submit', function (e) {
-    var page = e.target && e.target.querySelector && e.target.querySelector('input[name="_page"]')
+    var f = e.target
+    // 提交到 /_t/lead 的原生表单：页面跳转前再次点击提交不重复发送
+    if (isLeadForm(f) && f.getAttribute('data-crm-sending')) { e.preventDefault(); return }
+    var page = f && f.querySelector && f.querySelector('input[name="_page"]')
     if (page) page.value = location.href
     send([{ id: uuid(), t: 'form', p: location.pathname }], true)
   }, true)
+  // 表单真正提交出去（网站自己的脚本没有拦截）后才标记为提交中，10 秒后恢复
+  window.addEventListener('submit', function (e) {
+    var f = e.target
+    if (!isLeadForm(f) || e.defaultPrevented) return
+    f.setAttribute('data-crm-sending', '1')
+    setTimeout(function () { f.removeAttribute('data-crm-sending') }, 10000)
+  })
   // JS 提交留资：__crmTracker.submitLead({ name, phone, ... }) → Promise<{ ok, message }>
+  // 同样的内容还在提交中时（如连点提交按钮），返回同一个请求，不重复发送
+  var pending = null, pendingBody = ''
   function submitLead(data) {
-    send([{ id: uuid(), t: 'form', p: location.pathname }], true)
     var body = {}; for (var k in data) if (Object.prototype.hasOwnProperty.call(data, k)) body[k] = data[k]
     body.crm_vid = vid; body._page = location.href
-    return fetch('/_t/lead', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+    var json = JSON.stringify(body)
+    if (pending && json === pendingBody) return pending
+    send([{ id: uuid(), t: 'form', p: location.pathname }], true)
+    pendingBody = json
+    pending = fetch('/_t/lead', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: json })
       .then(function (r) { return r.json().catch(function () { return { ok: r.ok } }) })
       .catch(function () { return { ok: false, message: 'network' } })
+      .then(function (res) { pending = null; return res })
+    return pending
   }
   if (window.MutationObserver) new MutationObserver(function () { tagForms() }).observe(document.documentElement, { childList: true, subtree: true })
   window.__crmTracker = {
