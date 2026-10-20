@@ -1,72 +1,38 @@
-// 站点管理（管理员）：新建站点、接入向导、停用、更换密钥
+// 站点管理（管理员）：站点列表与接入状态；概览、接入、记录进入站点详情，停用/启用直接操作
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { Link } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
 import { crmApi } from '@/shared/utils/request'
 import { formatDate } from '@/shared/utils/format'
 import { Button } from '@/shared/components/Button'
 import { Input } from '@/shared/components/Input'
 import { Modal } from '@/shared/components/Modal'
-import { IntegrationGuide } from './IntegrationGuide'
-
-const STAT_TONE = { gray: 'bg-gray-100 text-gray-600', green: 'bg-green-50 text-green-700', amber: 'bg-amber-50 text-amber-700', red: 'bg-red-50 text-red-700' }
-function Stat({ label, value, tone = 'gray' }: { label: string; value: number; tone?: keyof typeof STAT_TONE }) {
-  return <span className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 ${STAT_TONE[tone]}`}>{label}<b className="font-semibold">{value}</b></span>
-}
-
-/** 超过 24 小时没有收到数据（时间为 UTC 的 YYYY-MM-DD HH:MM:SS） */
-function isStale(lastSeenAt: string | null) {
-  if (!lastSeenAt) return true
-  const ts = Date.parse(lastSeenAt.includes('T') ? lastSeenAt : `${lastSeenAt.replace(' ', 'T')}Z`)
-  return Number.isFinite(ts) && Date.now() - ts > 24 * 3600 * 1000
-}
-
-interface Submission { id: string; status: string; createdAt: string; leadId: string | null; leadName: string | null }
-
-/** 最近的表单提交记录：包括成功的和被拦截的，用于排查「网站说提交了、CRM 里没有」 */
-function SubmissionsModal({ site, onClose }: { site: { id: string; name: string }; onClose: () => void }) {
-  const { t } = useTranslation()
-  const { data, isLoading } = useQuery({
-    queryKey: ['site-submissions', site.id],
-    queryFn: () => crmApi.get<{ data: Submission[] }>(`/admin/tracking-sites/${site.id}/submissions`).then((r) => r.data.data),
-  })
-  return (
-    <Modal title={t('analytics.sites.submissions.title', { name: site.name })} onClose={onClose}>
-      <p className="mb-3 text-xs text-gray-500">{t('analytics.sites.submissions.hint')}</p>
-      {isLoading ? <p className="text-sm text-gray-400">{t('common.loading')}</p> : !data?.length ? (
-        <p className="py-6 text-center text-sm text-gray-400">{t('analytics.sites.submissions.empty')}</p>
-      ) : (
-        <ul className="divide-y text-sm">
-          {data.map((x) => (
-            <li key={x.id} className="flex items-center justify-between gap-3 py-2">
-              <span className="text-xs text-gray-500">{formatDate(x.createdAt)}</span>
-              <span className="min-w-0 flex-1 truncate">
-                {x.leadId ? <Link to={`/app/leads/${x.leadId}`} className="text-primary-600 hover:underline">{x.leadName ?? x.leadId}</Link> : <span className="text-gray-400">—</span>}
-              </span>
-              <span className={`rounded px-1.5 py-0.5 text-xs ${x.status === 'ok' ? 'bg-green-50 text-green-700' : x.status === 'error' ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-700'}`}>
-                {t(`analytics.sites.submissions.status.${x.status}`, { defaultValue: x.status })}
-              </span>
-            </li>
-          ))}
-        </ul>
-      )}
-    </Modal>
-  )
-}
+import { isStale, Stat, type Platform, type SiteFeatures } from '@/app/sites/ui'
+import { SiteDrawer, toSiteTab, type SiteTab } from '@/app/sites/SiteDrawer'
 
 interface Site {
   id: string; name: string; domain: string | null; keyPrefix: string; isActive: boolean
   createdAt: string; lastSeenAt: string | null; visitorCount: number
   visitorsDay?: number; leadsDay?: number; blockedDay?: number; openFailures?: number
+  platform?: Platform | null; features?: SiteFeatures
 }
 export function SitesPanel() {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   const [creating, setCreating] = useState(false)
   const [form, setForm] = useState({ name: '', domain: '' })
-  const [dialog, setDialog] = useState<{ site: Site; key: string | null } | null>(null)
-  const [submissions, setSubmissions] = useState<Site | null>(null)
+  // 站点详情抽屉：打开的站点和标签记在地址里（?site=&view=），刷新或分享链接后仍能打开
+  const [searchParams, setSearchParams] = useSearchParams()
+  const openId = searchParams.get('site')
+  const view = toSiteTab(searchParams.get('view'))
+  // 新建站点后的明文密钥只在抽屉里显示一次
+  const [newKey, setNewKey] = useState<{ id: string; key: string } | null>(null)
+  const openSite = (id: string, tab: SiteTab, key?: string) => {
+    setNewKey(key ? { id, key } : null)
+    setSearchParams((p) => { p.set('site', id); p.set('view', tab); return p })
+  }
+  const closeSite = () => { setNewKey(null); setSearchParams((p) => { p.delete('site'); p.delete('view'); return p }) }
 
   const { data: sites, isLoading } = useQuery({
     queryKey: ['tracking-sites-admin'],
@@ -82,16 +48,12 @@ export function SitesPanel() {
     onSuccess: (res) => {
       refresh(); setCreating(false); setForm({ name: '', domain: '' })
       const d = res.data.data
-      setDialog({ site: { id: d.id, name: d.name, domain: form.domain || null, keyPrefix: d.keyPrefix, isActive: true, createdAt: '', lastSeenAt: null, visitorCount: 0 }, key: d.key })
+      openSite(d.id, 'overview', d.key)
     },
   })
   const toggleMutation = useMutation({
     mutationFn: (s: Site) => crmApi.patch(`/admin/tracking-sites/${s.id}`, { isActive: !s.isActive }),
     onSuccess: refresh,
-  })
-  const rotateMutation = useMutation({
-    mutationFn: (s: Site) => crmApi.post<{ data: { key: string } }>(`/admin/tracking-sites/${s.id}/rotate-key`, {}),
-    onSuccess: (res, s) => { refresh(); setDialog({ site: s, key: res.data.data.key }) },
   })
 
   return (
@@ -113,36 +75,53 @@ export function SitesPanel() {
             <li key={s.id} className="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3">
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium text-gray-900">
-                  {s.name}
+                  <button type="button" onClick={() => openSite(s.id, 'overview')} className="text-left hover:text-primary-600 hover:underline">{s.name}</button>
                   {!s.isActive && <span className="ml-2 rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-500">{t('analytics.sites.disabled')}</span>}
                 </p>
                 <p className="mt-0.5 text-xs text-gray-400">
-                  {s.domain ?? '—'} · <span className="font-mono">{s.keyPrefix}…</span> · {t('analytics.sites.visitors', { count: s.visitorCount })} ·{' '}
+                  {s.domain ?? '—'} ·{' '}
+                  {s.platform
+                    ? t(`siteConnect.platforms.${s.platform}.name`)
+                    : <button type="button" className="text-amber-600 hover:underline" onClick={() => openSite(s.id, 'overview')}>{t('analytics.sites.noPlatform')}</button>}
+                  {' '}· {t(s.features?.forms ? 'analytics.sites.withForms' : 'analytics.sites.trackingOnly')}
+                  {' '}· <span className="font-mono">{s.keyPrefix}…</span> · {t('analytics.sites.visitors', { count: s.visitorCount })} ·{' '}
                   {s.lastSeenAt ? t('analytics.sites.lastSeen', { time: formatDate(s.lastSeenAt) }) : t('analytics.sites.noData')}
                 </p>
                 {/* 近 24 小时接入状态 */}
                 <div className="mt-2 flex flex-wrap items-center gap-1.5 text-xs">
                   <Stat label={t('analytics.sites.stat.visitors')} value={s.visitorsDay ?? 0} />
                   <Stat label={t('analytics.sites.stat.leads')} value={s.leadsDay ?? 0} tone={(s.leadsDay ?? 0) > 0 ? 'green' : 'gray'} />
-                  <button type="button" onClick={() => setSubmissions(s)} className="hover:opacity-80">
+                  <button type="button" onClick={() => openSite(s.id, 'records')} className="hover:opacity-80">
                     <Stat label={t('analytics.sites.stat.blocked')} value={s.blockedDay ?? 0} tone={(s.blockedDay ?? 0) > 0 ? 'amber' : 'gray'} />
                   </button>
-                  {(s.openFailures ?? 0) > 0 && <Stat label={t('analytics.sites.stat.failures')} value={s.openFailures ?? 0} tone="red" />}
+                  {(s.openFailures ?? 0) > 0 && (
+                    <button type="button" onClick={() => openSite(s.id, 'records')} className="hover:opacity-80">
+                      <Stat label={t('analytics.sites.stat.failures')} value={s.openFailures ?? 0} tone="red" />
+                    </button>
+                  )}
                   {s.isActive && isStale(s.lastSeenAt) && (
                     <span className="rounded bg-amber-50 px-1.5 py-0.5 text-amber-700">{s.lastSeenAt ? t('analytics.sites.stale') : t('analytics.sites.neverSeen')}</span>
                   )}
                 </div>
               </div>
               <div className="flex items-center gap-3 text-xs">
-                <button className="text-primary-600 hover:text-primary-800" onClick={() => setDialog({ site: s, key: null })}>{t('analytics.sites.viewCode')}</button>
-                <button className="text-gray-600 hover:text-gray-800" onClick={() => { if (confirm(t('analytics.sites.rotateConfirm', { name: s.name }))) rotateMutation.mutate(s) }}>{t('analytics.sites.rotate')}</button>
-                <button className={s.isActive ? 'text-red-500 hover:text-red-700' : 'text-green-600 hover:text-green-800'} onClick={() => toggleMutation.mutate(s)}>
+                {(['overview', 'connect', 'records'] as const).map((tab) => (
+                  <button key={tab} type="button" className="text-primary-600 hover:text-primary-800" onClick={() => openSite(s.id, tab)}>{t(`siteConnect.tabs.${tab}`)}</button>
+                ))}
+                <span className="h-3 w-px bg-gray-200" />
+                <button type="button" disabled={toggleMutation.isPending} className={s.isActive ? 'text-red-500 hover:text-red-700' : 'text-green-600 hover:text-green-800'}
+                  onClick={() => { if (!s.isActive || confirm(t('analytics.sites.disableConfirm', { name: s.name }))) toggleMutation.mutate(s) }}>
                   {s.isActive ? t('analytics.sites.disable') : t('analytics.sites.enable')}
                 </button>
               </div>
             </li>
           ))}
         </ul>
+      )}
+
+      {openId && (
+        <SiteDrawer key={openId} id={openId} tab={view} initialKey={newKey?.id === openId ? newKey.key : null}
+          onTab={(tab) => setSearchParams((p) => { p.set('view', tab); return p }, { replace: true })} onClose={closeSite} />
       )}
 
       {creating && (
@@ -157,8 +136,6 @@ export function SitesPanel() {
           </div>
         </Modal>
       )}
-      {dialog && <IntegrationGuide site={dialog.site} siteKey={dialog.key} onClose={() => setDialog(null)} />}
-      {submissions && <SubmissionsModal site={submissions} onClose={() => setSubmissions(null)} />}
     </div>
   )
 }

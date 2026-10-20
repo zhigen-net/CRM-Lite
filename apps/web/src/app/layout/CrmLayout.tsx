@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, Suspense } from 'react'
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
@@ -7,6 +7,8 @@ import { cn } from '@/shared/utils/cn'
 import { crmApi } from '@/shared/utils/request'
 import { setAppTimezone } from '@/shared/utils/format'
 import { AiAgentChat } from '@/shared/components/AiAgentChat'
+import { LoadingSpinner } from '@/shared/components/LoadingSpinner'
+import { prefetchAllRoutes, prefetchRoute } from '@/app/routes'
 import { NavIcon } from './NavIcon'
 
 export default function CrmLayout() {
@@ -30,6 +32,9 @@ export default function CrmLayout() {
     { to: '/app/users', icon: 'users', label: t('nav.users'), roles: ['admin'] },
     { to: '/app/settings', icon: 'settings', label: t('nav.settings'), roles: ['admin'] },
   ]
+
+  // 登录后空闲时预加载其它页面，第一次点击导航不用等待下载
+  useEffect(() => { prefetchAllRoutes() }, [])
 
   const { data: newLeadsData } = useQuery({
     queryKey: ['leads', 'new-count'],
@@ -172,6 +177,9 @@ export default function CrmLayout() {
                   key={item.to}
                   to={item.to}
                   onClick={onNavClick}
+                  onMouseEnter={() => prefetchRoute(item.to)}
+                  onFocus={() => prefetchRoute(item.to)}
+                  onTouchStart={() => prefetchRoute(item.to)}
                   title={compact ? item.label : undefined}
                   className={({ isActive }) => cn(
                     'group relative flex items-center gap-3 rounded-lg py-2 text-sm font-medium transition-colors',
@@ -244,7 +252,10 @@ export default function CrmLayout() {
       </aside>
 
       <main className="flex-1 overflow-y-auto pt-14 md:pt-0">
-        <Outlet />
+        {/* 页面加载时只在内容区显示加载中，导航保持可见 */}
+        <Suspense fallback={<div className="flex h-full min-h-[50vh] items-center justify-center"><LoadingSpinner /></div>}>
+          <Outlet />
+        </Suspense>
       </main>
 
       {publicSettings?.aiAgentEnabled !== false && <AiAgentChat />}

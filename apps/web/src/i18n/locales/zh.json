@@ -1067,7 +1067,6 @@
   },
   "aiAccess": {
     "title": "接入",
-    "subtitle": "网站、外部系统和 AI 工具接入 CRM 都在这里：网站用站点密钥（访客统计 + 表单留资），外部系统和 AI 工具用 API Key。",
     "sections": {
       "mcp": {
         "title": "AI 工具（MCP）",
@@ -1077,12 +1076,10 @@
         "title": "外部系统",
         "desc": "广告平台、业务系统等通过接口推送线索，与网站表单用同一套处理规则。"
       },
-      "keyCount": "已有 {{count}} 把密钥",
       "sites": {
         "title": "网站",
         "desc": "网站访客统计与表单留资，一个网站一把站点密钥，一次接好。"
-      },
-      "siteCount": "已接入 {{count}} 个网站"
+      }
     },
     "mcp": {
       "stepsTitle": "三步接入",
@@ -1190,7 +1187,10 @@
       "visitors": "访客 {{count}}",
       "lastSeen": "最近数据 {{time}}",
       "noData": "尚未收到数据",
-      "viewCode": "接入向导",
+      "noPlatform": "未选择部署平台",
+      "trackingOnly": "访客统计",
+      "withForms": "访客统计 + 表单留资",
+      "disableConfirm": "停用「{{name}}」？停用后该网站上报的访客数据和表单提交都会被拒绝，可以随时重新启用。",
       "rotate": "更换密钥",
       "rotateConfirm": "更换「{{name}}」的站点密钥？旧密钥会立即失效，需要同步更新网站的 CRM_SITE_KEY。",
       "disable": "停用",
@@ -1217,88 +1217,11 @@
       }
     },
     "guide": {
-      "title": "接入「{{name}}」",
-      "steps": {
-        "prepare": "准备",
-        "secrets": "配置变量",
-        "code": "转发代码",
-        "script": "页面脚本",
-        "verify": "检测",
-        "form": "表单"
-      },
-      "prev": "上一步",
-      "next": "下一步",
-      "done": "完成",
-      "siteTypes": {
-        "pages": "Pages 网站",
-        "worker": "Worker 网站"
-      },
-      "prepare": {
-        "intro": "按向导完成 5 步，网站访客就会出现在「访客」中。浏览器只访问网站自己的 /_t/ 路径，看不到 CRM 地址和密钥。",
-        "siteType": "网站部署在哪里？",
-        "siteTypeHint": {
-          "pages": "Cloudflare Pages 项目，静态站点或使用 functions/ 目录",
-          "worker": "Cloudflare Workers 项目（含带静态资源的 Worker），或 Pages 高级模式（_worker.js）"
-        },
-        "account": "网站与本 CRM 在同一个 Cloudflare 账号下吗？",
-        "connect": {
-          "binding": "同一账号（推荐）",
-          "url": "不同账号"
-        },
-        "connectHint": {
-          "binding": "使用服务绑定，请求走 Cloudflare 内部，不经过公网",
-          "url": "通过 CRM 地址访问；地址保存在网站的加密变量中，浏览器看不到"
-        },
-        "envNotice": "当前 CRM：{{origin}}。测试环境和生产环境的站点与密钥互不通用：要接入哪个环境，就在哪个 CRM 中添加站点并运行本向导。"
-      },
-      "secrets": {
-        "path": "打开网站所在的 Cloudflare 项目（不是 CRM 的 Worker）：Workers & Pages → 网站项目 → Settings。",
-        "keyTitle": "① Variables and Secrets → Add，类型选 Secret，名称 CRM_SITE_KEY，值为站点密钥：",
-        "keyNotice": "请立即复制，关闭后不再显示。",
-        "keyHidden": "站点密钥只在创建或更换时显示一次。如果已经配置在网站中，跳过这一项；如果找不到了，可以更换密钥（旧密钥立即失效）。",
-        "rotate": "更换密钥并显示",
-        "bindingTitle": "② Bindings → Add → Service binding：",
-        "bindingName": "Variable name 填",
-        "bindingService": "Service 选择本 CRM 的 Worker：",
-        "bindingServiceUnknown": "（即当前这个 CRM 对应的 Worker）",
-        "urlTitle": "② 再添加一个 Secret，名称 CRM_URL，值为本 CRM 地址（末尾不要加 /）：",
-        "pagesEnv": "Pages 项目的变量和绑定分 Production 和 Preview 两套，至少要配置在 Production。",
-        "redeploy": "变量和绑定要重新部署后才生效，完成后面的代码改动后统一部署一次即可。"
-      },
-      "code": {
-        "pagesPlace": "在网站项目根目录（与 package.json 同级，不要放进 dist/ 或 public/）新建文件 functions/_t/[[path]].js，粘贴以下代码：",
-        "pagesRoutes": "如果项目有自定义的 _routes.json，确认 /_t/* 在 include 中、不在 exclude 中。",
-        "pagesAdvanced": "如果构建输出中有 _worker.js（高级模式，Next.js 等框架常见），functions/ 不会生效，请回到第 1 步改选「Worker 网站」。",
-        "workerPlace": "在 Worker 入口的 fetch 函数最前面加上这一行，再把 forwardToCrm 函数加进同一个文件：",
-        "workerEntry": "加在 fetch 入口最前面",
-        "workerAssets": "如果 Worker 带静态资源（配置中有 [assets]），还要让 /_t/* 先进入 Worker，否则 t.js 会返回网页：",
-        "workerBinding": "服务绑定也可以写在网站的 wrangler 配置里，与控制台设置等效：",
-        "workerNamePlaceholder": "<CRM 的 Worker 名>",
-        "noModify": "请原样使用，不要修改转发逻辑。",
-        "aiTitle": "让 AI 来改代码",
-        "aiHint": "把提示词交给编码 AI（Claude Code、Cursor 等），在网站仓库中执行。密钥请自己在 Cloudflare 控制台填写，不要发给 AI，也不要提交到代码仓库。"
-      },
-      "aiConnect": {
-        "binding": "网站与 CRM 在同一个 Cloudflare 账号：使用服务绑定，变量名 CRM（大写），指向 CRM 的 Worker：{{worker}}。",
-        "url": "网站与 CRM 不在同一个 Cloudflare 账号：使用加密环境变量 CRM_URL，值为 {{origin}}（末尾不带 /）。这个地址只能在 Cloudflare 控制台设置为 Secret，不要写进代码、配置文件或仓库。"
-      },
-      "aiPlace": {
-        "pages": "新建文件 functions/_t/[[path]].js（项目根目录）；如果有自定义 _routes.json，确保 /_t/* 被包含。",
-        "worker": "把 forwardToCrm 加进 Worker 入口，并在 fetch 最前面判断 /_t/ 开头的路径交给它；如果配置了 [assets]，加上 run_worker_first = [\"/_t/*\"]。"
-      },
-      "aiPrompt": "请帮我给这个{{mode}}接入 CRM 访客统计：\n1. {{place}}不要修改转发逻辑。\n2. 在所有页面的 </head> 前加上：{{scriptTag}}\n3. 不要把 CRM 地址或密钥写进前端代码或仓库。站点密钥使用加密环境变量 CRM_SITE_KEY。{{connect}}\n4. 完成后告诉我需要在 Cloudflare 控制台设置哪些变量或绑定。\n\n转发代码：\n{{code}}",
-      "script": {
-        "place": "在网站每个页面的 </head> 前加上这一行（公共布局或模板中加一次即可；单页应用加在 index.html）：",
-        "spa": "单页应用的路由切换会自动记为新的浏览。",
-        "form": "提交表单时会自动带上隐藏字段 crm_vid（访客 ID），CRM 的线索接口会忽略它；第三方表单后端校验严格时请放行该字段。",
-        "csp": "脚本和上报都是同源请求，网站有 CSP 时 'self' 即可，不需要放行 CRM 域名。",
-        "deploy": "完成后推送代码或在控制台重新部署网站，然后进入下一步检测。"
-      },
       "verify": {
         "disabled": "该站点已停用，启用后才能接收数据。",
         "checkTitle": "自动检测",
         "check": "检测接入",
-        "checkHint": "CRM 会从服务器端访问该网站的 /_t/t.js 和 /_t/collect，检查转发代码和站点密钥，不会产生访客数据。填写的域名会保存到站点。",
+        "checkHint": "CRM 会从服务器端访问该网站的 /_t/t.js、/_t/collect 和 /_t/lead，检查转发代码和站点密钥，不会产生访客数据或线索。填写的域名会保存到站点。",
         "rows": {
           "script": "采集脚本 /_t/t.js",
           "collect": "转发与站点密钥 /_t/collect",
@@ -1326,16 +1249,15 @@
         "manual4": "测试来源识别：在网址后加 ?utm_source=test&utm_medium=cpc，用无痕窗口访问，「首次来源」应显示为广告。",
         "multi": "还有其它网站？完成后再「添加站点」，每个网站使用自己的密钥，重复本向导即可。同一域名下的多个页面属于同一个站点。"
       },
+      "secrets": {
+        "keyHidden": "站点密钥只在创建或更换时显示一次。如果已经配置在网站中，跳过这一项；如果找不到了，可以更换密钥（旧密钥立即失效）。",
+        "rotate": "更换密钥并显示"
+      },
+      "script": {
+        "place": "在网站每个页面的 </head> 前加上这一行（公共布局或模板中加一次即可；单页应用加在 index.html）："
+      },
       "form": {
-        "intro": "网站表单直接提交到本站的 /_t/lead，由同一个转发代码交给 CRM 新建线索。不需要 API Key，也不用写后端代码；线索会自动关联访客的来源和访问轨迹。两种方式任选：",
-        "htmlLabel": "方式一：原生表单（把 action 改成 /_t/lead）",
-        "jsLabel": "方式二：自定义前端（调用采集脚本提供的 submitLead）",
-        "fields": "字段：姓名（name / 姓名）和联系方式（phone / mobile / wechat / email / 电话 / 微信 等）必填，留言（message / 留言）写进备注，其它字段也会写进备注，不会丢。",
-        "source": "来源默认是站点名称「{{name}}」；表单里传 source 可以覆盖，比如区分不同落地页。",
-        "protect": "已自动防刷：隐藏的防机器人字段，同一 IP 10 分钟内最多 5 次、同一访客最多 3 次提交。",
-        "backend": "已经由网站后端调用 /api/v1/leads 推送线索的，可以不改，推送时带上表单里的 crm_vid 即可；两条路径用同一套处理规则。",
-        "aiHint": "交给编码 AI，在网站仓库中把现有的留资表单改为提交到 /_t/lead。",
-        "aiPrompt": "请把这个网站现有的留资表单接入 CRM（网站已接入访客统计，/_t/* 的转发代码已部署，不要修改它）：\n1. 表单提交到同域的 /_t/lead，不需要任何密钥或 CRM 地址。\n2. 原生表单：把 action 改为 /_t/lead、method 改为 post；自定义前端：改为调用 window.__crmTracker.submitLead(数据)，根据返回的 ok 提示用户。\n3. 字段名：姓名用 name，联系方式用 phone（或 wechat、email），留言用 message；其它字段保持原名即可。需要区分落地页时加 source 字段。\n4. 不要删除采集脚本自动加入的隐藏字段（crm_vid、_hp、_page）。\n5. 完成后列出改动的页面。\n\n原生表单示例：\n{{html}}\n\n自定义前端示例：\n{{js}}"
+        "htmlLabel": "方式一：原生表单（把 action 改成 /_t/lead）"
       }
     },
     "source": {
@@ -1573,5 +1495,166 @@
     },
     "title": "工作流使用说明",
     "open": "使用说明"
+  },
+  "siteConnect": {
+    "keyNotice": "请立即复制站点密钥，离开页面后不再显示。它只能放在网站服务器端（加密环境变量或服务器配置），不要发给 AI，也不要提交到代码仓库。",
+    "tabs": {
+      "overview": "概览",
+      "connect": "接入",
+      "records": "记录"
+    },
+    "overview": {
+      "status": "接入状态（近 24 小时）",
+      "goConnect": "查看接入方式"
+    },
+    "groups": {
+      "edge": "边缘 / Serverless 平台",
+      "server": "自有服务器",
+      "other": "其它"
+    },
+    "platforms": {
+      "cloudflare_pages": {
+        "name": "Cloudflare Pages",
+        "hint": "Pages 项目，用 functions/ 目录转发"
+      },
+      "cloudflare_workers": {
+        "name": "Cloudflare Workers",
+        "hint": "Worker 网站（含带静态资源的 Worker）"
+      },
+      "vercel": {
+        "name": "Vercel",
+        "hint": "任意框架（含 Next.js），用 Middleware 转发"
+      },
+      "netlify": {
+        "name": "Netlify",
+        "hint": "用 Edge Function 转发"
+      },
+      "edgeone_pages": {
+        "name": "腾讯云 EdgeOne Pages",
+        "hint": "用 Pages Functions 转发"
+      },
+      "nginx": {
+        "name": "Nginx / 宝塔",
+        "hint": "服务器上的 Nginx 反向代理，不用改网站代码"
+      },
+      "php": {
+        "name": "PHP / Apache / WordPress",
+        "hint": "虚拟主机或 PHP 网站，放一个 PHP 转发文件"
+      },
+      "node": {
+        "name": "Node.js 后端",
+        "hint": "Express 或原生 http 服务"
+      },
+      "other": {
+        "name": "其它 / 不确定",
+        "hint": "Java、Python、.NET、阿里云函数计算、CloudBase 等：AI 按转发协议实现"
+      },
+      "static": {
+        "name": "纯静态托管",
+        "hint": "GitHub Pages、OSS / COS 静态网站、建站平台等"
+      }
+    },
+    "connect": {
+      "binding": "同一 Cloudflare 账号（推荐）",
+      "url": "不同账号"
+    },
+    "connectHint": {
+      "binding": "用服务绑定，请求走 Cloudflare 内部",
+      "url": "通过 CRM 地址访问，地址放在加密变量里"
+    },
+    "features": {
+      "platform": "部署平台",
+      "detect": "识别",
+      "detected": "识别为：{{name}}",
+      "useDetected": "使用识别结果",
+      "detectUnknown": "没能识别出部署平台，请手动选择；不确定时选「其它 / 不确定」，AI 会按转发协议实现。",
+      "detectUnreachable": "无法访问网站，请确认域名正确，或直接手动选择平台。",
+      "staticNotice": "纯静态托管无法在服务器端转发请求，暂时不能用同域转发接入。可以把网站放到支持函数的平台（EdgeOne Pages、Vercel、Cloudflare Pages 等），或者等待后续的「子域名接入」。",
+      "tracking": "访客统计",
+      "trackingHint": "访问来源、浏览轨迹、点击电话、复制微信、表单提交等行为。基础功能，始终开启。",
+      "forms": "表单留资",
+      "formsHint": "网站表单提交到 /_t/lead 直接进 CRM，自动关联访客来源，不需要 API Key。",
+      "widgets": "转化组件",
+      "widgetsHint": "悬浮咨询按钮、手机底部咨询栏、留资弹窗等，在 CRM 里配置，网站不用改代码。",
+      "soon": "即将推出"
+    },
+    "needPlatform": "请先在「概览 → 站点设置」里选择网站的部署平台。",
+    "goFeatures": "去选择",
+    "promptTitle": "交给 AI 的接入提示词",
+    "promptHint": "复制后交给编码 AI（Claude Code、Cursor 等），在网站仓库里执行。提示词按部署平台和开启的功能生成，包含转发代码、页面脚本、需要设置的配置和自检方法。",
+    "promptFormsHint": "网站已经接入访客统计时，用这份只接入表单留资，不会改动已接好的部分。",
+    "promptKeyNote": "提示词里不包含站点密钥。AI 改完代码后，按下方「需要设置的配置」把密钥填到服务器端。",
+    "scope": {
+      "full": "完整接入",
+      "forms": "只加表单"
+    },
+    "manual": {
+      "vars": "需要设置的配置",
+      "code": "手动接入：代码与脚本",
+      "check": "检测接入"
+    },
+    "proxySpec": "转发协议",
+    "workerUnknown": "当前 CRM 对应的 Worker",
+    "workerNamePlaceholder": "<CRM 的 Worker 名>",
+    "steps": {
+      "cloudflare_pages": "在项目根目录新建下面的文件（不要放进构建输出目录）。项目有自定义 _routes.json 时，确保包含 /_t/*。构建输出里有 _worker.js（高级模式）时 functions/ 不会生效，请改按 Cloudflare Workers 的方式在 _worker.js 里接入。",
+      "cloudflare_workers": "在 Worker 入口的 fetch 最前面加上：{{entry}}\n并把 forwardToCrm 函数加进同一个文件。Worker 带静态资源（配置里有 [assets]）时，在 [assets] 里加 run_worker_first = [\"/_t/*\"]。",
+      "vercel": "新建 middleware.js（项目根目录；Next.js 使用 src/ 目录时放在 src/middleware.js）。已有 middleware 时，合并 matcher，并在原函数最前面加 /_t/ 判断。不要在 Next.js 里建 _t 路由目录（App Router 不会为下划线开头的目录生成路由）。",
+      "netlify": "新建下面的 Edge Function 文件，文件里的 config.path 已指定 /_t/*，不需要再改 netlify.toml。",
+      "edgeone_pages": "在项目根目录新建下面的 Pages Functions 文件（通配路由；文件命名以 EdgeOne Pages 官方文档为准）。",
+      "nginx": "把下面的 location 加进网站的 server { } 配置（宝塔：网站 → 设置 → 配置文件），站点密钥单独放在 /etc/nginx/crm_site_key.conf。网站前面有 CDN 时，把 $remote_addr 改为真实访客 IP。",
+      "php": "在网站根目录新建 _t/ 目录，放入下面的文件。Nginx + PHP-FPM 的网站不认 .htaccess，改为在 server 配置里加：location /_t/ { try_files $uri /_t/index.php?$query_string; }。WordPress 同样适用。",
+      "node": "新建 crm-proxy.js，在 Express 应用里尽早挂载：app.use('/_t', crmProxy)（必须在 express.json() 等解析请求体的中间件之前）。原生 http 或其它框架按文件里的注释接入。"
+    },
+    "vars": {
+      "cloudflare_pages": {
+        "binding": "Cloudflare 控制台 → Workers & Pages → 网站项目 → 设置：\n· 变量和机密 → 添加 Secret：CRM_SITE_KEY = 站点密钥\n· 绑定 → 添加 → 服务绑定：变量名 CRM，选择 Worker：{{worker}}\nProduction 与 Preview 分开配置，至少配置 Production；保存后重新部署网站。",
+        "url": "Cloudflare 控制台 → Workers & Pages → 网站项目 → 设置 → 变量和机密，添加两个 Secret：\n· CRM_SITE_KEY = 站点密钥\n· CRM_URL = {{origin}}（末尾不带 /）\nProduction 与 Preview 分开配置，至少配置 Production；保存后重新部署网站。"
+      },
+      "cloudflare_workers": {
+        "binding": "Cloudflare 控制台 → Workers & Pages → 网站的 Worker → 设置：\n· 变量和机密 → 添加 Secret：CRM_SITE_KEY = 站点密钥\n· 绑定 → 添加 → 服务绑定：变量名 CRM，选择 Worker：{{worker}}（也可以写在 wrangler 配置的 [[services]] 里）\n保存后重新部署。",
+        "url": "Cloudflare 控制台 → Workers & Pages → 网站的 Worker → 设置 → 变量和机密，添加两个 Secret：\n· CRM_SITE_KEY = 站点密钥\n· CRM_URL = {{origin}}（末尾不带 /）\n保存后重新部署。"
+      },
+      "vercel": "Vercel 项目 → Settings → Environment Variables，添加：\n· CRM_SITE_KEY = 站点密钥（勾选 Sensitive）\n· CRM_URL = {{origin}}（末尾不带 /）\n勾选 Production（需要时也勾选 Preview），保存后重新部署。",
+      "netlify": "Netlify 站点 → Site configuration → Environment variables，添加（作用范围包含 Functions）：\n· CRM_SITE_KEY = 站点密钥（标记为 secret）\n· CRM_URL = {{origin}}（末尾不带 /）\n保存后重新部署。",
+      "edgeone_pages": "EdgeOne Pages 项目 → 项目设置 → 环境变量，添加：\n· CRM_SITE_KEY = 站点密钥\n· CRM_URL = {{origin}}（末尾不带 /）\n保存后重新部署。",
+      "nginx": "在服务器上：\n· 创建 /etc/nginx/crm_site_key.conf，写入 set $crm_site_key \"站点密钥\";（权限 600，不要放进网站目录）\n· 确认 location 里的 CRM 地址是 {{origin}}\n· 执行 nginx -t && nginx -s reload（宝塔：保存配置文件即重载）",
+      "php": "在服务器上把站点密钥和 CRM 地址（{{origin}}）写进 _t/config.php，或者设置环境变量 CRM_SITE_KEY、CRM_URL。确认 config.php 没有提交到代码仓库（加进 .gitignore）。",
+      "node": "在运行网站的服务器、容器或进程管理器（PM2、Docker 等）里设置环境变量：\n· CRM_SITE_KEY = 站点密钥\n· CRM_URL = {{origin}}（末尾不带 /）\n然后重启服务。",
+      "other": "按网站实际使用的平台，在服务器端设置：\n· CRM_SITE_KEY = 站点密钥\n· CRM_URL = {{origin}}（末尾不带 /）\n只能放在服务器端的环境变量或配置里。"
+    },
+    "prompt": {
+      "intro": "请帮我给这个网站接入 CRM（{{features}}）。网站部署在：{{platform}}。",
+      "formsIntro": "这个网站已经接入了 CRM 访客统计（/_t/* 的转发和页面脚本都已部署，不要修改它们）。现在只需要接入表单留资：",
+      "rule": "原则：浏览器只访问网站自己的 /_t/*，由服务器端带站点密钥转发给 CRM。CRM 地址和站点密钥只能放在服务器端（环境变量、加密变量或服务器配置文件），不能写进前端代码，也不能提交到代码仓库。不要修改转发逻辑。",
+      "proxyTitle": "转发 /_t/*",
+      "otherSteps": "先判断网站使用的技术栈和部署方式，选一个能在服务器端处理 /_t/* 请求的位置（边缘函数、云函数、反向代理或后端路由），按下面的转发协议实现。如果网站是纯静态托管、没办法在服务器端处理请求，请停下来告诉我。\n\n{{spec}}",
+      "file": "文件 {{path}}：",
+      "scriptTitle": "页面脚本",
+      "script": "在网站所有页面的 </head> 前加上：{{scriptTag}}\n加在公共模板或布局里一次即可；单页应用加在 index.html。",
+      "formsTitle": "表单留资",
+      "forms": "把网站现有的留资表单改为提交到同域的 /_t/lead（不需要密钥，也不需要 CRM 地址）：\n· 原生表单：action=\"/_t/lead\" method=\"post\"，可加隐藏字段 _redirect 指定提交成功后跳转的站内路径\n· 自定义前端：调用 window.__crmTracker.submitLead(数据)，根据返回的 ok 提示用户\n· 字段名：姓名用 name，联系方式用 phone（或 wechat、email），留言用 message；其它字段保持原名即可。来源默认是「{{name}}」，需要区分落地页时加 source 字段\n· 不要删除采集脚本自动加入的隐藏字段（crm_vid、_hp、_page）",
+      "formHtml": "原生表单示例：",
+      "formJs": "自定义前端示例：",
+      "varsTitle": "需要我在控制台或服务器上设置的配置（改完代码后请提醒我）",
+      "checkTitle": "完成后自检并告诉我",
+      "check": "部署后访问 https://网站域名/_t/t.js，应返回 JavaScript；分别向 /_t/collect 和 /_t/lead 发送 POST {\"ping\":1}（Content-Type: application/json），都应返回 {\"data\":{\"siteId\":\"...\"}}。最后列出改动的文件，并告诉我还需要在控制台或服务器上做哪些设置。",
+      "checkForms": "部署后向 /_t/lead 发送 POST {\"ping\":1}（Content-Type: application/json），应返回 {\"data\":{\"siteId\":\"...\"}}；再用测试数据提交一次表单，确认页面提示提交成功。最后列出改动的页面。"
+    },
+    "settings": {
+      "title": "站点设置",
+      "domain": "网站域名",
+      "domainHint": "用于识别部署平台和检测接入",
+      "choosePlatform": "请选择部署平台",
+      "status": "站点状态",
+      "active": "接收中",
+      "activeHint": "停用后网站发来的访问和留资都会被拒绝",
+      "inactiveHint": "已停用：网站发来的访问和留资都会被拒绝",
+      "key": "站点密钥",
+      "keyHint": "只在新建或更换时显示一次；更换后旧密钥立即失效，需要同步更新网站的 CRM_SITE_KEY"
+    },
+    "records": {
+      "submissions": "表单提交记录"
+    }
   }
 }

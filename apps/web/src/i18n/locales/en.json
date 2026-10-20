@@ -1067,7 +1067,6 @@
   },
   "aiAccess": {
     "title": "Integrations",
-    "subtitle": "Connect websites, external systems and AI tools to the CRM. Websites use a site key (visitor tracking + form leads); external systems and AI tools use API keys.",
     "sections": {
       "mcp": {
         "title": "AI tools (MCP)",
@@ -1077,12 +1076,10 @@
         "title": "External systems",
         "desc": "Ad platforms and business systems push leads through the API, with the same processing rules as website forms."
       },
-      "keyCount": "Keys: {{count}}",
       "sites": {
         "title": "Websites",
         "desc": "Visitor tracking and form leads for your websites: one site key per website, set up once."
-      },
-      "siteCount": "{{count}} websites connected"
+      }
     },
     "mcp": {
       "stepsTitle": "Set up in three steps",
@@ -1190,7 +1187,10 @@
       "visitors": "Visitors: {{count}}",
       "lastSeen": "Last data {{time}}",
       "noData": "No data received yet",
-      "viewCode": "Setup guide",
+      "noPlatform": "No platform selected",
+      "trackingOnly": "Tracking",
+      "withForms": "Tracking + forms",
+      "disableConfirm": "Disable \"{{name}}\"? Visitor data and form submissions from this site will be rejected until you enable it again.",
       "rotate": "Rotate key",
       "rotateConfirm": "Rotate the site key for \"{{name}}\"? The old key stops working immediately; update the website's CRM_SITE_KEY.",
       "disable": "Disable",
@@ -1217,88 +1217,11 @@
       }
     },
     "guide": {
-      "title": "Connect “{{name}}”",
-      "steps": {
-        "prepare": "Prepare",
-        "secrets": "Variables",
-        "code": "Proxy code",
-        "script": "Page script",
-        "verify": "Check",
-        "form": "Forms"
-      },
-      "prev": "Back",
-      "next": "Next",
-      "done": "Done",
-      "siteTypes": {
-        "pages": "Pages site",
-        "worker": "Worker site"
-      },
-      "prepare": {
-        "intro": "Finish these 5 steps and website visitors will appear under Visitors. Browsers only call the site's own /_t/ path and never see the CRM address or keys.",
-        "siteType": "Where is the website deployed?",
-        "siteTypeHint": {
-          "pages": "A Cloudflare Pages project: a static site or one using the functions/ directory",
-          "worker": "A Cloudflare Workers project (including Workers with static assets), or Pages advanced mode (_worker.js)"
-        },
-        "account": "Is the website in the same Cloudflare account as this CRM?",
-        "connect": {
-          "binding": "Same account (recommended)",
-          "url": "Different account"
-        },
-        "connectHint": {
-          "binding": "Uses a service binding; requests stay inside Cloudflare",
-          "url": "Calls the CRM address, stored in an encrypted variable the browser cannot see"
-        },
-        "envNotice": "Current CRM: {{origin}}. Test and production environments do not share sites or keys: add the site and run this guide in the CRM you want to connect."
-      },
-      "secrets": {
-        "path": "Open the website's Cloudflare project (not the CRM Worker): Workers & Pages → website project → Settings.",
-        "keyTitle": "① Variables and Secrets → Add, type Secret, name CRM_SITE_KEY, value is the site key:",
-        "keyNotice": "Copy it now. It will not be shown again after you close this.",
-        "keyHidden": "The site key is only shown when created or rotated. Skip this if the website already has it; if it is lost, rotate the key (the old key stops working immediately).",
-        "rotate": "Rotate and show key",
-        "bindingTitle": "② Bindings → Add → Service binding:",
-        "bindingName": "Variable name:",
-        "bindingService": "Service: this CRM's Worker:",
-        "bindingServiceUnknown": "(the Worker serving this CRM)",
-        "urlTitle": "② Add another Secret named CRM_URL with this CRM's address (no trailing /):",
-        "pagesEnv": "Pages projects have separate Production and Preview variables and bindings; configure at least Production.",
-        "redeploy": "Variables and bindings take effect after a redeploy; deploy once after the code changes below."
-      },
-      "code": {
-        "pagesPlace": "In the website project root (next to package.json, not inside dist/ or public/), create functions/_t/[[path]].js with this code:",
-        "pagesRoutes": "If the project has a custom _routes.json, make sure /_t/* is in include and not in exclude.",
-        "pagesAdvanced": "If the build output contains _worker.js (advanced mode, common with Next.js and other frameworks), functions/ is ignored; go back to step 1 and choose Worker site.",
-        "workerPlace": "Add this line at the very top of the Worker's fetch handler, and add the forwardToCrm function to the same file:",
-        "workerEntry": "Top of the fetch handler",
-        "workerAssets": "If the Worker serves static assets ([assets] in its config), route /_t/* to the Worker first, otherwise t.js returns a web page:",
-        "workerBinding": "The service binding can also be declared in the website's wrangler config, equivalent to the dashboard setting:",
-        "workerNamePlaceholder": "<CRM worker name>",
-        "noModify": "Use the code as is; do not change the forwarding logic.",
-        "aiTitle": "Let an AI make the code changes",
-        "aiHint": "Give this prompt to a coding AI (Claude Code, Cursor, etc.) in the website repository. Enter the key yourself in the Cloudflare dashboard; do not send it to the AI or commit it."
-      },
-      "aiConnect": {
-        "binding": "The website and the CRM are in the same Cloudflare account: use a service binding named CRM (uppercase) pointing to the CRM Worker: {{worker}}.",
-        "url": "The website and the CRM are in different Cloudflare accounts: use the encrypted environment variable CRM_URL with the value {{origin}} (no trailing /). Set this address only as a Secret in the Cloudflare dashboard; never put it in code, config files or the repository."
-      },
-      "aiPlace": {
-        "pages": "Create functions/_t/[[path]].js in the project root; if there is a custom _routes.json, make sure /_t/* is included.",
-        "worker": "Add forwardToCrm to the Worker entry and, at the top of fetch, hand paths starting with /_t/ to it; if [assets] is configured, add run_worker_first = [\"/_t/*\"]."
-      },
-      "aiPrompt": "Please connect this {{mode}} to CRM visitor tracking:\n1. {{place}} Do not change the forwarding logic.\n2. Add before </head> on every page: {{scriptTag}}\n3. Never put the CRM address or keys in frontend code or the repository. The site key uses the encrypted environment variable CRM_SITE_KEY. {{connect}}\n4. When done, tell me which variables or bindings I need to set in the Cloudflare dashboard.\n\nProxy code:\n{{code}}",
-      "script": {
-        "place": "Add this line before </head> on every page (once in the shared layout or template; in index.html for single-page apps):",
-        "spa": "Route changes in single-page apps are recorded as new page views automatically.",
-        "form": "Form submissions automatically include a hidden crm_vid field (visitor ID); the CRM lead API ignores it, but strict third-party form backends must allow it.",
-        "csp": "The script and its requests are same-origin, so a CSP of 'self' is enough; no need to allow the CRM domain.",
-        "deploy": "Push the code or redeploy the website in the dashboard, then go to the next step to check."
-      },
       "verify": {
         "disabled": "This site is disabled. Enable it to receive data.",
         "checkTitle": "Automatic check",
         "check": "Check",
-        "checkHint": "The CRM calls the website's /_t/t.js and /_t/collect from its server to check the proxy code and site key. No visitor data is created. The domain is saved to the site.",
+        "checkHint": "The CRM calls the website's /_t/t.js, /_t/collect and /_t/lead from its server to check the proxy code and site key. No visitor data or leads are created. The domain is saved to the site.",
         "rows": {
           "script": "Tracking script /_t/t.js",
           "collect": "Proxy and site key /_t/collect",
@@ -1326,16 +1249,15 @@
         "manual4": "To test source detection, add ?utm_source=test&utm_medium=cpc to the URL in a private window; First source should show Paid.",
         "multi": "More websites? Add another site afterwards; each website uses its own key, then repeat this guide. Pages under the same domain belong to one site."
       },
+      "secrets": {
+        "keyHidden": "The site key is only shown when created or rotated. Skip this if the website already has it; if it is lost, rotate the key (the old key stops working immediately).",
+        "rotate": "Rotate and show key"
+      },
+      "script": {
+        "place": "Add this line before </head> on every page (once in the shared layout or template; in index.html for single-page apps):"
+      },
       "form": {
-        "intro": "Website forms submit straight to /_t/lead on the same site, and the same proxy code hands them to the CRM to create a lead. No API key and no backend code are needed, and the lead is linked to the visitor's source and journey automatically. Pick either way:",
-        "htmlLabel": "Option 1: native form (set action to /_t/lead)",
-        "jsLabel": "Option 2: custom front end (call submitLead from the tracking script)",
-        "fields": "Fields: name (name) and a contact (phone / mobile / wechat / email) are required, message goes into notes, and any other field is kept in notes too.",
-        "source": "The source defaults to the site name \"{{name}}\"; pass a source field to override it, e.g. to tell landing pages apart.",
-        "protect": "Built-in spam protection: a hidden bot trap field, at most 5 submissions per IP and 3 per visitor in 10 minutes.",
-        "backend": "Sites whose backend already pushes to /api/v1/leads can stay as they are; just include the form's crm_vid. Both paths use the same processing rules.",
-        "aiHint": "Give this to a coding AI to switch the website's existing lead forms to /_t/lead.",
-        "aiPrompt": "Please connect this website's existing lead forms to the CRM (visitor tracking is already set up and the /_t/* proxy code is deployed; do not change it):\n1. Submit forms to /_t/lead on the same site. No key or CRM address is needed.\n2. Native forms: set action to /_t/lead and method to post. Custom front ends: call window.__crmTracker.submitLead(data) and show the result based on ok.\n3. Field names: name for the name, phone (or wechat, email) for the contact, message for the message; keep other fields as they are. Add a source field to tell landing pages apart.\n4. Do not remove the hidden fields added by the tracking script (crm_vid, _hp, _page).\n5. When done, list the pages you changed.\n\nNative form example:\n{{html}}\n\nCustom front end example:\n{{js}}"
+        "htmlLabel": "Option 1: native form (set action to /_t/lead)"
       }
     },
     "source": {
@@ -1573,5 +1495,166 @@
     },
     "title": "Workflow guide",
     "open": "Guide"
+  },
+  "siteConnect": {
+    "keyNotice": "Copy the site key now; it will not be shown again after you leave this page. Keep it on the website's server side only (encrypted environment variable or server config). Do not give it to the AI or commit it.",
+    "tabs": {
+      "overview": "Overview",
+      "connect": "Connect",
+      "records": "Records"
+    },
+    "overview": {
+      "status": "Status (last 24 hours)",
+      "goConnect": "View setup steps"
+    },
+    "groups": {
+      "edge": "Edge / serverless platforms",
+      "server": "Your own server",
+      "other": "Other"
+    },
+    "platforms": {
+      "cloudflare_pages": {
+        "name": "Cloudflare Pages",
+        "hint": "Pages project, proxy via the functions/ directory"
+      },
+      "cloudflare_workers": {
+        "name": "Cloudflare Workers",
+        "hint": "Worker site (including Workers with static assets)"
+      },
+      "vercel": {
+        "name": "Vercel",
+        "hint": "Any framework (including Next.js), proxy via Middleware"
+      },
+      "netlify": {
+        "name": "Netlify",
+        "hint": "Proxy via an Edge Function"
+      },
+      "edgeone_pages": {
+        "name": "Tencent EdgeOne Pages",
+        "hint": "Proxy via Pages Functions"
+      },
+      "nginx": {
+        "name": "Nginx / BT Panel",
+        "hint": "Nginx reverse proxy on your server; no website code changes"
+      },
+      "php": {
+        "name": "PHP / Apache / WordPress",
+        "hint": "Shared hosting or PHP site; add one PHP proxy file"
+      },
+      "node": {
+        "name": "Node.js backend",
+        "hint": "Express or plain http server"
+      },
+      "other": {
+        "name": "Other / not sure",
+        "hint": "Java, Python, .NET, Alibaba Function Compute, CloudBase, etc.: the AI implements the proxy protocol"
+      },
+      "static": {
+        "name": "Static hosting only",
+        "hint": "GitHub Pages, OSS / COS static websites, site builders, etc."
+      }
+    },
+    "connect": {
+      "binding": "Same Cloudflare account (recommended)",
+      "url": "Different account"
+    },
+    "connectHint": {
+      "binding": "Uses a service binding inside Cloudflare",
+      "url": "Calls the CRM address stored in an encrypted variable"
+    },
+    "features": {
+      "platform": "Hosting platform",
+      "detect": "Detect",
+      "detected": "Detected: {{name}}",
+      "useDetected": "Use this",
+      "detectUnknown": "Could not detect the platform. Pick it manually; if unsure, choose Other / not sure and the AI will implement the proxy protocol.",
+      "detectUnreachable": "Could not reach the website. Check the domain or pick the platform manually.",
+      "staticNotice": "Static hosting cannot proxy requests on the server, so same-origin proxying is not available yet. Move the site to a platform with functions (EdgeOne Pages, Vercel, Cloudflare Pages, etc.) or wait for the upcoming subdomain mode.",
+      "tracking": "Visitor tracking",
+      "trackingHint": "Sources, page journeys, phone clicks, WeChat copies, form submissions and more. Always on.",
+      "forms": "Form leads",
+      "formsHint": "Website forms submit to /_t/lead and go straight into the CRM with the visitor source linked. No API key needed.",
+      "widgets": "Conversion widgets",
+      "widgetsHint": "Floating contact button, mobile contact bar, lead popups and more, configured in the CRM with no website code changes.",
+      "soon": "Coming soon"
+    },
+    "needPlatform": "Pick the website's hosting platform under Overview → Site settings first.",
+    "goFeatures": "Pick now",
+    "promptTitle": "Prompt for your AI agent",
+    "promptHint": "Copy it to a coding AI (Claude Code, Cursor, etc.) in the website repository. It is generated for the hosting platform and enabled features, and includes the proxy code, page script, settings to configure and self-checks.",
+    "promptFormsHint": "Use this when visitor tracking is already set up; it only adds form leads and leaves the existing setup untouched.",
+    "promptKeyNote": "The prompt does not contain the site key. After the AI changes the code, put the key on the server as described under Settings to configure.",
+    "scope": {
+      "full": "Full setup",
+      "forms": "Forms only"
+    },
+    "manual": {
+      "vars": "Settings to configure",
+      "code": "Manual setup: code and script",
+      "check": "Check connection"
+    },
+    "proxySpec": "Proxy protocol",
+    "workerUnknown": "the Worker serving this CRM",
+    "workerNamePlaceholder": "<CRM worker name>",
+    "steps": {
+      "cloudflare_pages": "Create the file below in the project root (not in the build output). If the project has a custom _routes.json, make sure it includes /_t/*. If the build output contains _worker.js (advanced mode), functions/ is ignored; set it up in _worker.js the Cloudflare Workers way instead.",
+      "cloudflare_workers": "Add this at the top of the Worker's fetch handler: {{entry}}\nand add the forwardToCrm function to the same file. If the Worker serves static assets ([assets] in its config), add run_worker_first = [\"/_t/*\"] under [assets].",
+      "vercel": "Create middleware.js (project root; src/middleware.js for Next.js projects using src/). If middleware already exists, merge the matcher and add the /_t/ check at the top of the existing function. Do not create a _t route folder in Next.js (the App Router ignores folders starting with an underscore).",
+      "netlify": "Create the Edge Function file below. Its config.path already targets /_t/*, so netlify.toml needs no change.",
+      "edgeone_pages": "Create the Pages Functions file below in the project root (catch-all route; follow the official EdgeOne Pages docs for the file name).",
+      "nginx": "Add the location below to the website's server { } config (BT Panel: Website → Settings → Config file). Keep the site key in /etc/nginx/crm_site_key.conf. If the site is behind a CDN, replace $remote_addr with the real visitor IP.",
+      "php": "Create a _t/ directory in the web root with the files below. Nginx + PHP-FPM sites ignore .htaccess; add to the server config instead: location /_t/ { try_files $uri /_t/index.php?$query_string; }. Works for WordPress too.",
+      "node": "Create crm-proxy.js and mount it early in the Express app: app.use('/_t', crmProxy) (before body parsers such as express.json()). For plain http or other frameworks, follow the comments in the file."
+    },
+    "vars": {
+      "cloudflare_pages": {
+        "binding": "Cloudflare dashboard → Workers & Pages → website project → Settings:\n· Variables and Secrets → add Secret CRM_SITE_KEY = site key\n· Bindings → Add → Service binding: variable name CRM, Worker: {{worker}}\nProduction and Preview are configured separately (at least Production); redeploy afterwards.",
+        "url": "Cloudflare dashboard → Workers & Pages → website project → Settings → Variables and Secrets, add two Secrets:\n· CRM_SITE_KEY = site key\n· CRM_URL = {{origin}} (no trailing /)\nProduction and Preview are configured separately (at least Production); redeploy afterwards."
+      },
+      "cloudflare_workers": {
+        "binding": "Cloudflare dashboard → Workers & Pages → the website's Worker → Settings:\n· Variables and Secrets → add Secret CRM_SITE_KEY = site key\n· Bindings → Add → Service binding: variable name CRM, Worker: {{worker}} (or declare it under [[services]] in the wrangler config)\nRedeploy afterwards.",
+        "url": "Cloudflare dashboard → Workers & Pages → the website's Worker → Settings → Variables and Secrets, add two Secrets:\n· CRM_SITE_KEY = site key\n· CRM_URL = {{origin}} (no trailing /)\nRedeploy afterwards."
+      },
+      "vercel": "Vercel project → Settings → Environment Variables, add:\n· CRM_SITE_KEY = site key (mark as Sensitive)\n· CRM_URL = {{origin}} (no trailing /)\nTick Production (and Preview if needed), then redeploy.",
+      "netlify": "Netlify site → Site configuration → Environment variables, add (scope must include Functions):\n· CRM_SITE_KEY = site key (mark as secret)\n· CRM_URL = {{origin}} (no trailing /)\nRedeploy afterwards.",
+      "edgeone_pages": "EdgeOne Pages project → Project settings → Environment variables, add:\n· CRM_SITE_KEY = site key\n· CRM_URL = {{origin}} (no trailing /)\nRedeploy afterwards.",
+      "nginx": "On the server:\n· Create /etc/nginx/crm_site_key.conf containing set $crm_site_key \"site key\"; (mode 600, outside the web root)\n· Make sure the CRM address in the location is {{origin}}\n· Run nginx -t && nginx -s reload (BT Panel reloads when you save the config file)",
+      "php": "On the server, put the site key and the CRM address ({{origin}}) in _t/config.php, or set the environment variables CRM_SITE_KEY and CRM_URL. Make sure config.php is not committed (add it to .gitignore).",
+      "node": "Set environment variables on the server, container or process manager (PM2, Docker, etc.):\n· CRM_SITE_KEY = site key\n· CRM_URL = {{origin}} (no trailing /)\nThen restart the service.",
+      "other": "On the platform the website actually uses, set on the server side:\n· CRM_SITE_KEY = site key\n· CRM_URL = {{origin}} (no trailing /)\nOnly in server-side environment variables or config."
+    },
+    "prompt": {
+      "intro": "Please connect this website to the CRM ({{features}}). The website is hosted on: {{platform}}.",
+      "formsIntro": "This website already has CRM visitor tracking (the /_t/* proxy and page script are deployed; do not change them). Now only connect the lead forms:",
+      "rule": "Principle: browsers only call the website's own /_t/*, and the server forwards them to the CRM with the site key. The CRM address and site key must stay on the server (environment variables, encrypted variables or server config files); never put them in front-end code or commit them. Do not change the forwarding logic.",
+      "proxyTitle": "Proxy /_t/*",
+      "otherSteps": "First identify the website's tech stack and hosting, and pick a place that can handle /_t/* on the server (edge function, cloud function, reverse proxy or backend route). Implement the proxy protocol below. If the website is static hosting only and cannot handle requests on the server, stop and tell me.\n\n{{spec}}",
+      "file": "File {{path}}:",
+      "scriptTitle": "Page script",
+      "script": "Add before </head> on every page: {{scriptTag}}\nOnce in the shared template or layout is enough; for single-page apps add it to index.html.",
+      "formsTitle": "Form leads",
+      "forms": "Switch the website's existing lead forms to submit to /_t/lead on the same site (no key or CRM address needed):\n· Native forms: action=\"/_t/lead\" method=\"post\"; an optional hidden _redirect field sets the on-site path to go to after success\n· Custom front ends: call window.__crmTracker.submitLead(data) and show the result based on ok\n· Field names: name for the name, phone (or wechat, email) for the contact, message for the message; keep other fields as they are. The source defaults to \"{{name}}\"; add a source field to tell landing pages apart\n· Do not remove the hidden fields added by the tracking script (crm_vid, _hp, _page)",
+      "formHtml": "Native form example:",
+      "formJs": "Custom front end example:",
+      "varsTitle": "Settings I need to configure in the dashboard or on the server (remind me after the code changes)",
+      "checkTitle": "Self-check when done and report back",
+      "check": "After deploying, https://<website domain>/_t/t.js should return JavaScript, and POST {\"ping\":1} (Content-Type: application/json) to /_t/collect and /_t/lead should both return {\"data\":{\"siteId\":\"...\"}}. Then list the files you changed and tell me which dashboard or server settings I still need to configure.",
+      "checkForms": "After deploying, POST {\"ping\":1} (Content-Type: application/json) to /_t/lead should return {\"data\":{\"siteId\":\"...\"}}; then submit a form once with test data and confirm the success message. Finally list the pages you changed."
+    },
+    "settings": {
+      "title": "Site settings",
+      "domain": "Website domain",
+      "domainHint": "Used to detect the hosting platform and check the connection",
+      "choosePlatform": "Choose a hosting platform",
+      "status": "Status",
+      "active": "Receiving",
+      "activeHint": "When disabled, visits and leads from the website are rejected",
+      "inactiveHint": "Disabled: visits and leads from the website are rejected",
+      "key": "Site key",
+      "keyHint": "Shown only when created or rotated; rotating invalidates the old key immediately, so update CRM_SITE_KEY on the website"
+    },
+    "records": {
+      "submissions": "Form submissions"
+    }
   }
 }
