@@ -32,6 +32,7 @@ settingsRoutes.put(
       smtp_from_name:       z.string().optional(),
       auto_assign_enabled:  z.string().optional(),
       ai_agent_enabled:     z.string().optional(),
+      ai_agent_model_id:    z.string().max(100).optional(),
       portal_enabled:       z.enum(['true', 'false']).optional(),
       timezone:             z.string().optional(),
       industry_context:     z.string().max(2000).optional(),

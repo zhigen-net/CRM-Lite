@@ -1,4 +1,5 @@
 import { Hono } from 'hono'
+import { recentAiUsage, recordAiUsage, todayAiUsage } from '../../shared/aiUsage'
 import { zValidator } from '@hono/zod-validator'
 import { z } from 'zod'
 import { HTTPException } from 'hono/http-exception'
@@ -195,6 +196,12 @@ aiConfigRoutes.get('/providers/:id/available-models', async (c) => {
 // ─── 已启用模型管理 ─────────────────────────────────────────────────────────
 
 // GET /api/admin/ai/models
+// GET /api/admin/ai/usage —— Workers AI 今天与近 7 天的用量（估算）
+aiConfigRoutes.get('/usage', async (c) => {
+  requireAdmin(c.get('jwtPayload').role)
+  return c.json({ data: { today: await todayAiUsage(c.env.DB), days: toCamelList(await recentAiUsage(c.env.DB)) } })
+})
+
 aiConfigRoutes.get('/models', async (c) => {
   const { role } = c.get('jwtPayload')
   requireAdmin(role)
@@ -303,6 +310,7 @@ aiConfigRoutes.post(
         row.model_id as Parameters<typeof c.env.AI.run>[0],
         { messages: [{ role: 'user', content: prompt }] },
       )
+      c.executionCtx.waitUntil(recordAiUsage(c.env.DB, row.model_id, prompt, result).catch(() => undefined))
       const reply = typeof result === 'object' && result !== null && 'response' in result
         ? String((result as { response?: unknown }).response ?? '（无返回内容）')
         : '（无返回内容）'

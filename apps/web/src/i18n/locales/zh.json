@@ -775,6 +775,18 @@
         "client": "客户"
       },
       "input": "参数"
+    },
+    "aiUsage": {
+      "title": "AI 助手模型与免费额度",
+      "defaultModel": "助手默认模型",
+      "defaultModelHint": "对话框里也可以临时切换。Workers AI 小模型（如 8B）最省免费额度，复杂问题再切到大模型。",
+      "auto": "自动（Workers AI 里最省额度的模型）",
+      "today": "今天 Workers AI 用量（估算）",
+      "calls": "{{count}} 次调用",
+      "hint": "Cloudflare 免费额度每天 10,000 neurons，UTC 0 点（北京时间 8 点）重置。这里按各模型价格估算，以 Cloudflare 控制台为准；外部模型（Anthropic、OpenAI 等）不占用这个额度。",
+      "day": "日期",
+      "model": "模型",
+      "callsCol": "调用次数"
     }
   },
   "profile": {
@@ -945,7 +957,11 @@
         "今天需要联系哪些客户？",
         "有哪些已逾期的线索？",
         "帮我查一下最近新建的线索"
-      ]
+      ],
+      "model": "模型",
+      "quota": "今日免费额度已用 {{pct}}%",
+      "quotaWarn": "今天的 Workers AI 免费额度快用完了，可以切换到更小的模型，或使用外部模型。",
+      "quotaOut": "今天的 Workers AI 免费额度可能已用完（北京时间 8 点重置），可以切换到外部模型。"
     },
     "ask": {
       "hint": "让 AI 助手结合资料、跟进记录和网站来源，分析意向并建议下一步。",

@@ -775,6 +775,18 @@
         "client": "Client"
       },
       "input": "Parameters"
+    },
+    "aiUsage": {
+      "title": "AI assistant model and free quota",
+      "defaultModel": "Default assistant model",
+      "defaultModelHint": "You can also switch in the chat box. Small Workers AI models (e.g. 8B) use the least free quota; switch to a larger model for complex questions.",
+      "auto": "Automatic (cheapest Workers AI model)",
+      "today": "Workers AI usage today (estimated)",
+      "calls": "{{count}} calls",
+      "hint": "The Cloudflare free quota is 10,000 neurons per day and resets at 00:00 UTC. This is estimated from each model's pricing; the Cloudflare dashboard is authoritative. External models (Anthropic, OpenAI, etc.) don't use this quota.",
+      "day": "Date",
+      "model": "Model",
+      "callsCol": "Calls"
     }
   },
   "profile": {
@@ -945,7 +957,11 @@
         "Which clients need to be contacted today?",
         "Show me overdue leads",
         "List recently created leads"
-      ]
+      ],
+      "model": "Model",
+      "quota": "{{pct}}% of today's free quota used",
+      "quotaWarn": "Today's Workers AI free quota is almost used up. Switch to a smaller model or use an external model.",
+      "quotaOut": "Today's Workers AI free quota may be used up (resets at 00:00 UTC). Switch to an external model."
     },
     "ask": {
       "hint": "Let the AI assistant review the profile, follow-ups and website source, assess intent and suggest next steps.",

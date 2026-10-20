@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { AiUsagePanel } from './AiUsagePanel'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -1344,6 +1345,8 @@ export default function SystemSettingsPage() {
       {/* AI 与自动化：AI 配置在上，工作流在下 */}
       {activeTab === 'automation' && (
         <div className="space-y-6">
+          {/* AI 助手默认模型与免费额度用量 */}
+          <AiUsagePanel models={aiModels} currentModelId={data?.ai_agent_model_id} />
           {/* 模型提供商 */}
           <div className="rounded-lg border bg-white overflow-hidden">
             <div className="flex items-center justify-between px-4 py-3 border-b bg-gray-50">
