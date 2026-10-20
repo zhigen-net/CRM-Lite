@@ -5,24 +5,11 @@ import { PortalAuthProvider } from '@/portal/auth/PortalAuthContext'
 import { CrmGuard } from '@/app/auth/CrmGuard'
 import { PortalGuard } from '@/portal/auth/PortalGuard'
 import { LoadingSpinner } from '@/shared/components/LoadingSpinner'
+import { pages } from '@/app/routes'
 
 // 内部 CRM 页面（懒加载）
 const CrmLogin = lazy(() => import('@/app/auth/LoginPage'))
 const CrmLayout = lazy(() => import('@/app/layout/CrmLayout'))
-const LeadsPage = lazy(() => import('@/app/leads/LeadsPage'))
-const LeadDetailPage = lazy(() => import('@/app/leads/LeadDetailPage'))
-const ClientsPage = lazy(() => import('@/app/clients/ClientsPage'))
-const ClientDetailPage = lazy(() => import('@/app/clients/ClientDetailPage'))
-const ServicesPage = lazy(() => import('@/app/services/ServicesPage'))
-const ActivitiesPage = lazy(() => import('@/app/activities/ActivitiesPage'))
-const UsersPage = lazy(() => import('@/app/users/UsersPage'))
-const SystemSettingsPage = lazy(() => import('@/app/settings/SystemSettingsPage'))
-const WorkflowEditorPage = lazy(() => import('@/app/settings/workflows/WorkflowEditorPage'))
-const ProfilePage = lazy(() => import('@/app/profile/ProfilePage'))
-const AiAccessPage = lazy(() => import('@/app/ai-access/AiAccessPage'))
-const SiteDetailRedirect = lazy(() => import('@/app/sites/SiteDrawer'))
-const AnalyticsPage = lazy(() => import('@/app/analytics/AnalyticsPage'))
-
 // 客户门户页面（懒加载）
 const PortalLogin = lazy(() => import('@/portal/auth/LoginPage'))
 const PortalLayout = lazy(() => import('@/portal/layout/PortalLayout'))
@@ -31,9 +18,12 @@ const PortalServicesPage = lazy(() => import('@/portal/services/ServicesPage'))
 const PortalResourcesPage = lazy(() => import('@/portal/resources/ResourcesPage'))
 const PortalProgressPage = lazy(() => import('@/portal/progress/ProgressPage'))
 
+const P = pages
+
 export default function App() {
   return (
-    <BrowserRouter>
+    // 导航切换放进 startTransition：新页面下载完成前继续显示当前页面
+    <BrowserRouter future={{ v7_startTransition: true }}>
       <Suspense fallback={<LoadingSpinner fullScreen />}>
         <Routes>
           {/* 根路径重定向 */}
@@ -54,24 +44,24 @@ export default function App() {
                       </CrmGuard>
                     }
                   >
-                    <Route path="leads" element={<LeadsPage />} />
-                    <Route path="leads/:id" element={<LeadDetailPage />} />
-                    <Route path="clients" element={<ClientsPage />} />
-                    <Route path="clients/:id" element={<ClientDetailPage />} />
-                    <Route path="products" element={<ServicesPage />} />
+                    <Route path="leads" element={<P.leads />} />
+                    <Route path="leads/:id" element={<P.leadDetail />} />
+                    <Route path="clients" element={<P.clients />} />
+                    <Route path="clients/:id" element={<P.clientDetail />} />
+                    <Route path="products" element={<P.products />} />
                     <Route path="services" element={<Navigate to="/app/products" replace />} />
                     <Route path="partners" element={<Navigate to="/app/products" replace />} />
-                    <Route path="activities" element={<ActivitiesPage />} />
-                    <Route path="users" element={<UsersPage />} />
-                    <Route path="settings" element={<SystemSettingsPage />} />
-                    <Route path="settings/workflows/new" element={<WorkflowEditorPage />} />
-                    <Route path="settings/workflows/:wfId" element={<WorkflowEditorPage />} />
+                    <Route path="activities" element={<P.activities />} />
+                    <Route path="users" element={<P.users />} />
+                    <Route path="settings" element={<P.settings />} />
+                    <Route path="settings/workflows/new" element={<P.workflowEditor />} />
+                    <Route path="settings/workflows/:wfId" element={<P.workflowEditor />} />
                     <Route path="docs" element={<Navigate to="/app/settings?tab=automation" replace />} />
                     <Route path="settings/options" element={<Navigate to="/app/settings" replace />} />
-                    <Route path="profile" element={<ProfilePage />} />
-                    <Route path="ai-access" element={<AiAccessPage />} />
-                    <Route path="ai-access/sites/:id" element={<SiteDetailRedirect />} />
-                    <Route path="analytics" element={<AnalyticsPage />} />
+                    <Route path="profile" element={<P.profile />} />
+                    <Route path="ai-access" element={<P.aiAccess />} />
+                    <Route path="ai-access/sites/:id" element={<P.siteRedirect />} />
+                    <Route path="analytics" element={<P.analytics />} />
                     <Route index element={<Navigate to="leads" replace />} />
                   </Route>
                 </Routes>
