@@ -1,6 +1,7 @@
 // 访客数据查询（访客分析页面使用）。可见范围：管理员、运营（入口处校验）
 import { badRequest, notFound } from '../errors'
 import { toCamel, toCamelList } from '../../shared/db'
+import { detectAnomalies, mergeAnomalies } from './anomaly'
 
 export interface VisitorListFilters {
   siteId: string
@@ -30,11 +31,18 @@ export async function listVisitors(db: D1Database, f: VisitorListFilters) {
   const [count, rows] = await Promise.all([
     db.prepare(`SELECT COUNT(*) AS total FROM visitors v ${where}`).bind(...params).first<{ total: number }>(),
     db.prepare(`
-      SELECT v.*, l.name AS lead_name
+      SELECT v.*, l.name AS lead_name,
+        -- 最近一次访问的屏幕与语言，用于异常标识（走 visit 索引，每行读一条）
+        (SELECT vi.screen FROM visits vi WHERE vi.site_id = v.site_id AND vi.visitor_id = v.id ORDER BY vi.started_at DESC LIMIT 1) AS last_screen,
+        (SELECT vi.language FROM visits vi WHERE vi.site_id = v.site_id AND vi.visitor_id = v.id ORDER BY vi.started_at DESC LIMIT 1) AS last_language
       FROM visitors v LEFT JOIN leads l ON l.id = v.lead_id
       ${where} ORDER BY v.last_seen_at DESC LIMIT ? OFFSET ?`).bind(...params, pageSize, (page - 1) * pageSize).all<Record<string, unknown>>(),
   ])
-  return { data: toCamelList(rows.results), total: count?.total ?? 0, page, pageSize }
+  const data = rows.results.map((r) => ({
+    ...toCamel(r),
+    anomalies: detectAnomalies({ isp: r.isp as string, screen: r.last_screen as string, language: r.last_language as string, deviceType: r.device_type as string }),
+  }))
+  return { data, total: count?.total ?? 0, page, pageSize }
 }
 
 /** 访客详情：基本信息 + 最近 50 次访问 + 每次访问的事件时间线 */
@@ -56,8 +64,13 @@ export async function getVisitorJourney(db: D1Database, siteId: string, visitorI
     list.push(e)
     byVisit.set(e.visitId as string, list)
   }
+  const visitList = toCamelList(visits.results).map((v) => ({
+    ...v,
+    anomalies: detectAnomalies({ isp: v.isp as string, screen: v.screen as string, language: v.language as string, deviceType: v.deviceType as string }),
+    events: byVisit.get(v.id as string) ?? [],
+  }))
   return {
-    visitor: toCamel(visitor),
-    visits: toCamelList(visits.results).map((v) => ({ ...v, events: byVisit.get(v.id as string) ?? [] })),
+    visitor: { ...toCamel(visitor), anomalies: mergeAnomalies(visitList.map((v) => v.anomalies)) },
+    visits: visitList,
   }
 }

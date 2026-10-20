@@ -244,3 +244,16 @@ describe('浏览明细手动清理', () => {
     expect(await visitorRow(v)).not.toBeNull()
   })
 })
+
+describe('访客异常标识', () => {
+  it('机房 IP、VPN、伪装 UA、服务器语言、无头浏览器窗口；普通运营商不标识', async () => {
+    const { detectAnomalies } = await import('../src/domain/tracking/anomaly')
+    const types = (v: Parameters<typeof detectAnomalies>[0]) => detectAnomalies(v).map((a) => a.type)
+    expect(types({ isp: 'Amazon Technologies Inc.', screen: '1920x1080', language: 'en-US@posix', deviceType: 'mobile' })).toEqual(['datacenter', 'bot'])
+    expect(types({ isp: 'Google LLC', screen: '800x600', language: 'en-US', deviceType: 'desktop' })).toEqual(['datacenter', 'bot'])
+    expect(types({ isp: 'Aventice LLC', screen: '1920x1080', language: 'en-US', deviceType: 'desktop' })).toEqual(['vpn'])
+    expect(types({ isp: 'Hangzhou Alibaba Advertising Co.,Ltd.' })).toEqual(['datacenter'])
+    expect(types({ isp: 'China Telecom', screen: '390x844', language: 'zh-CN', deviceType: 'mobile' })).toEqual([])
+    expect(types({ isp: 'China Mobile', screen: '1440x900', language: 'zh-CN', deviceType: 'desktop' })).toEqual([])
+  })
+})

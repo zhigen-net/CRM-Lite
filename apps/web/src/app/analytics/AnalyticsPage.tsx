@@ -8,17 +8,31 @@ import { formatDate } from '@/shared/utils/format'
 import { Pagination } from '@/shared/components/Pagination'
 import { DateRangePicker, useDateRangeParam } from '@/shared/components/DateRangePicker'
 import { JourneyDrawer, place } from './Journey'
+import { AnomalyIcons, type Anomaly } from './AnomalyIcons'
+import { CountryFlag } from './CountryFlag'
 
 interface SiteOption { id: string; name: string; domain: string | null; isActive: boolean; lastSeenAt: string | null }
 interface Visitor {
   id: string; siteId: string; firstSeenAt: string; lastSeenAt: string; visitCount: number; pageviewCount: number
   firstChannel: string | null; firstUtmSource: string | null; firstUtmCampaign: string | null; firstLanding: string | null
-  deviceType: string | null; os: string | null; browser: string | null; region: string | null; city: string | null; isp: string | null
+  deviceType: string | null; os: string | null; browser: string | null; country: string | null; region: string | null; city: string | null; isp: string | null
   leadId: string | null; leadName: string | null; keyActions: number; lastIp: string | null
+  anomalies?: Anomaly[]
 }
 const CHANNELS = ['paid', 'search', 'social', 'referral', 'direct'] as const
 const PAGE_SIZE = 30
-const selectCls = 'w-full min-w-0 rounded border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-700 sm:w-auto'
+/** 筛选下拉框：统一高度和箭头样式（不用各系统自带的样式，手机上排列整齐） */
+function FilterSelect({ value, onChange, label, children }: { value: string; onChange: (v: string) => void; label: string; children: React.ReactNode }) {
+  return (
+    <div className="relative min-w-0">
+      <select value={value} onChange={(e) => onChange(e.target.value)} aria-label={label}
+        className="h-9 w-full min-w-0 appearance-none truncate rounded-md border border-gray-300 bg-white py-0 pl-2.5 pr-7 text-sm text-gray-700 shadow-sm sm:w-auto">
+        {children}
+      </select>
+      <svg className="pointer-events-none absolute right-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+    </div>
+  )
+}
 
 function VisitorsPanel() {
   const { t } = useTranslation()
@@ -64,22 +78,26 @@ function VisitorsPanel() {
 
   return (
     <div className="overflow-hidden rounded-lg border bg-white">
-      {/* 筛选：手机上两列排布 */}
-      <div className="grid grid-cols-2 items-center gap-2 border-b px-3 py-3 sm:flex sm:flex-wrap sm:px-4">
-        <div className="col-span-2 sm:col-span-1"><DateRangePicker value={range} onChange={(v) => { setRange(v); setPage(1) }} allowAll /></div>
-        <select className={selectCls} value={siteId} onChange={(e) => { setSiteId(e.target.value); setPage(1) }}>
-          {(sites ?? []).map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-        </select>
-        <select className={selectCls} value={channel} onChange={(e) => { setChannel(e.target.value); setPage(1) }}>
-          <option value="">{t('analytics.visitors.allChannels')}</option>
-          {CHANNELS.map((c) => <option key={c} value={c}>{t(`analytics.channels.${c}`)}</option>)}
-        </select>
-        <select className={selectCls} value={withLead} onChange={(e) => { setWithLead(e.target.value); setPage(1) }}>
-          <option value="">{t('analytics.visitors.allVisitors')}</option>
-          <option value="true">{t('analytics.visitors.withLead')}</option>
-          <option value="false">{t('analytics.visitors.withoutLead')}</option>
-        </select>
-        {data && <span className="col-span-2 text-xs text-gray-400 sm:ml-auto">{t('analytics.visitors.total', { count: data.total })}</span>}
+      {/* 筛选：第一行时间段 + 总数；第二行三个下拉框，手机上等宽排成一行 */}
+      <div className="space-y-2 border-b px-3 py-3 sm:flex sm:flex-wrap sm:items-center sm:gap-2 sm:space-y-0 sm:px-4">
+        <div className="flex items-center justify-between gap-2 sm:contents">
+          <DateRangePicker value={range} onChange={(v) => { setRange(v); setPage(1) }} allowAll />
+          {data && <span className="text-xs text-gray-400 sm:order-last sm:ml-auto">{t('analytics.visitors.total', { count: data.total })}</span>}
+        </div>
+        <div className="grid grid-cols-3 gap-2 sm:contents">
+          <FilterSelect value={siteId} onChange={(v) => { setSiteId(v); setPage(1) }} label={t('analytics.visitors.site')}>
+            {(sites ?? []).map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+          </FilterSelect>
+          <FilterSelect value={channel} onChange={(v) => { setChannel(v); setPage(1) }} label={t('analytics.visitors.allChannels')}>
+            <option value="">{t('analytics.visitors.allChannels')}</option>
+            {CHANNELS.map((c) => <option key={c} value={c}>{t(`analytics.channels.${c}`)}</option>)}
+          </FilterSelect>
+          <FilterSelect value={withLead} onChange={(v) => { setWithLead(v); setPage(1) }} label={t('analytics.visitors.allVisitors')}>
+            <option value="">{t('analytics.visitors.allVisitors')}</option>
+            <option value="true">{t('analytics.visitors.withLead')}</option>
+            <option value="false">{t('analytics.visitors.withoutLead')}</option>
+          </FilterSelect>
+        </div>
       </div>
       {isLoading || !siteId ? (
         <div className="px-4 py-6 text-sm text-gray-400">{t('common.loading')}</div>
@@ -91,14 +109,17 @@ function VisitorsPanel() {
         <ul className="divide-y divide-gray-100 sm:hidden">
           {data.data.map((v) => (
             <li key={v.id}>
-              <button type="button" onClick={() => setOpenVisitor(v.id)} className="block w-full px-3 py-3 text-left active:bg-gray-50">
+              <div role="button" tabIndex={0} onClick={() => setOpenVisitor(v.id)} onKeyDown={(e) => { if (e.key === 'Enter') setOpenVisitor(v.id) }}
+                className="block w-full cursor-pointer px-3 py-3 text-left active:bg-gray-50">
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-sm font-medium text-gray-900">{v.firstChannel ? t(`analytics.channels.${v.firstChannel}`, { defaultValue: v.firstChannel }) : '—'}
                     {(v.firstUtmSource || v.firstUtmCampaign) && <span className="ml-1 text-xs font-normal text-gray-400">{[v.firstUtmSource, v.firstUtmCampaign].filter(Boolean).join(' / ')}</span>}
+                    <span className="ml-1"><AnomalyIcons items={v.anomalies} /></span>
                   </span>
                   <span className="shrink-0 text-xs text-gray-400">{formatDate(v.lastSeenAt)}</span>
                 </div>
-                <p className="mt-1 truncate text-xs text-gray-500">
+                <p className="mt-1 flex items-center gap-1 truncate text-xs text-gray-500">
+                  <CountryFlag code={v.country} />
                   {[v.deviceType && t(`analytics.devices.${v.deviceType}`), v.browser, place(v), v.lastIp].filter(Boolean).join(' · ')}
                 </p>
                 <div className="mt-1.5 flex items-center gap-2 text-xs">
@@ -106,7 +127,7 @@ function VisitorsPanel() {
                   {v.keyActions > 0 && <span className="rounded bg-amber-100 px-1.5 py-0.5 text-amber-700">{t('analytics.visitors.cols.actions')} {v.keyActions}</span>}
                   {v.leadId && <span className="ml-auto rounded bg-green-50 px-1.5 py-0.5 text-green-700">{v.leadName ?? t('analytics.journey.viewLead')}</span>}
                 </div>
-              </button>
+              </div>
             </li>
           ))}
         </ul>
@@ -130,8 +151,11 @@ function VisitorsPanel() {
                   <td className="whitespace-nowrap px-4 py-2.5 text-gray-600">{v.visitCount} / {v.pageviewCount}</td>
                   <td className="whitespace-nowrap px-4 py-2.5 text-gray-600">{[v.deviceType && t(`analytics.devices.${v.deviceType}`), v.browser].filter(Boolean).join(' · ')}</td>
                   <td className="px-4 py-2.5 text-gray-600">
-                    {v.lastIp && <span className="block font-mono text-xs text-gray-700">{v.lastIp}</span>}
-                    {place(v)}{v.isp && <span className="block text-xs text-gray-400">{v.isp}</span>}
+                    {(v.lastIp || !!v.anomalies?.length) && (
+                      <span className="flex items-center gap-1 font-mono text-xs text-gray-700">{v.lastIp}<AnomalyIcons items={v.anomalies} /></span>
+                    )}
+                    <span className="inline-flex items-center gap-1"><CountryFlag code={v.country} />{place(v)}</span>
+                    {v.isp && <span className="block text-xs text-gray-400">{v.isp}</span>}
                   </td>
                   <td className="px-4 py-2.5">{v.keyActions > 0 ? <span className="rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-700">{v.keyActions}</span> : <span className="text-gray-300">—</span>}</td>
                   <td className="px-4 py-2.5">{v.leadId
