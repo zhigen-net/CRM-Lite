@@ -48,9 +48,32 @@ service = "<crm-worker-name>"`
 
 export const SCRIPT_TAG = '<script src="/_t/t.js" defer></script>'
 
+/** 表单留资：原生表单直接提交到同域 /_t/lead（采集脚本会自动加访客 ID 与防机器人字段） */
+export const FORM_HTML = `<form action="/_t/lead" method="post">
+  <input name="name" placeholder="姓名" required>
+  <input name="phone" placeholder="手机号" required>
+  <textarea name="message" placeholder="留言"></textarea>
+  <!-- 可选：提交成功后跳回站内页面 -->
+  <input type="hidden" name="_redirect" value="/thanks">
+  <button type="submit">提交</button>
+</form>`
+
+/** 表单留资：自定义前端用采集脚本提供的 submitLead */
+export const FORM_JS = `const res = await window.__crmTracker.submitLead({
+  name: '张三',
+  phone: '13800138000',
+  message: '想了解价格',
+})
+if (res.ok) {
+  // 提交成功
+} else {
+  alert(res.message || '提交失败，请稍后再试')
+}`
+
 export function integrationTemplates() {
   return {
     pagesFunction: PAGES_FUNCTION, workerSnippet: WORKER_SNIPPET, workerEntryLine: WORKER_ENTRY_LINE,
     assetsConfig: ASSETS_CONFIG, serviceBindingConfig: SERVICE_BINDING_CONFIG, scriptTag: SCRIPT_TAG,
+    formHtml: FORM_HTML, formJs: FORM_JS,
   }
 }

@@ -220,6 +220,10 @@ export default function AiAccessPage() {
                 <div className="min-w-0 flex-1">
                   <h2 className="text-sm font-medium text-gray-900">{t('aiAccess.push.keysTitle')}</h2>
                   <p className="mt-0.5 text-xs text-gray-500">{t('aiAccess.push.intro')}</p>
+                  <p className="mt-1 text-xs text-gray-500">
+                    {t('aiAccess.push.siteHint')}{' '}
+                    <Link to="/app/analytics?tab=sites" className="text-primary-600 hover:underline">{t('aiAccess.push.siteLink')}</Link>
+                  </p>
                 </div>
                 <Button size="sm" onClick={() => openCreate('push')}>{t('aiAccess.push.create')}</Button>
               </div>

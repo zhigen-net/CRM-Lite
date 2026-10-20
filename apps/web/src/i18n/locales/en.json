@@ -1108,7 +1108,9 @@
       "defaultName": "Website form",
       "empty": "No push keys yet",
       "docsToggle": "API reference",
-      "llmsHint": "AIs with web access can read the live API reference directly:"
+      "llmsHint": "AIs with web access can read the live API reference directly:",
+      "siteHint": "For website forms, submitting to the site's /_t/lead is recommended: no push key is needed and the visitor source is linked automatically. Both ways use the same processing rules.",
+      "siteLink": "Go to Sites"
     },
     "keys": {
       "lastUsed": "Last used {{time}}",
@@ -1197,7 +1199,8 @@
         "secrets": "Variables",
         "code": "Proxy code",
         "script": "Page script",
-        "verify": "Check"
+        "verify": "Check",
+        "form": "Forms"
       },
       "prev": "Back",
       "next": "Next",
@@ -1297,6 +1300,17 @@
         "manual3": "/_t/collect should return 204.",
         "manual4": "To test source detection, add ?utm_source=test&utm_medium=cpc to the URL in a private window; First source should show Paid.",
         "multi": "More websites? Add another site afterwards; each website uses its own key, then repeat this guide. Pages under the same domain belong to one site."
+      },
+      "form": {
+        "intro": "Website forms submit straight to /_t/lead on the same site, and the same proxy code hands them to the CRM to create a lead. No API key and no backend code are needed, and the lead is linked to the visitor's source and journey automatically. Pick either way:",
+        "htmlLabel": "Option 1: native form (set action to /_t/lead)",
+        "jsLabel": "Option 2: custom front end (call submitLead from the tracking script)",
+        "fields": "Fields: name (name) and a contact (phone / mobile / wechat / email) are required, message goes into notes, and any other field is kept in notes too.",
+        "source": "The source defaults to the site name \"{{name}}\"; pass a source field to override it, e.g. to tell landing pages apart.",
+        "protect": "Built-in spam protection: a hidden bot trap field, at most 5 submissions per IP and 3 per visitor in 10 minutes.",
+        "backend": "Sites whose backend already pushes to /api/v1/leads can stay as they are; just include the form's crm_vid. Both paths use the same processing rules.",
+        "aiHint": "Give this to a coding AI to switch the website's existing lead forms to /_t/lead.",
+        "aiPrompt": "Please connect this website's existing lead forms to the CRM (visitor tracking is already set up and the /_t/* proxy code is deployed; do not change it):\n1. Submit forms to /_t/lead on the same site. No key or CRM address is needed.\n2. Native forms: set action to /_t/lead and method to post. Custom front ends: call window.__crmTracker.submitLead(data) and show the result based on ok.\n3. Field names: name for the name, phone (or wechat, email) for the contact, message for the message; keep other fields as they are. Add a source field to tell landing pages apart.\n4. Do not remove the hidden fields added by the tracking script (crm_vid, _hp, _page).\n5. When done, list the pages you changed.\n\nNative form example:\n{{html}}\n\nCustom front end example:\n{{js}}"
       }
     },
     "source": {

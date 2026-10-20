@@ -13,7 +13,7 @@ export interface GuideSite {
 }
 interface Integration {
   pagesFunction: string; workerSnippet: string; workerEntryLine: string
-  assetsConfig: string; serviceBindingConfig: string; scriptTag: string
+  assetsConfig: string; serviceBindingConfig: string; scriptTag: string; formHtml: string; formJs: string
 }
 type CheckReason = 'ok' | 'unreachable' | 'not_found' | 'html' | 'redirect' | 'bad_key' | 'wrong_site' | 'server_error' | 'unexpected'
 interface CheckStep { ok: boolean; status: number | null; reason: CheckReason }
@@ -21,7 +21,7 @@ interface CheckResult { host: string; script: CheckStep; collect: CheckStep }
 
 type SiteType = 'pages' | 'worker'
 type Connect = 'binding' | 'url'
-const STEPS = ['prepare', 'secrets', 'code', 'script', 'verify'] as const
+const STEPS = ['prepare', 'secrets', 'code', 'script', 'form', 'verify'] as const
 
 /** CRM 部署在 workers.dev 上时，子域名的第一段就是 Worker 名 */
 function guessWorkerName(): string | null {
@@ -235,6 +235,27 @@ export function IntegrationGuide({ site, siteKey: initialKey, onClose }: { site:
             </ul>
           </Note>
           <Note tone="amber">{t('analytics.guide.script.deploy')}</Note>
+        </div>
+      )
+
+      case 'form': return tpl && (
+        <div className="space-y-4 text-sm text-gray-700">
+          <p>{t('analytics.guide.form.intro')}</p>
+          <CopyBlock label={t('analytics.guide.form.htmlLabel')} code={tpl.formHtml} />
+          <CopyBlock label={t('analytics.guide.form.jsLabel')} code={tpl.formJs} />
+          <Note>
+            <ul className="list-disc space-y-1 pl-4">
+              <li>{t('analytics.guide.form.fields')}</li>
+              <li>{t('analytics.guide.form.source', { name: site.name })}</li>
+              <li>{t('analytics.guide.form.protect')}</li>
+              <li>{t('analytics.guide.form.backend')}</li>
+            </ul>
+          </Note>
+          <details className="rounded-lg border px-3 py-2">
+            <summary className="cursor-pointer text-sm font-medium text-gray-800">{t('analytics.guide.code.aiTitle')}</summary>
+            <p className="my-2 text-xs text-gray-500">{t('analytics.guide.form.aiHint')}</p>
+            <CopyBlock code={t('analytics.guide.form.aiPrompt', { html: tpl.formHtml, js: tpl.formJs })} />
+          </details>
         </div>
       )
 

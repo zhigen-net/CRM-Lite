@@ -1,4 +1,4 @@
-// 外部推送线索的整理规则（对外接口 /api/v1/leads 与失败补录共用）
+// 外部提交线索的整理规则（由 submit.ts 统一调用：对外接口、网站表单、AI 能力、失败补录）
 import type { CreateLeadInput } from './service'
 import { parseVisitorId } from '../tracking/link'
 
@@ -13,6 +13,19 @@ const AD_FIELD_ALIASES: Record<string, string> = {
   campaign: '广告计划', '广告计划': '广告计划',
   adGroup: '广告组', '广告组': '广告组', ad_group: '广告组',
   ad: '广告', '广告': '广告',
+}
+
+// 网站表单常见的字段名：没有标准字段时按顺序取第一个有值的
+const NAME_ALIASES = ['name', 'fullname', 'full_name', 'username', '姓名', '称呼', '名字']
+const CONTACT_ALIASES = ['contactInfo', 'contact_info', 'contact', 'phone', 'mobile', 'tel', 'telephone', 'wechat', 'weixin', 'email',
+  '联系方式', '手机', '手机号', '电话', '微信', '邮箱']
+const NOTES_ALIASES = ['notes', 'message', 'remark', 'comment', 'content', '留言', '备注', '咨询内容']
+
+const filled = (v: unknown) => v !== undefined && v !== null && String(v).trim() !== ''
+/** 按别名顺序取第一个有值的字段，返回字段名和值 */
+function pick(body: Record<string, unknown>, aliases: string[]): [string, string] | null {
+  for (const k of aliases) if (filled(body[k])) return [k, String(body[k]).trim()]
+  return null
 }
 
 // 兜底服务的常见叫法；不同部署的服务名可能是中文或英文
@@ -44,8 +57,13 @@ export async function normalizeExternalLead(db: D1Database, body: Record<string,
   const validServices = new Set(serviceNames)
   const fallback = pickFallbackService(serviceNames)
 
+  const namePick = pick(body, NAME_ALIASES)
+  const contactPick = pick(body, CONTACT_ALIASES)
+  const used = new Set([namePick?.[0], contactPick?.[0]].filter(Boolean) as string[])
   const notes: string[] = []
-  if (body.notes) notes.push(String(body.notes))
+  for (const k of NOTES_ALIASES) {
+    if (filled(body[k])) { notes.push(String(body[k]).trim()); used.add(k) }
+  }
 
   // 意向服务选填：没传时为空；传了系统未收录的值时记为兜底服务
   const submitted = Array.isArray(body.intendedServices) ? (body.intendedServices as unknown[]).map(String) : []
@@ -62,7 +80,7 @@ export async function normalizeExternalLead(db: D1Database, body: Record<string,
   }
   const extra: string[] = []
   for (const [k, v] of Object.entries(body)) {
-    if (KNOWN_FIELDS.has(k) || IGNORED_FIELDS.has(k) || k === 'contact_info') continue
+    if (KNOWN_FIELDS.has(k) || IGNORED_FIELDS.has(k) || used.has(k) || k === 'contact_info' || !filled(v)) continue
     const adKey = AD_FIELD_ALIASES[k]
     if (adKey) {
       if (!adInfo[adKey]) adInfo[adKey] = String(v)
@@ -73,9 +91,9 @@ export async function normalizeExternalLead(db: D1Database, body: Record<string,
   if (extra.length > 0) notes.push(`附加信息：${extra.join('；')}`)
 
   return {
-    source: String(body.source ?? ''),
-    name: String(body.name ?? ''),
-    contactInfo: String(body.contactInfo ?? body.contact_info ?? ''),
+    source: String(body.source ?? '').trim(),
+    name: namePick?.[1] ?? '',
+    contactInfo: contactPick?.[1] ?? '',
     intendedServices,
     notes: notes.length > 0 ? notes.join('\n') : null,
     adInfo: Object.keys(adInfo).length > 0 ? adInfo : null,

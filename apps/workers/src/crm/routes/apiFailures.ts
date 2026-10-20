@@ -2,9 +2,8 @@ import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { requireAuth, requireAdmin } from '../middleware/auth'
 import { toCamelList } from '../../shared/db'
-import { actorFromJwt } from '../../domain/actor'
-import { createLead } from '../../domain/leads/service'
-import { normalizeExternalLead } from '../../domain/leads/intake'
+import { actorFromJwt, depsFrom } from '../../domain/actor'
+import { submitExternalLead } from '../../domain/leads/submit'
 
 export const apiFailuresRoutes = new Hono<{ Bindings: Env }>()
 
@@ -41,13 +40,8 @@ apiFailuresRoutes.post('/:id/create-lead', async (c) => {
     throw new HTTPException(422, { message: '请求体数据损坏，无法解析' })
   }
 
-  // 与对外接口走同一套整理规则和新建流程（进入自动分配、触发"新建"类工作流）
-  const input = await normalizeExternalLead(c.env.DB, body)
-  const leadId = await createLead(
-    { db: c.env.DB, env: c.env, waitUntil: (p: Promise<unknown>) => c.executionCtx.waitUntil(p) },
-    actorFromJwt(c.get('jwtPayload'), 'web'),
-    input,
-  )
+  // 与对外接口、网站表单同一套处理（进入自动分配、触发"新建"类工作流）；补录失败不再新增失败记录
+  const { id: leadId } = await submitExternalLead(depsFrom(c), actorFromJwt(c.get('jwtPayload'), 'web'), body)
 
   await c.env.DB.prepare(
     `UPDATE api_lead_failures
