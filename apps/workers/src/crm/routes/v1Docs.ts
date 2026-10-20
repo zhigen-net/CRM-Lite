@@ -50,6 +50,7 @@ ${JSON.stringify(example, null, 2)}
 
 响应：
 - 201：\`{"data":{"id":"线索ID","status":"New"}}\`
+- 200：\`{"data":{"id":"已有线索ID","duplicate":true}}\`，30 天内同一联系方式已有线索，已合并到该线索（不新建，本次内容记在该线索的跟进记录里），同样视为成功
 - 400：参数错误（缺少必填字段、类型不对），返回体说明是哪个字段
 - 401：缺少或无效的 X-API-Key，返回 \`{"message":"..."}\`
 - 403：密钥没有 leads:create 权限
@@ -133,7 +134,7 @@ export function buildOpenApi(origin: string, services: string[]) {
                 properties: { data: { type: 'object', properties: { id: { type: 'string' }, status: { type: 'string', example: 'New' } } } },
               } } },
             },
-            200: { description: '试运行结果（dryRun=1），未创建线索' },
+            200: { description: '试运行结果（dryRun=1）；或 30 天内同一联系方式已有线索，已合并到该线索（data.duplicate 为 true，data.id 为已有线索 ID）' },
             400: { description: '参数错误' },
             401: { description: '缺少或无效的 X-API-Key' },
             403: { description: '密钥没有 leads:create 权限' },

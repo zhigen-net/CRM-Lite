@@ -1,9 +1,10 @@
 // 外部提交线索的统一处理：对外接口 /api/v1/leads、网站表单 /api/t/lead、MCP / AI 助手 create_lead、失败补录都走这里
-// 校验 → 整理（意向服务兜底、广告字段、未知字段进备注、访客关联）→ 新建（分配、工作流）→ 审计 / 失败记录
+// 校验 → 整理（意向服务兜底、广告字段、未知字段进备注、访客关联）→ 去重（30 天内同一联系方式合并到已有线索）→ 新建（分配、工作流）→ 审计 / 失败记录
 // 各入口只负责鉴权和响应格式，不要在入口里另写规则，避免几条路径的数据不一致
 import type { Actor, Deps } from '../actor'
 import { recordAudit } from '../audit'
 import { badRequest } from '../errors'
+import { findDuplicateLead, mergeIntoLead } from './dedupe'
 import { normalizeExternalLead } from './intake'
 import { createLead, type CreateLeadInput } from './service'
 
@@ -52,15 +53,22 @@ export async function prepareExternalLead(
   return lead
 }
 
-/** 校验、整理并新建线索；参数错误直接抛出（不记失败），新建过程中的错误按选项记审计和失败 */
+/** 校验、整理并新建线索；30 天内同一联系方式已有线索时合并到已有线索（duplicate 为 true，id 为已有线索）
+ *  参数错误直接抛出（不记失败），新建过程中的错误按选项记审计和失败 */
 export async function submitExternalLead(
   deps: Deps, actor: Actor, raw: Record<string, unknown>, opts: SubmitOptions = {},
-): Promise<{ id: string; lead: CreateLeadInput }> {
+): Promise<{ id: string; lead: CreateLeadInput; duplicate: boolean }> {
   const lead = await prepareExternalLead(deps.db, raw, opts)
   try {
+    const existing = await findDuplicateLead(deps.db, lead.contactInfo)
+    if (existing) {
+      await mergeIntoLead(deps, actor, existing, lead)
+      if (opts.audit) recordAudit(deps, actor, { action: 'create_lead', status: 'ok', targetType: 'lead', targetId: existing.id, input: { ...raw, _merged: true } })
+      return { id: existing.id, lead, duplicate: true }
+    }
     const id = await createLead(deps, actor, { ...lead, linkCreatorTeam: opts.linkCreatorTeam })
     if (opts.audit) recordAudit(deps, actor, { action: 'create_lead', status: 'ok', targetType: 'lead', targetId: id, input: raw })
-    return { id, lead }
+    return { id, lead, duplicate: false }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
     if (opts.audit) recordAudit(deps, actor, { action: 'create_lead', status: 'error', input: raw, error: message })

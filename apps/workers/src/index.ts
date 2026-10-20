@@ -149,9 +149,11 @@ app.post('/api/v1/leads', requireApiKey, requireScope('leads:create'), async (c)
   if (['1', 'true'].includes(c.req.query('dryRun') ?? '')) {
     return c.json({ data: { dryRun: true, lead: await prepareExternalLead(c.env.DB, body as Record<string, unknown>) } })
   }
-  const { id } = await submitExternalLead(depsFrom(c), actor, body as Record<string, unknown>, {
+  const { id, duplicate } = await submitExternalLead(depsFrom(c), actor, body as Record<string, unknown>, {
     audit: true, failure: { apiKeyPrefix: (c.req.header('X-API-Key') ?? '').slice(0, 12) || null },
   })
+  // 30 天内同一联系方式已有线索：已合并到该线索，返回 200 与已有线索 ID
+  if (duplicate) return c.json({ data: { id, duplicate: true } }, 200)
   return c.json({ data: { id, status: 'New' } }, 201)
 })
 

@@ -78,7 +78,7 @@ const escapeHtml = (s: string) => s.replace(/[&<>"']/g, (ch) => `&#${ch.charCode
 
 /** 原生表单提交后的提示页：成功时可跳转到网站指定的站内路径（_redirect） */
 function leadHtml(result: SiteLeadResult, redirect: string | null) {
-  const ok = result.status === 'ok' || result.status === 'spam'
+  const ok = result.status === 'ok' || result.status === 'duplicate' || result.status === 'spam'
   const msg = ok ? '提交成功，我们会尽快与您联系。' : (result.message ?? '提交失败，请稍后再试。')
   const go = ok && redirect ? `<meta http-equiv="refresh" content="2;url=${escapeHtml(redirect)}">` : ''
   return `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">${go}
@@ -102,7 +102,7 @@ trackingCollectRoutes.post('/lead', async (c) => {
   const result = await submitSiteLead(depsFrom(c), { id: site.id, name: site.name, domain: site.domain ?? null, ownerId: site.ownerId ?? null }, raw, {
     geo: parseGeoHeader(c.req.header('X-Visitor-Geo')), ipSalt: c.env.JWT_SECRET,
   })
-  const status = result.status === 'ok' || result.status === 'spam' ? 200
+  const status = result.status === 'ok' || result.status === 'duplicate' || result.status === 'spam' ? 200
     : result.status === 'rate_limited' ? 429 : result.status === 'invalid' ? 400 : 503
 
   // JS 提交（JSON 或 _format=json）返回 JSON；原生表单返回提示页面
