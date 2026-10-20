@@ -27,8 +27,8 @@ const pct = (a: number, b: number) => (b > 0 ? Math.round((a / b) * 1000) / 10 :
 function Card({ title, children, className }: { title: string; children: React.ReactNode; className?: string }) {
   return (
     <section className={cn('rounded-lg border bg-white', className)}>
-      <h2 className="border-b px-4 py-3 text-sm font-medium text-gray-900">{title}</h2>
-      <div className="p-4">{children}</div>
+      <h2 className="border-b px-3 py-2.5 text-sm font-medium text-gray-900 sm:px-4 sm:py-3">{title}</h2>
+      <div className="p-3 sm:p-4">{children}</div>
     </section>
   )
 }
@@ -43,15 +43,15 @@ function StatTile({ label, value, prev, hint }: { label: string; value: string |
     const text = diff === 0 ? t('dashboard.flat') : `${diff > 0 ? '↑' : '↓'} ${rate !== null ? `${Math.abs(rate)}%` : Math.abs(diff)}`
     delta = (
       <span className={cn('text-xs', diff > 0 ? 'text-green-600' : diff < 0 ? 'text-red-500' : 'text-gray-400')}>
-        {text} <span className="text-gray-400">{t('dashboard.vsPrev')}</span>
+        {text} <span className="hidden text-gray-400 sm:inline">{t('dashboard.vsPrev')}</span>
       </span>
     )
   }
   return (
-    <div className="rounded-lg border bg-white p-4">
-      <p className="text-xs text-gray-500">{label}</p>
-      <p className="mt-1 text-2xl font-semibold text-gray-900">{value}</p>
-      <p className="mt-1 min-h-[1rem]">{delta ?? <span className="text-xs text-gray-400">{hint}</span>}</p>
+    <div className="min-w-0 rounded-lg border bg-white p-2.5 sm:p-4">
+      <p className="truncate text-xs text-gray-500">{label}</p>
+      <p className="mt-0.5 text-lg font-semibold text-gray-900 sm:mt-1 sm:text-2xl">{value}</p>
+      <p className="mt-0.5 min-h-[1rem] truncate sm:mt-1">{delta ?? <span className="text-xs text-gray-400">{hint}</span>}</p>
     </div>
   )
 }
@@ -112,14 +112,14 @@ export default function DashboardPage() {
 
   return (
     <div className="p-4 sm:p-6">
-      <div className="mb-4">
+      <div className="mb-3 sm:mb-4">
         <h1 className="text-lg font-semibold text-gray-900 sm:text-xl">{t('dashboard.title')}</h1>
-        <p className="mt-0.5 text-sm text-gray-500">{t(staff ? 'dashboard.subtitle' : 'dashboard.subtitleSales')}</p>
+        <p className="mt-0.5 hidden text-sm text-gray-500 sm:block">{t(staff ? 'dashboard.subtitle' : 'dashboard.subtitleSales')}</p>
       </div>
-      <div className="mb-4 flex flex-wrap items-center gap-2">
+      <div className="mb-3 flex flex-wrap items-center gap-2 sm:mb-4">
         <DateRangePicker value={range} onChange={setRange} />
         <select value={source} onChange={(e) => setSource(e.target.value)} aria-label={t('dashboard.source')}
-          className="max-w-[12rem] rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-700 shadow-sm">
+          className="min-w-0 flex-1 rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-700 shadow-sm sm:max-w-[12rem] sm:flex-none">
           <option value="">{t('dashboard.allSources')}</option>
           {(sources ?? []).map((s) => <option key={s} value={s}>{s}</option>)}
         </select>
@@ -129,8 +129,9 @@ export default function DashboardPage() {
       {isError ? <p className="text-sm text-red-500">{t('common.opFailed')}</p> : !data || !k ? (
         <p className="text-sm text-gray-400">{t('common.loading')}</p>
       ) : (
-        <div className={cn('space-y-4 transition-opacity', isFetching && 'opacity-60')}>
-          <div className={cn('grid grid-cols-2 gap-3', staff ? 'lg:grid-cols-6' : 'lg:grid-cols-4')}>
+        <div className={cn('space-y-3 transition-opacity sm:space-y-4', isFetching && 'opacity-60')}>
+          {/* 手机上 3 列（6 个指标两行），电脑上一行 */}
+          <div className={cn('grid gap-2 sm:gap-3', staff ? 'grid-cols-3 lg:grid-cols-6' : 'grid-cols-2 lg:grid-cols-4')}>
             <StatTile label={t('dashboard.kpi.newLeads')} value={k.newLeads.value} prev={k.newLeads} />
             <StatTile label={t('dashboard.kpi.newClients')} value={k.newClients.value} prev={k.newClients} />
             <StatTile label={t('dashboard.kpi.conversion')} value={`${pct(k.convertedLeads, k.newLeads.value)}%`}
@@ -143,7 +144,7 @@ export default function DashboardPage() {
             </>}
           </div>
 
-          <div className="grid gap-4 lg:grid-cols-3">
+          <div className="grid gap-3 sm:gap-4 lg:grid-cols-3">
             <Card title={t(hasVisitors ? 'dashboard.trend.both' : 'dashboard.trend.leads')} className="lg:col-span-2">
               <BarChart label={t(hasVisitors ? 'dashboard.trend.both' : 'dashboard.trend.leads')} data={data.trend}
                 series={[
@@ -151,11 +152,12 @@ export default function DashboardPage() {
                   { key: 'leads', label: t('dashboard.kpi.newLeads'), color: '#eb6834' },
                 ]} />
             </Card>
-            <Card title={t('dashboard.todo.title')}>
+            {/* 手机上待跟进排在图表前面，打开就能看到要处理的事 */}
+            <Card title={t('dashboard.todo.title')} className="order-first lg:order-none">
               <ul className="divide-y divide-gray-100">
                 {todoItems.map((x) => (
                   <li key={x.key}>
-                    <Link to={x.to} className="flex items-center justify-between py-2.5 text-sm hover:text-primary-700">
+                    <Link to={x.to} className="flex items-center justify-between py-2 text-sm hover:text-primary-700 sm:py-2.5">
                       <span className="text-gray-700">{t(`dashboard.todo.${x.key}`)}</span>
                       <span className={cn('min-w-[2rem] rounded-full px-2 py-0.5 text-center text-xs font-semibold',
                         x.n === 0 ? 'bg-gray-100 text-gray-400' : x.tone === 'red' ? 'bg-red-50 text-red-600' : 'bg-amber-50 text-amber-700')}>{x.n}</span>
@@ -167,7 +169,7 @@ export default function DashboardPage() {
             </Card>
           </div>
 
-          <div className="grid gap-4 lg:grid-cols-2">
+          <div className="grid gap-3 sm:gap-4 lg:grid-cols-2">
             <Card title={t('dashboard.sources')}>
               <BarList rows={data.sources.map((s) => ({ label: s.source === '__other__' ? t('dashboard.other') : s.source, count: s.count }))} />
             </Card>
