@@ -20,7 +20,7 @@ const MAX_PER_VISITOR = 3
 export type SiteLeadStatus = 'ok' | 'invalid' | 'rate_limited' | 'spam' | 'error'
 export interface SiteLeadResult { status: SiteLeadStatus; leadId?: string; message?: string }
 
-interface SiteForLead { id: string; name: string; ownerId: string | null }
+interface SiteForLead { id: string; name: string; domain?: string | null | undefined; ownerId: string | null }
 
 /** 网站提交的线索记在站点创建人名下；创建人已停用时记在任一启用的管理员名下 */
 async function siteActor(db: D1Database, site: SiteForLead): Promise<Actor | null> {
@@ -71,7 +71,8 @@ export async function submitSiteLead(
 
   try {
     const { id } = await submitExternalLead(deps, actor, body, {
-      defaultSource: site.name, audit: true, failure: { siteId: site.id }, adInfoDefaults,
+      // 来源记为网站域名（未填域名时用站点名称）；访客从哪个页面提交看访问轨迹
+      defaultSource: site.domain || site.name, audit: true, failure: { siteId: site.id }, adInfoDefaults,
     })
     await log('ok', id)
     return { status: 'ok', leadId: id }

@@ -13,7 +13,7 @@ function newSiteKey(): string {
   return `cts_${[...bytes].map((b) => b.toString(16).padStart(2, '0')).join('')}`
 }
 
-export interface TrackingSite { id: string; name: string; isActive: boolean; ownerId?: string | null }
+export interface TrackingSite { id: string; name: string; domain?: string | null; isActive: boolean; ownerId?: string | null }
 
 interface SiteRow {
   id: string; name: string; domain: string | null; keyPrefix: string; isActive: boolean | number
@@ -34,9 +34,9 @@ export function parseFeatures(v: unknown): SiteFeatures {
 /** 按站点密钥查找启用中的站点；找不到返回 null */
 export async function findSiteByKey(db: D1Database, key: string | undefined): Promise<TrackingSite | null> {
   if (!key?.startsWith('cts_')) return null
-  const row = await db.prepare('SELECT id, name, is_active, created_by_userId FROM tracking_sites WHERE key_hash = ?')
-    .bind(await sha256Hex(key)).first<{ id: string; name: string; is_active: number; created_by_userId: string | null }>()
-  return row && row.is_active ? { id: row.id, name: row.name, isActive: true, ownerId: row.created_by_userId } : null
+  const row = await db.prepare('SELECT id, name, domain, is_active, created_by_userId FROM tracking_sites WHERE key_hash = ?')
+    .bind(await sha256Hex(key)).first<{ id: string; name: string; domain: string | null; is_active: number; created_by_userId: string | null }>()
+  return row && row.is_active ? { id: row.id, name: row.name, domain: row.domain, isActive: true, ownerId: row.created_by_userId } : null
 }
 
 /** 按 ID 读取站点（含停用的）；不存在时抛错 */

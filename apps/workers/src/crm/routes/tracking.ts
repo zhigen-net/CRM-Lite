@@ -48,7 +48,8 @@ trackingCollectRoutes.post('/collect', async (c) => {
 // ─── 网站表单留资（/_t/lead 转发而来）────────────────────────────────────────
 // 与 /api/v1/leads 共用 submitExternalLead；这里只解析浏览器表单并按提交方式返回 JSON 或提示页面
 
-/** 解析 JSON、普通表单、multipart 表单（文件字段忽略） */
+/** 解析 JSON、普通表单、multipart 表单（文件字段忽略）
+ *  原生表单的意向服务用多个同名 checkbox 或 <select multiple> 提交：intendedServices / intendedServices[] 合并为数组 */
 async function parseLeadBody(contentType: string, buf: ArrayBuffer): Promise<Record<string, unknown> | null> {
   const text = new TextDecoder().decode(buf)
   if (contentType.includes('application/json')) {
@@ -58,13 +59,18 @@ async function parseLeadBody(contentType: string, buf: ArrayBuffer): Promise<Rec
     } catch { return null }
   }
   const out: Record<string, unknown> = {}
+  const services: string[] = []
+  const add = (k: string, v: string) => {
+    if (k === 'intendedServices' || k === 'intendedServices[]') { if (v.trim()) services.push(v.trim()) } else out[k] = v
+  }
   if (contentType.includes('multipart/form-data')) {
     const fd = await new Response(buf, { headers: { 'Content-Type': contentType } }).formData().catch(() => null)
     if (!fd) return null
-    fd.forEach((v, k) => { if (typeof v === 'string') out[k] = v })
-    return out
+    fd.forEach((v, k) => { if (typeof v === 'string') add(k, v) })
+  } else {
+    new URLSearchParams(text).forEach((v, k) => add(k, v))
   }
-  new URLSearchParams(text).forEach((v, k) => { out[k] = v })
+  if (services.length > 0) out.intendedServices = services
   return out
 }
 
@@ -93,7 +99,7 @@ trackingCollectRoutes.post('/lead', async (c) => {
   // 接入检测的探测请求：只回报密钥对应的站点，不建线索、不计入提交频率
   if ('ping' in raw) return c.json({ data: { siteId: site.id } })
 
-  const result = await submitSiteLead(depsFrom(c), { id: site.id, name: site.name, ownerId: site.ownerId ?? null }, raw, {
+  const result = await submitSiteLead(depsFrom(c), { id: site.id, name: site.name, domain: site.domain ?? null, ownerId: site.ownerId ?? null }, raw, {
     geo: parseGeoHeader(c.req.header('X-Visitor-Geo')), ipSalt: c.env.JWT_SECRET,
   })
   const status = result.status === 'ok' || result.status === 'spam' ? 200

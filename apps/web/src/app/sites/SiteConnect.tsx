@@ -26,6 +26,11 @@ export function SiteConnect({ site, siteKey, onRotate, rotating, onGoFeatures }:
     queryKey: ['tracking-integration'],
     queryFn: () => crmApi.get<{ data: Integration }>('/admin/tracking-sites/integration').then((r) => r.data.data),
   })
+  // 表单的意向服务只能用 CRM 里已有的服务名，提示词里列出来
+  const { data: services } = useQuery({
+    queryKey: ['services-list'],
+    queryFn: () => crmApi.get<{ data: { id: string; name: string }[] }>('/services').then((r) => r.data.data),
+  })
   const checkMutation = useMutation({
     mutationFn: () => crmApi.post<{ data: CheckResult }>(`/admin/tracking-sites/${site.id}/check`, { domain }),
     onSuccess: (res) => { setCheck(res.data.data); setDomain(res.data.data.host); queryClient.invalidateQueries({ queryKey: ['tracking-site', site.id] }) },
@@ -41,8 +46,8 @@ export function SiteConnect({ site, siteKey, onRotate, rotating, onGoFeatures }:
   if (!tpl) return <p className="text-sm text-gray-400">{t('common.loading')}</p>
 
   const ctx: PromptContext = {
-    t, tpl, platform: site.platform, features: site.features, siteName: site.name,
-    origin: window.location.origin, workerName: guessWorkerName(),
+    t, tpl, platform: site.platform, features: site.features, leadSource: site.domain || site.name,
+    origin: window.location.origin, workerName: guessWorkerName(), services: (services ?? []).map((s) => s.name),
   }
   const prompt = buildPrompt(ctx, scope)
   const files = site.platform === 'other' ? [] : platformFiles(ctx)
