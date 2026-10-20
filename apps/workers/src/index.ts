@@ -35,11 +35,9 @@ import { trackingCollectRoutes, trackingRoutes, trackingSitesAdminRoutes } from 
 import { requireApiKey, requireScope } from './crm/middleware/apiKeyAuth'
 import { executeScheduledWorkflows } from './crm/workflow/executor'
 import { hashPassword } from './shared/password'
-import { actorFromJwt } from './domain/actor'
+import { actorFromJwt, depsFrom } from './domain/actor'
 import { DomainError } from './domain/errors'
-import { recordAudit } from './domain/audit'
-import { createLead } from './domain/leads/service'
-import { normalizeExternalLead } from './domain/leads/intake'
+import { prepareExternalLead, submitExternalLead } from './domain/leads/submit'
 import { applyIndustryTemplate, INDUSTRY_TEMPLATES } from './domain/templates'
 
 // 客户门户路由
@@ -142,61 +140,20 @@ app.route('/api/mcp', mcpRoutes)
 // 访客统计采集（网站服务器端转发，站点密钥鉴权）
 app.route('/api/t', trackingCollectRoutes)
 
-const v1LeadSchema = z.object({
-  source: z.string().min(1, '请填写来源'),
-  name: z.string().min(1, '请填写姓名'),
-  contactInfo: z.string().min(1, '请填写联系方式'),
-  intendedServices: z.array(z.string()).optional(),
-  notes: z.string().nullable().optional(),
-  adInfo: z.object({
-    ip: z.string().optional(),
-    url: z.string().optional(),
-    账户: z.string().optional(),
-    广告计划: z.string().optional(),
-    广告组: z.string().optional(),
-    广告: z.string().optional(),
-  }).optional(),
-}).passthrough()
-
-app.post(
-  '/api/v1/leads',
-  requireApiKey,
-  requireScope('leads:create'),
-  zValidator('json', v1LeadSchema),
-  async (c) => {
-    const body = c.req.valid('json') as Record<string, unknown>
-    const actor = actorFromJwt(c.get('jwtPayload'), 'api', c.get('apiKey').id)
-    const deps = { db: c.env.DB, env: c.env, waitUntil: (p: Promise<unknown>) => c.executionCtx.waitUntil(p) }
-
-    // 试运行：只返回整理后的结果，不建线索、不记失败
-    if (['1', 'true'].includes(c.req.query('dryRun') ?? '')) {
-      const input = await normalizeExternalLead(c.env.DB, body)
-      return c.json({ data: { dryRun: true, lead: input } })
-    }
-
-    try {
-      const input = await normalizeExternalLead(c.env.DB, body)
-      const id = await createLead(deps, actor, input)
-      recordAudit(deps, actor, { action: 'create_lead', status: 'ok', targetType: 'lead', targetId: id, input: body })
-      return c.json({ data: { id, status: 'New' } }, 201)
-    } catch (err) {
-      recordAudit(deps, actor, {
-        action: 'create_lead', status: 'error', input: body, error: err instanceof Error ? err.message : String(err),
-      })
-      // 异步保存失败记录，不阻塞响应，也不抛出新错误
-      void c.env.DB.prepare(
-        `INSERT INTO api_lead_failures (id, request_body, error_message, api_key_prefix)
-         VALUES (?, ?, ?, ?)`,
-      ).bind(
-        uuidv4(),
-        JSON.stringify(body),
-        err instanceof Error ? err.message : String(err),
-        (c.req.header('X-API-Key') ?? '').slice(0, 12) || null,
-      ).run().catch(() => {})
-      throw err
-    }
-  },
-)
+// 对外接口新建线索：鉴权在这里，校验、整理、新建、审计、失败记录都在 domain/leads/submit.ts（与网站表单 /api/t/lead 共用）
+app.post('/api/v1/leads', requireApiKey, requireScope('leads:create'), async (c) => {
+  const body = await c.req.json<unknown>().catch(() => null)
+  if (!body || typeof body !== 'object' || Array.isArray(body)) return c.json({ message: '请求体必须是 JSON 对象' }, 400)
+  const actor = actorFromJwt(c.get('jwtPayload'), 'api', c.get('apiKey').id)
+  // 试运行：只返回整理后的结果，不建线索、不记失败
+  if (['1', 'true'].includes(c.req.query('dryRun') ?? '')) {
+    return c.json({ data: { dryRun: true, lead: await prepareExternalLead(c.env.DB, body as Record<string, unknown>) } })
+  }
+  const { id } = await submitExternalLead(depsFrom(c), actor, body as Record<string, unknown>, {
+    audit: true, failure: { apiKeyPrefix: (c.req.header('X-API-Key') ?? '').slice(0, 12) || null },
+  })
+  return c.json({ data: { id, status: 'New' } }, 201)
+})
 
 // CRM 内部 API（/api/*）
 app.route('/api/auth', authRoutes)

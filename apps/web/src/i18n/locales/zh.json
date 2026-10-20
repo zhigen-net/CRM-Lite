@@ -1108,7 +1108,9 @@
       "defaultName": "官网表单",
       "empty": "还没有推送密钥",
       "docsToggle": "接口说明",
-      "llmsHint": "能联网的 AI 可以直接读取实时生成的接口说明："
+      "llmsHint": "能联网的 AI 可以直接读取实时生成的接口说明：",
+      "siteHint": "网站表单推荐直接提交到网站的 /_t/lead，不需要推送密钥，并会自动关联访客来源；两种方式用同一套处理规则。",
+      "siteLink": "去站点管理"
     },
     "keys": {
       "lastUsed": "最后使用 {{time}}",
@@ -1197,7 +1199,8 @@
         "secrets": "配置变量",
         "code": "转发代码",
         "script": "页面脚本",
-        "verify": "检测"
+        "verify": "检测",
+        "form": "表单"
       },
       "prev": "上一步",
       "next": "下一步",
@@ -1297,6 +1300,17 @@
         "manual3": "/_t/collect 应返回 204。",
         "manual4": "测试来源识别：在网址后加 ?utm_source=test&utm_medium=cpc，用无痕窗口访问，「首次来源」应显示为广告。",
         "multi": "还有其它网站？完成后再「添加站点」，每个网站使用自己的密钥，重复本向导即可。同一域名下的多个页面属于同一个站点。"
+      },
+      "form": {
+        "intro": "网站表单直接提交到本站的 /_t/lead，由同一个转发代码交给 CRM 新建线索。不需要 API Key，也不用写后端代码；线索会自动关联访客的来源和访问轨迹。两种方式任选：",
+        "htmlLabel": "方式一：原生表单（把 action 改成 /_t/lead）",
+        "jsLabel": "方式二：自定义前端（调用采集脚本提供的 submitLead）",
+        "fields": "字段：姓名（name / 姓名）和联系方式（phone / mobile / wechat / email / 电话 / 微信 等）必填，留言（message / 留言）写进备注，其它字段也会写进备注，不会丢。",
+        "source": "来源默认是站点名称「{{name}}」；表单里传 source 可以覆盖，比如区分不同落地页。",
+        "protect": "已自动防刷：隐藏的防机器人字段，同一 IP 10 分钟内最多 5 次、同一访客最多 3 次提交。",
+        "backend": "已经由网站后端调用 /api/v1/leads 推送线索的，可以不改，推送时带上表单里的 crm_vid 即可；两条路径用同一套处理规则。",
+        "aiHint": "交给编码 AI，在网站仓库中把现有的留资表单改为提交到 /_t/lead。",
+        "aiPrompt": "请把这个网站现有的留资表单接入 CRM（网站已接入访客统计，/_t/* 的转发代码已部署，不要修改它）：\n1. 表单提交到同域的 /_t/lead，不需要任何密钥或 CRM 地址。\n2. 原生表单：把 action 改为 /_t/lead、method 改为 post；自定义前端：改为调用 window.__crmTracker.submitLead(数据)，根据返回的 ok 提示用户。\n3. 字段名：姓名用 name，联系方式用 phone（或 wechat、email），留言用 message；其它字段保持原名即可。需要区分落地页时加 source 字段。\n4. 不要删除采集脚本自动加入的隐藏字段（crm_vid、_hp、_page）。\n5. 完成后列出改动的页面。\n\n原生表单示例：\n{{html}}\n\n自定义前端示例：\n{{js}}"
       }
     },
     "source": {

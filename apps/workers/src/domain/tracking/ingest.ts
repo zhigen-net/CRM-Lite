@@ -38,7 +38,7 @@ const int = (v: unknown, max: number): number | null =>
   typeof v === 'number' && Number.isFinite(v) && v >= 0 ? Math.min(Math.round(v), max) : null
 const nowSql = () => new Date().toISOString().slice(0, 19).replace('T', ' ')
 
-async function hashIp(ip: string | null | undefined, salt: string): Promise<string | null> {
+export async function hashIp(ip: string | null | undefined, salt: string): Promise<string | null> {
   if (!ip) return null
   const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(salt), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'])
   const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(`ip:${ip}`))

@@ -4,7 +4,7 @@ import type { CrmJwtPayload } from '../shared/jwt'
 export type Role = 'admin' | 'operations' | 'sales'
 
 /** 请求来源，用于日志、审计，以及避免工作流循环触发 */
-export type Channel = 'web' | 'api' | 'assistant' | 'mcp' | 'workflow'
+export type Channel = 'web' | 'api' | 'assistant' | 'mcp' | 'workflow' | 'site'
 
 export interface Actor {
   userId: string

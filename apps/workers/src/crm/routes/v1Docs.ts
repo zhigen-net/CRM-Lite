@@ -39,6 +39,7 @@ Content-Type: application/json
 - intendedServices（可选，字符串数组）：意向服务。可选值：${services.length > 0 ? services.join('、') : `（系统暂未配置服务，填「${fallback}」）`}。不在列表中的值会被记为「${fallback}」，原值写入备注
 - notes（可选，字符串）：备注
 - adInfo（可选，对象）：广告追踪信息，键为 ${AD_KEYS.join('、')}；也可以把这些键直接放在顶层
+- 常见字段名也能识别：姓名可用 name / 姓名，联系方式可用 phone / mobile / wechat / email / 电话 / 微信，留言可用 message / 留言（写入备注）
 - crm_vid（可选，字符串）：网站接入访客统计后，表单里会自动多出隐藏字段 crm_vid（访客 ID）。原样传入即可在线索上看到访客的来源渠道和访问轨迹；没有时不传
 - 其它未定义的字段不会报错，会拼接到备注里
 
@@ -53,6 +54,10 @@ ${JSON.stringify(example, null, 2)}
 - 401：缺少或无效的 X-API-Key，返回 \`{"message":"..."}\`
 - 403：密钥没有 leads:create 权限
 - 接口允许跨域请求，但密钥不能暴露在浏览器中
+
+## 网站表单（推荐）
+- 已接入访客统计的网站，表单可以直接提交到网站自己的 /_t/lead（由网站转发给 CRM），不需要 API Key，线索会自动关联访客来源。
+- 两种方式使用同一套处理规则：字段、校验、意向服务兜底、备注整理完全一致。
 
 ## 试运行（调试用）
 POST ${endpoint}?dryRun=1

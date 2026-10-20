@@ -2,7 +2,7 @@
 import * as leads from '../leads/service'
 import { recentActivities } from '../activities/service'
 import { badRequest } from '../errors'
-import { normalizeExternalLead } from '../leads/intake'
+import { submitExternalLead } from '../leads/submit'
 import type { Capability } from './types'
 import { visitorSourceSummary } from '../tracking/attribution'
 
@@ -115,8 +115,8 @@ export const createLead: Capability = {
     required: ['source', 'name', 'contactInfo'],
   },
   async run(deps, actor, input) {
-    const normalized = await normalizeExternalLead(deps.db, input)
-    const id = await leads.createLead(deps, actor, { ...normalized, linkCreatorTeam: true })
-    return { success: true, leadId: id, intendedServices: normalized.intendedServices, message: '线索已创建' }
+    // 与对外接口、网站表单同一套处理；审计由能力注册表统一记录
+    const result = await submitExternalLead(deps, actor, input, { linkCreatorTeam: true })
+    return { success: true, leadId: result.id, intendedServices: result.lead.intendedServices, message: '线索已创建' }
   },
 }
