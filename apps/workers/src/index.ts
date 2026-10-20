@@ -32,6 +32,7 @@ import { v1DocsRoutes } from './crm/routes/v1Docs'
 import { auditLogRoutes } from './crm/routes/auditLog'
 import { mcpRoutes } from './crm/routes/mcp'
 import { trackingCollectRoutes, trackingRoutes, trackingSitesAdminRoutes } from './crm/routes/tracking'
+import { dashboardRoutes } from './crm/routes/dashboard'
 import { requireApiKey, requireScope } from './crm/middleware/apiKeyAuth'
 import { executeScheduledWorkflows } from './crm/workflow/executor'
 import { hashPassword } from './shared/password'
@@ -182,6 +183,7 @@ app.route('/api/admin/api-failures', apiFailuresRoutes)
 app.route('/api/admin/audit-log', auditLogRoutes)
 app.route('/api/admin/tracking-sites', trackingSitesAdminRoutes)
 app.route('/api/tracking', trackingRoutes)
+app.route('/api/dashboard', dashboardRoutes)
 app.route('/api/milestones', milestonesRoutes)
 
 // 客户门户 API（/api/client/*）：默认关闭，未开启时一律 404

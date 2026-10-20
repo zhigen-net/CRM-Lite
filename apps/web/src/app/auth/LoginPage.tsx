@@ -44,7 +44,7 @@ export default function CrmLoginPage() {
     setServerError('')
     try {
       await login(data.email, data.password)
-      navigate('/app/leads', { replace: true })
+      navigate('/app/dashboard', { replace: true })
     } catch {
       setServerError(t('auth.loginFailed'))
     }
@@ -72,7 +72,7 @@ export default function CrmLoginPage() {
     onSuccess: async (_, data) => {
       try {
         await login(data.email, data.password)
-        navigate('/app/leads', { replace: true })
+        navigate('/app/dashboard', { replace: true })
       } catch {
         setServerError(t('auth.loginFailed'))
       }

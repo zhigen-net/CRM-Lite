@@ -84,6 +84,7 @@
     "brand": "客路"
   },
   "nav": {
+    "dashboard": "仪表盘",
     "leads": "线索",
     "clients": "客户",
     "activities": "跟进记录",
@@ -1660,6 +1661,62 @@
     },
     "records": {
       "submissions": "表单提交记录"
+    }
+  },
+  "dateRange": {
+    "presets": {
+      "all": "全部时间",
+      "today": "今天",
+      "yesterday": "昨天",
+      "7d": "近 7 天",
+      "30d": "近 30 天",
+      "90d": "近 90 天",
+      "thisMonth": "本月",
+      "lastMonth": "上月"
+    },
+    "custom": "自定义",
+    "from": "开始日期",
+    "to": "结束日期",
+    "apply": "应用"
+  },
+  "dashboard": {
+    "title": "仪表盘",
+    "subtitle": "所选时间段内的线索、客户、跟进与网站访客概况",
+    "subtitleSales": "所选时间段内你负责的线索、客户与跟进概况",
+    "vsPrev": "较上一周期",
+    "flat": "持平",
+    "noData": "这段时间没有数据",
+    "other": "其它",
+    "kpi": {
+      "newLeads": "新增线索",
+      "newClients": "新增客户",
+      "conversion": "线索转化率",
+      "conversionHint": "已转化 {{converted}} / 新增 {{total}}",
+      "followups": "跟进次数",
+      "visitors": "网站访客",
+      "siteRate": "网站留资率",
+      "siteRateHint": "网站留资 {{leads}} 条"
+    },
+    "trend": {
+      "leads": "每日新增线索",
+      "visitors": "每日网站访客"
+    },
+    "todo": {
+      "title": "待跟进",
+      "overdueLeads": "逾期未联系的线索",
+      "todayLeads": "今天要联系的线索",
+      "overdueClients": "逾期未联系的客户",
+      "todayClients": "今天要联系的客户",
+      "hint": "按「下次联系」日期统计，不受时间段影响"
+    },
+    "sources": "线索来源",
+    "statuses": "线索状态",
+    "leaderboard": {
+      "title": "销售排行",
+      "name": "销售",
+      "leads": "新分配线索",
+      "followups": "跟进次数",
+      "clients": "新增客户"
     }
   }
 }

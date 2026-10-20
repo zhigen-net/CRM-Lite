@@ -19,6 +19,7 @@ export default function CrmLayout() {
 
   // 主导航按 访客 → 线索 → 客户 的流程排列；roles 为空表示所有角色可见
   const navItems: { to: string; label: string; icon: string; roles?: string[] }[] = [
+    { to: '/app/dashboard', icon: 'dashboard', label: t('nav.dashboard') },
     { to: '/app/analytics', icon: 'analytics', label: t('nav.analytics'), roles: ['admin', 'operations'] },
     { to: '/app/leads', icon: 'leads', label: t('nav.leads') },
     { to: '/app/clients', icon: 'clients', label: t('nav.clients') },

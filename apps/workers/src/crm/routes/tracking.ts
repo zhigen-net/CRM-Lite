@@ -15,6 +15,7 @@ import { checkSiteIntegration, detectSitePlatform, normalizeHost } from '../../d
 import { platformTemplates, PROXY_SPEC } from '../../domain/tracking/platforms'
 import { submitSiteLead, type SiteLeadResult } from '../../domain/tracking/siteLead'
 import { depsFrom } from '../../domain/actor'
+import { resolveRange, systemTimezone } from '../../domain/timeRange'
 
 const MAX_BODY_BYTES = 16 * 1024
 
@@ -175,7 +176,9 @@ trackingRoutes.get('/sites', async (c) => {
 
 trackingRoutes.get('/visitors', async (c) => {
   const q = c.req.query()
+  const range = q.from || q.to ? resolveRange(await systemTimezone(c.env.DB), q.from, q.to) : null
   return c.json(await listVisitors(c.env.DB, {
+    startUtc: range?.startUtc, endUtc: range?.endUtc,
     siteId: q.siteId ?? '',
     channel: q.channel || undefined,
     withLead: q.withLead === 'true' ? true : q.withLead === 'false' ? false : undefined,

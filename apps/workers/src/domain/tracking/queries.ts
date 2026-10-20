@@ -6,6 +6,8 @@ export interface VisitorListFilters {
   siteId: string
   channel?: string | undefined
   withLead?: boolean | undefined
+  startUtc?: string | undefined
+  endUtc?: string | undefined
   page?: number | undefined
   pageSize?: number | undefined
 }
@@ -19,6 +21,11 @@ export async function listVisitors(db: D1Database, f: VisitorListFilters) {
   if (f.channel) { where += ' AND v.first_channel = ?'; params.push(f.channel) }
   if (f.withLead === true) where += ' AND v.lead_id IS NOT NULL'
   if (f.withLead === false) where += ' AND v.lead_id IS NULL'
+  // 时间范围：范围内有访问的访客（UTC 起止，由 timeRange 按系统时区换算）
+  if (f.startUtc && f.endUtc) {
+    where += ' AND EXISTS (SELECT 1 FROM visits vi WHERE vi.site_id = v.site_id AND vi.visitor_id = v.id AND vi.started_at >= ? AND vi.started_at < ?)'
+    params.push(f.startUtc, f.endUtc)
+  }
 
   const [count, rows] = await Promise.all([
     db.prepare(`SELECT COUNT(*) AS total FROM visitors v ${where}`).bind(...params).first<{ total: number }>(),
