@@ -93,9 +93,11 @@
     "logout": "退出登录",
     "profile": "个人资料",
     "language": "Language",
-    "aiAccess": "AI 接入",
+    "aiAccess": "接入",
     "analytics": "访客",
-    "groupSettings": "设置"
+    "groupSettings": "设置",
+    "collapse": "收起导航",
+    "expand": "展开导航"
   },
   "auth": {
     "title": "内部管理系统",
@@ -722,11 +724,13 @@
       "dismissed": "已忽略",
       "cols": {
         "time": "提交时间",
-        "keyPrefix": "API Key",
         "contact": "提交信息",
         "error": "错误信息",
-        "actions": "操作"
-      }
+        "actions": "操作",
+        "source": "来源"
+      },
+      "siteTitle": "表单留资失败记录",
+      "siteSubtitle": "网站表单提交后没能建成线索的记录（不含被防刷规则拦截的），可补录或忽略"
     },
     "timezones": {
       "Asia/Shanghai": "中国标准时间 (UTC+8)",
@@ -1062,18 +1066,23 @@
     "notesHint": "备注（可选）"
   },
   "aiAccess": {
-    "title": "AI 接入",
-    "subtitle": "把 AI Agent（Claude Code、Cursor 等）或外部系统接入 CRM。密钥以你的身份操作，权限不超过你的角色。",
+    "title": "接入",
+    "subtitle": "网站、外部系统和 AI 工具接入 CRM 都在这里：网站用站点密钥（访客统计 + 表单留资），外部系统和 AI 工具用 API Key。",
     "sections": {
       "mcp": {
         "title": "AI 工具（MCP）",
         "desc": "在 Claude Code、Cursor、Claude Desktop 等 AI 工具里，用自然语言查询和维护客户、线索。适合管理员、客服日常使用。"
       },
       "push": {
-        "title": "外部系统推送线索",
-        "desc": "网站表单、广告平台等外部系统把新线索自动推送进 CRM。"
+        "title": "外部系统",
+        "desc": "广告平台、业务系统等通过接口推送线索，与网站表单用同一套处理规则。"
       },
-      "keyCount": "已有 {{count}} 把密钥"
+      "keyCount": "已有 {{count}} 把密钥",
+      "sites": {
+        "title": "网站",
+        "desc": "网站访客统计与表单留资，一个网站一把站点密钥，一次接好。"
+      },
+      "siteCount": "已接入 {{count}} 个网站"
     },
     "mcp": {
       "stepsTitle": "三步接入",
@@ -1106,7 +1115,9 @@
       "defaultName": "官网表单",
       "empty": "还没有推送密钥",
       "docsToggle": "接口说明",
-      "llmsHint": "能联网的 AI 可以直接读取实时生成的接口说明："
+      "llmsHint": "能联网的 AI 可以直接读取实时生成的接口说明：",
+      "siteHint": "网站表单推荐直接提交到网站的 /_t/lead，不需要推送密钥，并会自动关联访客来源；两种方式用同一套处理规则。",
+      "siteLink": "去站点管理"
     },
     "keys": {
       "lastUsed": "最后使用 {{time}}",
@@ -1117,10 +1128,6 @@
   "analytics": {
     "title": "访客",
     "subtitle": "网站访客从哪里来、看了什么、做了什么，以及是否已经留资。",
-    "tabs": {
-      "visitors": "访客",
-      "sites": "站点管理"
-    },
     "channels": {
       "paid": "广告",
       "search": "搜索",
@@ -1148,7 +1155,7 @@
       "withoutLead": "未留资",
       "total": "共 {{count}} 位访客",
       "empty": "暂无访客数据。网站接入后，有人访问就会出现在这里。",
-      "noSites": "还没有接入网站。请管理员在「站点管理」中添加站点并部署接入代码。",
+      "noSites": "还没有接入网站。",
       "cols": {
         "lastSeen": "最近访问",
         "source": "首次来源",
@@ -1157,7 +1164,8 @@
         "location": "IP / 地区 / 运营商",
         "actions": "关键行为",
         "lead": "线索"
-      }
+      },
+      "goSites": "去接入网站"
     },
     "journey": {
       "title": "访问轨迹",
@@ -1186,7 +1194,27 @@
       "rotate": "更换密钥",
       "rotateConfirm": "更换「{{name}}」的站点密钥？旧密钥会立即失效，需要同步更新网站的 CRM_SITE_KEY。",
       "disable": "停用",
-      "enable": "启用"
+      "enable": "启用",
+      "stat": {
+        "visitors": "24 小时访客",
+        "leads": "留资",
+        "blocked": "拦截",
+        "failures": "待处理失败"
+      },
+      "stale": "超过 24 小时没有收到数据",
+      "neverSeen": "还没有收到数据",
+      "submissions": {
+        "title": "「{{name}}」的表单提交",
+        "hint": "最近 50 次网站表单提交，包括被防刷规则拦截的。点击线索名称查看详情。",
+        "empty": "还没有表单提交",
+        "status": {
+          "ok": "已建线索",
+          "invalid": "内容不完整",
+          "rate_limited": "提交过于频繁",
+          "spam": "疑似机器人",
+          "error": "处理失败"
+        }
+      }
     },
     "guide": {
       "title": "接入「{{name}}」",
@@ -1195,7 +1223,8 @@
         "secrets": "配置变量",
         "code": "转发代码",
         "script": "页面脚本",
-        "verify": "检测"
+        "verify": "检测",
+        "form": "表单"
       },
       "prev": "上一步",
       "next": "下一步",
@@ -1250,8 +1279,8 @@
         "aiHint": "把提示词交给编码 AI（Claude Code、Cursor 等），在网站仓库中执行。密钥请自己在 Cloudflare 控制台填写，不要发给 AI，也不要提交到代码仓库。"
       },
       "aiConnect": {
-        "binding": "网站与 CRM 在同一个 Cloudflare 账号：使用服务绑定 CRM（变量名大写）。",
-        "url": "网站与 CRM 不在同一个 Cloudflare 账号：使用加密环境变量 CRM_URL（CRM 地址，末尾不带 /）。"
+        "binding": "网站与 CRM 在同一个 Cloudflare 账号：使用服务绑定，变量名 CRM（大写），指向 CRM 的 Worker：{{worker}}。",
+        "url": "网站与 CRM 不在同一个 Cloudflare 账号：使用加密环境变量 CRM_URL，值为 {{origin}}（末尾不带 /）。这个地址只能在 Cloudflare 控制台设置为 Secret，不要写进代码、配置文件或仓库。"
       },
       "aiPlace": {
         "pages": "新建文件 functions/_t/[[path]].js（项目根目录）；如果有自定义 _routes.json，确保 /_t/* 被包含。",
@@ -1272,7 +1301,8 @@
         "checkHint": "CRM 会从服务器端访问该网站的 /_t/t.js 和 /_t/collect，检查转发代码和站点密钥，不会产生访客数据。填写的域名会保存到站点。",
         "rows": {
           "script": "采集脚本 /_t/t.js",
-          "collect": "转发与站点密钥 /_t/collect"
+          "collect": "转发与站点密钥 /_t/collect",
+          "lead": "表单留资 /_t/lead"
         },
         "reasons": {
           "ok": "正常",
@@ -1295,6 +1325,17 @@
         "manual3": "/_t/collect 应返回 204。",
         "manual4": "测试来源识别：在网址后加 ?utm_source=test&utm_medium=cpc，用无痕窗口访问，「首次来源」应显示为广告。",
         "multi": "还有其它网站？完成后再「添加站点」，每个网站使用自己的密钥，重复本向导即可。同一域名下的多个页面属于同一个站点。"
+      },
+      "form": {
+        "intro": "网站表单直接提交到本站的 /_t/lead，由同一个转发代码交给 CRM 新建线索。不需要 API Key，也不用写后端代码；线索会自动关联访客的来源和访问轨迹。两种方式任选：",
+        "htmlLabel": "方式一：原生表单（把 action 改成 /_t/lead）",
+        "jsLabel": "方式二：自定义前端（调用采集脚本提供的 submitLead）",
+        "fields": "字段：姓名（name / 姓名）和联系方式（phone / mobile / wechat / email / 电话 / 微信 等）必填，留言（message / 留言）写进备注，其它字段也会写进备注，不会丢。",
+        "source": "来源默认是站点名称「{{name}}」；表单里传 source 可以覆盖，比如区分不同落地页。",
+        "protect": "已自动防刷：隐藏的防机器人字段，同一 IP 10 分钟内最多 5 次、同一访客最多 3 次提交。",
+        "backend": "已经由网站后端调用 /api/v1/leads 推送线索的，可以不改，推送时带上表单里的 crm_vid 即可；两条路径用同一套处理规则。",
+        "aiHint": "交给编码 AI，在网站仓库中把现有的留资表单改为提交到 /_t/lead。",
+        "aiPrompt": "请把这个网站现有的留资表单接入 CRM（网站已接入访客统计，/_t/* 的转发代码已部署，不要修改它）：\n1. 表单提交到同域的 /_t/lead，不需要任何密钥或 CRM 地址。\n2. 原生表单：把 action 改为 /_t/lead、method 改为 post；自定义前端：改为调用 window.__crmTracker.submitLead(数据)，根据返回的 ok 提示用户。\n3. 字段名：姓名用 name，联系方式用 phone（或 wechat、email），留言用 message；其它字段保持原名即可。需要区分落地页时加 source 字段。\n4. 不要删除采集脚本自动加入的隐藏字段（crm_vid、_hp、_page）。\n5. 完成后列出改动的页面。\n\n原生表单示例：\n{{html}}\n\n自定义前端示例：\n{{js}}"
       }
     },
     "source": {

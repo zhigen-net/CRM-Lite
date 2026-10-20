@@ -33,13 +33,14 @@ export async function listVisitors(db: D1Database, f: VisitorListFilters) {
 
 /** 访客详情：基本信息 + 最近 50 次访问 + 每次访问的事件时间线 */
 export async function getVisitorJourney(db: D1Database, siteId: string, visitorId: string) {
-  const visitor = await db.prepare('SELECT v.*, l.name AS lead_name FROM visitors v LEFT JOIN leads l ON l.id = v.lead_id WHERE v.site_id = ? AND v.id = ?')
+  const visitor = await db.prepare(`SELECT v.*, l.name AS lead_name, s.domain AS site_domain FROM visitors v
+    LEFT JOIN leads l ON l.id = v.lead_id LEFT JOIN tracking_sites s ON s.id = v.site_id WHERE v.site_id = ? AND v.id = ?`)
     .bind(siteId, visitorId).first<Record<string, unknown>>()
   if (!visitor) throw notFound('访客不存在')
   const visits = await db.prepare('SELECT * FROM visits WHERE site_id = ? AND visitor_id = ? ORDER BY started_at DESC LIMIT 50')
     .bind(siteId, visitorId).all<Record<string, unknown>>()
   const events = await db.prepare(`
-    SELECT id, visit_id, type, path, title, duration_ms, scroll_pct, meta, created_at FROM track_events
+    SELECT id, visit_id, type, host, path, title, duration_ms, scroll_pct, meta, created_at FROM track_events
     WHERE site_id = ? AND visitor_id = ? ORDER BY created_at ASC LIMIT 1000`).bind(siteId, visitorId).all<Record<string, unknown>>()
   const byVisit = new Map<string, Record<string, unknown>[]>()
   for (const e of toCamelList(events.results)) {

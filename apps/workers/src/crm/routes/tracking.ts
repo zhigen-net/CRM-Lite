@@ -7,11 +7,13 @@ import { zValidator } from '@hono/zod-validator'
 import { z } from 'zod'
 import { requireAdmin, requireAuth, requireNotSales } from '../middleware/auth'
 import { TRACKER_SCRIPT } from '../../domain/tracking/script'
-import { findSiteByKey, getSite, listSites, createSite, updateSite, rotateSiteKey } from '../../domain/tracking/sites'
+import { findSiteByKey, getSite, listSiteSubmissions, listSites, createSite, updateSite, rotateSiteKey } from '../../domain/tracking/sites'
 import { ingestEvents, parseGeoHeader, type CollectPayload } from '../../domain/tracking/ingest'
 import { getVisitorJourney, listVisitors } from '../../domain/tracking/queries'
 import { integrationTemplates } from '../../domain/tracking/integration'
 import { checkSiteIntegration, normalizeHost } from '../../domain/tracking/check'
+import { submitSiteLead, type SiteLeadResult } from '../../domain/tracking/siteLead'
+import { depsFrom } from '../../domain/actor'
 
 const MAX_BODY_BYTES = 16 * 1024
 
@@ -40,6 +42,68 @@ trackingCollectRoutes.post('/collect', async (c) => {
   // 后台写入，立即返回，不拖慢网站
   c.executionCtx.waitUntil(ingestEvents(c.env.DB, site, payload, ctx).catch((err) => console.error('[tracking] ingest failed:', err)))
   return c.body(null, 204)
+})
+
+// ─── 网站表单留资（/_t/lead 转发而来）────────────────────────────────────────
+// 与 /api/v1/leads 共用 submitExternalLead；这里只解析浏览器表单并按提交方式返回 JSON 或提示页面
+
+/** 解析 JSON、普通表单、multipart 表单（文件字段忽略） */
+async function parseLeadBody(contentType: string, buf: ArrayBuffer): Promise<Record<string, unknown> | null> {
+  const text = new TextDecoder().decode(buf)
+  if (contentType.includes('application/json')) {
+    try {
+      const v = JSON.parse(text) as unknown
+      return v && typeof v === 'object' && !Array.isArray(v) ? v as Record<string, unknown> : null
+    } catch { return null }
+  }
+  const out: Record<string, unknown> = {}
+  if (contentType.includes('multipart/form-data')) {
+    const fd = await new Response(buf, { headers: { 'Content-Type': contentType } }).formData().catch(() => null)
+    if (!fd) return null
+    fd.forEach((v, k) => { if (typeof v === 'string') out[k] = v })
+    return out
+  }
+  new URLSearchParams(text).forEach((v, k) => { out[k] = v })
+  return out
+}
+
+const escapeHtml = (s: string) => s.replace(/[&<>"']/g, (ch) => `&#${ch.charCodeAt(0)};`)
+
+/** 原生表单提交后的提示页：成功时可跳转到网站指定的站内路径（_redirect） */
+function leadHtml(result: SiteLeadResult, redirect: string | null) {
+  const ok = result.status === 'ok' || result.status === 'spam'
+  const msg = ok ? '提交成功，我们会尽快与您联系。' : (result.message ?? '提交失败，请稍后再试。')
+  const go = ok && redirect ? `<meta http-equiv="refresh" content="2;url=${escapeHtml(redirect)}">` : ''
+  return `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">${go}
+<title>${ok ? '提交成功' : '提交失败'}</title></head>
+<body style="font-family:system-ui,sans-serif;display:flex;min-height:90vh;align-items:center;justify-content:center;color:#111">
+<div style="text-align:center;max-width:360px;padding:24px"><p style="font-size:18px">${escapeHtml(msg)}</p>
+<p><a href="${escapeHtml(redirect ?? '/')}" style="color:#0284c7">${ok && redirect ? '正在返回…' : '返回首页'}</a></p></div></body></html>`
+}
+
+trackingCollectRoutes.post('/lead', async (c) => {
+  const site = await findSiteByKey(c.env.DB, c.req.header('X-Site-Key'))
+  if (!site) return c.json({ ok: false, message: '站点密钥无效或站点已停用' }, 401)
+  const buf = await c.req.arrayBuffer()
+  if (buf.byteLength > MAX_BODY_BYTES) return c.json({ ok: false, message: '请求过大' }, 413)
+  const contentType = c.req.header('Content-Type') ?? ''
+  const raw = await parseLeadBody(contentType, buf)
+  if (!raw) return c.json({ ok: false, message: '请求格式错误' }, 400)
+  // 接入检测的探测请求：只回报密钥对应的站点，不建线索、不计入提交频率
+  if ('ping' in raw) return c.json({ data: { siteId: site.id } })
+
+  const result = await submitSiteLead(depsFrom(c), { id: site.id, name: site.name, ownerId: site.ownerId ?? null }, raw, {
+    geo: parseGeoHeader(c.req.header('X-Visitor-Geo')), ipSalt: c.env.JWT_SECRET,
+  })
+  const status = result.status === 'ok' || result.status === 'spam' ? 200
+    : result.status === 'rate_limited' ? 429 : result.status === 'invalid' ? 400 : 503
+
+  // JS 提交（JSON 或 _format=json）返回 JSON；原生表单返回提示页面
+  if (contentType.includes('application/json') || raw._format === 'json') {
+    return c.json(status === 200 ? { ok: true } : { ok: false, message: result.message }, status)
+  }
+  const redirect = typeof raw._redirect === 'string' && /^\/(?!\/)/.test(raw._redirect) ? raw._redirect.slice(0, 300) : null
+  return c.html(leadHtml(result, redirect), status)
 })
 
 export const trackingSitesAdminRoutes = new Hono<{ Bindings: Env }>()
@@ -78,6 +142,9 @@ trackingSitesAdminRoutes.post('/:id/check', zValidator('json', z.object({
   if (host !== site.domain) await updateSite(c.env.DB, site.id, { domain: host })
   return c.json({ data: await checkSiteIntegration(site, host) })
 })
+
+// 最近的表单提交记录（含被拦截的）
+trackingSitesAdminRoutes.get('/:id/submissions', async (c) => c.json({ data: await listSiteSubmissions(c.env.DB, c.req.param('id')) }))
 
 trackingSitesAdminRoutes.post('/:id/rotate-key', async (c) => c.json({ data: await rotateSiteKey(c.env.DB, c.req.param('id')) }))
 

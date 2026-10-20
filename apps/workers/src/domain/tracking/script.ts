@@ -28,6 +28,7 @@ export const TRACKER_SCRIPT = `(function () {
   }
   function send(events, beacon) {
     try {
+      for (var i = 0; i < events.length; i++) if (!events[i].h) events[i].h = location.hostname
       var body = JSON.stringify({ v: vid, s: session(), e: events, scr: screen.width + 'x' + screen.height,
         lg: navigator.language, net: navigator.connection && navigator.connection.effectiveType, wd: navigator.webdriver ? 1 : 0 })
       if (beacon && navigator.sendBeacon) { navigator.sendBeacon(ENDPOINT, new Blob([body], { type: 'application/json' })); return }
@@ -67,18 +68,41 @@ export const TRACKER_SCRIPT = `(function () {
     if (/^[a-zA-Z][-_a-zA-Z0-9]{5,19}$/.test(text) || /微信|wechat|weixin/i.test(text)) send([{ id: uuid(), t: 'wechat', p: location.pathname }])
   }, true)
   // 表单：自动带上访客 ID（隐藏字段 crm_vid），提交时记一次
+  // 提交到 /_t/lead 的表单再加上防机器人的蜜罐字段 _hp 和当前页面地址 _page
+  function hidden(form, name, value) {
+    var input = document.createElement('input'); input.type = 'hidden'; input.name = name; input.value = value
+    form.appendChild(input); return input
+  }
   function tagForms(root) {
     var forms = (root || document).querySelectorAll ? (root || document).querySelectorAll('form') : []
     for (var i = 0; i < forms.length; i++) {
-      if (forms[i].querySelector('input[name="crm_vid"]')) continue
-      var input = document.createElement('input'); input.type = 'hidden'; input.name = 'crm_vid'; input.value = vid
-      forms[i].appendChild(input)
+      var f = forms[i]
+      if (!f.querySelector('input[name="crm_vid"]')) hidden(f, 'crm_vid', vid)
+      if ((f.getAttribute('action') || '').indexOf('/_t/lead') !== -1 && !f.querySelector('input[name="_hp"]')) {
+        var hp = document.createElement('input'); hp.type = 'text'; hp.name = '_hp'; hp.tabIndex = -1; hp.autocomplete = 'off'
+        hp.setAttribute('aria-hidden', 'true'); hp.style.cssText = 'position:absolute;left:-9999px;width:1px;height:1px;opacity:0'
+        f.appendChild(hp); hidden(f, '_page', '')
+      }
     }
   }
-  document.addEventListener('submit', function () { send([{ id: uuid(), t: 'form', p: location.pathname }], true) }, true)
+  document.addEventListener('submit', function (e) {
+    var page = e.target && e.target.querySelector && e.target.querySelector('input[name="_page"]')
+    if (page) page.value = location.href
+    send([{ id: uuid(), t: 'form', p: location.pathname }], true)
+  }, true)
+  // JS 提交留资：__crmTracker.submitLead({ name, phone, ... }) → Promise<{ ok, message }>
+  function submitLead(data) {
+    send([{ id: uuid(), t: 'form', p: location.pathname }], true)
+    var body = {}; for (var k in data) if (Object.prototype.hasOwnProperty.call(data, k)) body[k] = data[k]
+    body.crm_vid = vid; body._page = location.href
+    return fetch('/_t/lead', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+      .then(function (r) { return r.json().catch(function () { return { ok: r.ok } }) })
+      .catch(function () { return { ok: false, message: 'network' } })
+  }
   if (window.MutationObserver) new MutationObserver(function () { tagForms() }).observe(document.documentElement, { childList: true, subtree: true })
   window.__crmTracker = {
     visitorId: vid,
+    submitLead: submitLead,
     track: function (name, meta) { send([{ id: uuid(), t: 'custom', p: location.pathname, m: { name: String(name).slice(0, 50), data: meta } }]) },
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { tagForms(); pageview() })

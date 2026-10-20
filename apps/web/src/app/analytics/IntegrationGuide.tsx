@@ -13,15 +13,15 @@ export interface GuideSite {
 }
 interface Integration {
   pagesFunction: string; workerSnippet: string; workerEntryLine: string
-  assetsConfig: string; serviceBindingConfig: string; scriptTag: string
+  assetsConfig: string; serviceBindingConfig: string; scriptTag: string; formHtml: string; formJs: string
 }
 type CheckReason = 'ok' | 'unreachable' | 'not_found' | 'html' | 'redirect' | 'bad_key' | 'wrong_site' | 'server_error' | 'unexpected'
 interface CheckStep { ok: boolean; status: number | null; reason: CheckReason }
-interface CheckResult { host: string; script: CheckStep; collect: CheckStep }
+interface CheckResult { host: string; script: CheckStep; collect: CheckStep; lead?: CheckStep }
 
 type SiteType = 'pages' | 'worker'
 type Connect = 'binding' | 'url'
-const STEPS = ['prepare', 'secrets', 'code', 'script', 'verify'] as const
+const STEPS = ['prepare', 'secrets', 'code', 'script', 'form', 'verify'] as const
 
 /** CRM 部署在 workers.dev 上时，子域名的第一段就是 Worker 名 */
 function guessWorkerName(): string | null {
@@ -102,7 +102,10 @@ export function IntegrationGuide({ site, siteKey: initialKey, onClose }: { site:
   const code = tpl ? (siteType === 'pages' ? tpl.pagesFunction : tpl.workerSnippet) : ''
   const aiPrompt = tpl ? t('analytics.guide.aiPrompt', {
     mode: t(`analytics.guide.siteTypes.${siteType}`),
-    connect: t(`analytics.guide.aiConnect.${connect}`),
+    // 带上本 CRM 的地址 / Worker 名，AI 才能告诉你变量该填什么（只在控制台设置，不写进代码）
+    connect: t(`analytics.guide.aiConnect.${connect}`, {
+      origin, worker: workerName ?? t('analytics.guide.secrets.bindingServiceUnknown'),
+    }),
     place: t(`analytics.guide.aiPlace.${siteType}`),
     scriptTag: tpl.scriptTag,
     code,
@@ -235,6 +238,27 @@ export function IntegrationGuide({ site, siteKey: initialKey, onClose }: { site:
         </div>
       )
 
+      case 'form': return tpl && (
+        <div className="space-y-4 text-sm text-gray-700">
+          <p>{t('analytics.guide.form.intro')}</p>
+          <CopyBlock label={t('analytics.guide.form.htmlLabel')} code={tpl.formHtml} />
+          <CopyBlock label={t('analytics.guide.form.jsLabel')} code={tpl.formJs} />
+          <Note>
+            <ul className="list-disc space-y-1 pl-4">
+              <li>{t('analytics.guide.form.fields')}</li>
+              <li>{t('analytics.guide.form.source', { name: site.name })}</li>
+              <li>{t('analytics.guide.form.protect')}</li>
+              <li>{t('analytics.guide.form.backend')}</li>
+            </ul>
+          </Note>
+          <details className="rounded-lg border px-3 py-2">
+            <summary className="cursor-pointer text-sm font-medium text-gray-800">{t('analytics.guide.code.aiTitle')}</summary>
+            <p className="my-2 text-xs text-gray-500">{t('analytics.guide.form.aiHint')}</p>
+            <CopyBlock code={t('analytics.guide.form.aiPrompt', { html: tpl.formHtml, js: tpl.formJs })} />
+          </details>
+        </div>
+      )
+
       case 'verify': return (
         <div className="space-y-4 text-sm text-gray-700">
           {!live.isActive && <Note tone="red">{t('analytics.guide.verify.disabled')}</Note>}
@@ -252,18 +276,18 @@ export function IntegrationGuide({ site, siteKey: initialKey, onClose }: { site:
             {checkMutation.isError && <Note tone="red">{(checkMutation.error as { response?: { data?: { message?: string } } }).response?.data?.message ?? t('common.opFailed')}</Note>}
             {check && (
               <div className="divide-y rounded-lg border">
-                {(['script', 'collect'] as const).map((k) => (
+                {(['script', 'collect', 'lead'] as const).filter((k) => check[k]).map((k) => check[k] && (
                   <div key={k} className="flex gap-3 px-3 py-2">
-                    <span className={`mt-0.5 text-sm ${check[k].ok ? 'text-green-600' : 'text-red-500'}`}>{check[k].ok ? '✓' : '✗'}</span>
+                    <span className={`mt-0.5 text-sm ${check[k]!.ok ? 'text-green-600' : 'text-red-500'}`}>{check[k]!.ok ? '✓' : '✗'}</span>
                     <div className="min-w-0">
                       <p className="text-xs font-medium text-gray-800">{t(`analytics.guide.verify.rows.${k}`)}</p>
-                      <p className="text-xs text-gray-500">{reasonText(check[k])}</p>
+                      <p className="text-xs text-gray-500">{reasonText(check[k]!)}</p>
                     </div>
                   </div>
                 ))}
               </div>
             )}
-            {check?.script.ok && check.collect.ok && <Note tone="green">{t('analytics.guide.verify.allOk')}</Note>}
+            {check?.script.ok && check.collect.ok && check.lead?.ok !== false && <Note tone="green">{t('analytics.guide.verify.allOk')}</Note>}
           </div>
 
           <div className="space-y-2">

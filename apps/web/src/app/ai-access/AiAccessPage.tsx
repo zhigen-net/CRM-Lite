@@ -17,6 +17,7 @@ import { ApiIntegrationDialog } from './ApiIntegrationDialog'
 import { ApiScopePicker, ScopeSummary, SCOPE_PRESETS, type ApiScope } from './ApiScopePicker'
 import { ApiFailuresPanel } from './ApiFailuresPanel'
 import { AuditLogPanel } from './AuditLogPanel'
+import { SitesPanel } from '@/app/analytics/SitesPanel'
 
 const apiKeySchema = z.object({
   name: z.string().min(1).max(50),
@@ -34,7 +35,7 @@ interface ApiKey {
 
 interface Service { id: string; name: string }
 
-type Section = 'mcp' | 'push'
+type Section = 'sites' | 'push' | 'mcp'
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? ''
 
@@ -93,9 +94,13 @@ export default function AiAccessPage() {
   const { user } = useCrmAuth()
   const queryClient = useQueryClient()
   const [searchParams, setSearchParams] = useSearchParams()
-  const section: Section = searchParams.get('tab') === 'push' ? 'push' : 'mcp'
+  // 网站（站点管理）只有管理员可见，管理员默认打开网站
+  const isAdmin = user?.role === 'admin'
+  const tabParam = searchParams.get('tab')
+  const section: Section = tabParam === 'push' ? 'push' : tabParam === 'mcp' ? 'mcp'
+    : tabParam === 'sites' && isAdmin ? 'sites' : isAdmin ? 'sites' : 'mcp'
 
-  const [creating, setCreating] = useState<Section | null>(null)
+  const [creating, setCreating] = useState<'mcp' | 'push' | null>(null)
   // 配置弹窗：刚生成时带完整密钥，从列表打开时 key 为空
   const [integration, setIntegration] = useState<{ name: string; key: string | null; scopes: string[] } | null>(null)
 
@@ -112,7 +117,7 @@ export default function AiAccessPage() {
   const [scopes, setScopes] = useState<ApiScope[]>([...SCOPE_PRESETS.readwrite])
 
   // MCP 用于管理员、客服维护数据，默认读写；推送密钥只给推送权限
-  const openCreate = (kind: Section) => {
+  const openCreate = (kind: 'mcp' | 'push') => {
     form.reset({ name: t(`aiAccess.${kind}.defaultName`) })
     setScopes([...(kind === 'mcp' ? SCOPE_PRESETS.readwrite : SCOPE_PRESETS.push)])
     setCreating(kind)
@@ -138,6 +143,12 @@ export default function AiAccessPage() {
   const mcpUrl = `${origin}/api/mcp`
   const endpoint = `${origin}/api/v1/leads`
   const keys = data ?? []
+  const { data: sitesData } = useQuery({
+    queryKey: ['tracking-sites-admin'],
+    queryFn: () => crmApi.get<{ data: unknown[] }>('/admin/tracking-sites').then((r) => r.data.data),
+    enabled: isAdmin,
+  })
+  const siteCount = sitesData?.length ?? 0
   const mcpKeys = keys.filter(isMcpKey)
   const pushKeys = keys.filter((k) => !isMcpKey(k))
 
@@ -154,7 +165,9 @@ export default function AiAccessPage() {
     >
       <p className="text-sm font-medium text-gray-900"><span className="mr-1.5">{icon}</span>{t(`aiAccess.sections.${s}.title`)}</p>
       <p className="mt-1 text-xs text-gray-500">{t(`aiAccess.sections.${s}.desc`)}</p>
-      <p className="mt-2 text-xs text-gray-400">{t('aiAccess.sections.keyCount', { count: s === 'mcp' ? mcpKeys.length : pushKeys.length })}</p>
+      <p className="mt-2 text-xs text-gray-400">{s === 'sites'
+        ? t('aiAccess.sections.siteCount', { count: siteCount })
+        : t('aiAccess.sections.keyCount', { count: s === 'mcp' ? mcpKeys.length : pushKeys.length })}</p>
     </button>
   )
 
@@ -169,11 +182,17 @@ export default function AiAccessPage() {
         </div>
 
         <div className="flex flex-col gap-3 sm:flex-row">
-          {sectionCard('mcp', '🤖')}
+          {isAdmin && sectionCard('sites', '🌐')}
           {sectionCard('push', '🔗')}
+          {sectionCard('mcp', '🤖')}
         </div>
 
-        {section === 'mcp' ? (
+        {section === 'sites' ? (
+          <>
+            <SitesPanel />
+            <ApiFailuresPanel source="site" />
+          </>
+        ) : section === 'mcp' ? (
           <>
             {/* 接入步骤 */}
             <div className="rounded-lg border bg-white p-4 sm:p-5">
@@ -220,6 +239,10 @@ export default function AiAccessPage() {
                 <div className="min-w-0 flex-1">
                   <h2 className="text-sm font-medium text-gray-900">{t('aiAccess.push.keysTitle')}</h2>
                   <p className="mt-0.5 text-xs text-gray-500">{t('aiAccess.push.intro')}</p>
+                  <p className="mt-1 text-xs text-gray-500">
+                    {t('aiAccess.push.siteHint')}{' '}
+                    {isAdmin && <button type="button" onClick={() => setSearchParams({ tab: 'sites' })} className="text-primary-600 hover:underline">{t('aiAccess.push.siteLink')}</button>}
+                  </p>
                 </div>
                 <Button size="sm" onClick={() => openCreate('push')}>{t('aiAccess.push.create')}</Button>
               </div>
@@ -269,8 +292,9 @@ export default function AiAccessPage() {
           </>
         )}
 
-        {/* 管理员：MCP / API Key 的调用记录；推送线索失败的请求 */}
-        {user?.role === 'admin' && (section === 'mcp' ? <AuditLogPanel /> : <ApiFailuresPanel />)}
+        {/* 管理员：MCP / API Key 的调用记录；对外接口推送失败的请求 */}
+        {isAdmin && section === 'mcp' && <AuditLogPanel />}
+        {isAdmin && section === 'push' && <ApiFailuresPanel source="api" />}
       </div>
 
       {integration && (

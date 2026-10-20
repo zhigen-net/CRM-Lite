@@ -2,12 +2,10 @@
 import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, Navigate, useSearchParams } from 'react-router-dom'
 import { crmApi } from '@/shared/utils/request'
 import { formatDate } from '@/shared/utils/format'
-import { useCrmAuth } from '@/app/auth/CrmAuthContext'
 import { Pagination } from '@/shared/components/Pagination'
-import { SitesPanel } from './SitesPanel'
 import { JourneyDrawer, place } from './Journey'
 
 interface SiteOption { id: string; name: string; domain: string | null; isActive: boolean; visitorCount: number }
@@ -47,7 +45,12 @@ function VisitorsPanel() {
   })
 
   if (sites && sites.length === 0) {
-    return <div className="rounded-lg border bg-white px-4 py-10 text-center text-sm text-gray-400">{t('analytics.visitors.noSites')}</div>
+    return (
+      <div className="rounded-lg border bg-white px-4 py-10 text-center text-sm text-gray-400">
+        {t('analytics.visitors.noSites')}{' '}
+        <Link to="/app/ai-access?tab=sites" className="text-primary-600 hover:underline">{t('analytics.visitors.goSites')}</Link>
+      </div>
+    )
   }
 
   return (
@@ -117,10 +120,9 @@ function VisitorsPanel() {
 
 export default function AnalyticsPage() {
   const { t } = useTranslation()
-  const { user } = useCrmAuth()
-  const [searchParams, setSearchParams] = useSearchParams()
-  const isAdmin = user?.role === 'admin'
-  const tab = searchParams.get('tab') === 'sites' && isAdmin ? 'sites' : 'visitors'
+  const [searchParams] = useSearchParams()
+  // 站点管理已移到「接入 → 网站」，旧链接自动跳转
+  if (searchParams.get('tab') === 'sites') return <Navigate to="/app/ai-access?tab=sites" replace />
 
   return (
     <div className="p-4 sm:p-6">
@@ -128,17 +130,7 @@ export default function AnalyticsPage() {
         <h1 className="text-lg font-semibold text-gray-900 sm:text-xl">{t('analytics.title')}</h1>
         <p className="mt-0.5 text-sm text-gray-500">{t('analytics.subtitle')}</p>
       </div>
-      {isAdmin && (
-        <div className="mb-4 flex gap-1 border-b">
-          {(['visitors', 'sites'] as const).map((k) => (
-            <button key={k} type="button" onClick={() => setSearchParams({ tab: k })}
-              className={`-mb-px border-b-2 px-4 py-2 text-sm font-medium transition-colors ${tab === k ? 'border-primary-600 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
-              {t(`analytics.tabs.${k}`)}
-            </button>
-          ))}
-        </div>
-      )}
-      {tab === 'sites' ? <SitesPanel /> : <VisitorsPanel />}
+      <VisitorsPanel />
     </div>
   )
 }

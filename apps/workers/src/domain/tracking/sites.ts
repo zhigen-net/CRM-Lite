@@ -12,19 +12,20 @@ function newSiteKey(): string {
   return `cts_${[...bytes].map((b) => b.toString(16).padStart(2, '0')).join('')}`
 }
 
-export interface TrackingSite { id: string; name: string; isActive: boolean }
+export interface TrackingSite { id: string; name: string; isActive: boolean; ownerId?: string | null }
 
 interface SiteRow {
   id: string; name: string; domain: string | null; keyPrefix: string; isActive: boolean | number
   createdAt: string; lastSeenAt: string | null; visitorCount: number
+  visitorsDay?: number; leadsDay?: number; blockedDay?: number; openFailures?: number
 }
 
 /** 按站点密钥查找启用中的站点；找不到返回 null */
 export async function findSiteByKey(db: D1Database, key: string | undefined): Promise<TrackingSite | null> {
   if (!key?.startsWith('cts_')) return null
-  const row = await db.prepare('SELECT id, name, is_active FROM tracking_sites WHERE key_hash = ?')
-    .bind(await sha256Hex(key)).first<{ id: string; name: string; is_active: number }>()
-  return row && row.is_active ? { id: row.id, name: row.name, isActive: true } : null
+  const row = await db.prepare('SELECT id, name, is_active, created_by_userId FROM tracking_sites WHERE key_hash = ?')
+    .bind(await sha256Hex(key)).first<{ id: string; name: string; is_active: number; created_by_userId: string | null }>()
+  return row && row.is_active ? { id: row.id, name: row.name, isActive: true, ownerId: row.created_by_userId } : null
 }
 
 /** 按 ID 读取站点（含停用的）；不存在时抛错 */
@@ -38,7 +39,14 @@ export async function getSite(db: D1Database, id: string) {
 export async function listSites(db: D1Database) {
   const rows = await db.prepare(`
     SELECT s.id, s.name, s.domain, s.key_prefix, s.is_active, s.created_at, s.last_seen_at,
-      (SELECT COUNT(*) FROM visitors v WHERE v.site_id = s.id) AS visitor_count
+      (SELECT COUNT(*) FROM visitors v WHERE v.site_id = s.id) AS visitor_count,
+      -- 近 24 小时：访客、留资（网站表单与对外接口带访客 ID 的都算）、被拦截的提交、待处理的失败
+      (SELECT COUNT(*) FROM visitors v WHERE v.site_id = s.id AND v.last_seen_at > datetime('now', '-1 day')) AS visitors_day,
+      (SELECT COUNT(*) FROM leads l JOIN visitors v ON v.id = l.visitor_id AND v.site_id = s.id
+        WHERE l.deleted_at IS NULL AND l.created_at > datetime('now', '-1 day')) AS leads_day,
+      (SELECT COUNT(*) FROM site_lead_submissions b WHERE b.site_id = s.id AND b.status IN ('spam', 'rate_limited', 'invalid')
+        AND b.created_at > datetime('now', '-1 day')) AS blocked_day,
+      (SELECT COUNT(*) FROM api_lead_failures f WHERE f.site_id = s.id AND f.resolved_at IS NULL) AS open_failures
     FROM tracking_sites s ORDER BY s.created_at DESC`).all<Record<string, unknown>>()
   return toCamelList<SiteRow>(rows.results).map((r) => ({ ...r, isActive: !!r.isActive }))
 }
@@ -72,4 +80,13 @@ export async function rotateSiteKey(db: D1Database, id: string) {
     .bind(await sha256Hex(key), key.slice(0, 12), id).run()
   if (!res.meta.changes) throw notFound('站点不存在')
   return { id, key, keyPrefix: key.slice(0, 12) }
+}
+
+/** 站点最近的网站表单提交记录（含被拦截的），用于排查 */
+export async function listSiteSubmissions(db: D1Database, siteId: string) {
+  const rows = await db.prepare(`
+    SELECT b.id, b.status, b.created_at, b.lead_id, l.name AS lead_name
+    FROM site_lead_submissions b LEFT JOIN leads l ON l.id = b.lead_id
+    WHERE b.site_id = ? ORDER BY b.created_at DESC LIMIT 50`).bind(siteId).all<Record<string, unknown>>()
+  return toCamelList(rows.results)
 }

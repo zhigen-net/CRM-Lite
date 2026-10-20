@@ -61,6 +61,7 @@ describe('接入检测', () => {
     const r = await checkSiteIntegration(site, 'www.site.test', website(siteKey))
     expect(r.script).toMatchObject({ ok: true, reason: 'ok' })
     expect(r.collect).toMatchObject({ ok: true, reason: 'ok' })
+    expect(r.lead).toMatchObject({ ok: true, reason: 'ok' })
   })
 
   it('密钥错误或缺失：bad_key；用了别的站点的密钥：wrong_site', async () => {

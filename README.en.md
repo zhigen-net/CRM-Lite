@@ -22,7 +22,7 @@ Visitor ──form──▶ Lead ──convert──▶ Client ──sign──�
 - AI assistant that queries and updates data in plain language, with one-click "Ask AI" on detail pages (OpenAI, Anthropic, Workers AI or any compatible API) and a configurable business background
 - AI access: MCP server (`/api/mcp`), scoped API keys, audit log
 - Public API for pushing leads (`POST /api/v1/leads`), with a machine-readable reference at `/api/v1/llms.txt`
-- Visitor analytics: websites connect through a same-origin `/_t/*` proxy (the CRM URL is never exposed), recording channels, journeys and key actions; set up with the in-app guide under Visitor analytics → Sites, which can check the connection automatically
+- Visitor analytics: websites connect through a same-origin `/_t/*` proxy (the CRM URL is never exposed), recording channels, journeys and key actions; form leads go through the same proxy (`/_t/lead`); set up with the in-app guide under Integrations → Websites, which can check the connection automatically
 - Customer portal (`/portal`, off by default; enable it in System settings → Basic) for profiles, services, resources and progress
 - Chinese and English UI
 

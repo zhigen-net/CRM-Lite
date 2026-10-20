@@ -93,9 +93,11 @@
     "logout": "Logout",
     "profile": "Profile",
     "language": "语言",
-    "aiAccess": "AI Access",
+    "aiAccess": "Integrations",
     "analytics": "Visitors",
-    "groupSettings": "Settings"
+    "groupSettings": "Settings",
+    "collapse": "Collapse sidebar",
+    "expand": "Expand sidebar"
   },
   "auth": {
     "title": "CRM System",
@@ -722,11 +724,13 @@
       "dismissed": "Dismissed",
       "cols": {
         "time": "Submitted At",
-        "keyPrefix": "API Key",
         "contact": "Submitted Data",
         "error": "Error",
-        "actions": "Actions"
-      }
+        "actions": "Actions",
+        "source": "Source"
+      },
+      "siteTitle": "Form lead failures",
+      "siteSubtitle": "Website form submissions that could not become leads (excluding those blocked by spam protection); create the lead or dismiss"
     },
     "timezones": {
       "Asia/Shanghai": "China Standard Time (UTC+8)",
@@ -1062,18 +1066,23 @@
     "notesHint": "Notes (optional)"
   },
   "aiAccess": {
-    "title": "AI Access",
-    "subtitle": "Connect AI agents (Claude Code, Cursor, etc.) or external systems to the CRM. Keys act as you and never exceed your role.",
+    "title": "Integrations",
+    "subtitle": "Connect websites, external systems and AI tools to the CRM. Websites use a site key (visitor tracking + form leads); external systems and AI tools use API keys.",
     "sections": {
       "mcp": {
         "title": "AI tools (MCP)",
         "desc": "Use natural language in AI tools such as Claude Code, Cursor or Claude Desktop to read and maintain clients and leads. Made for admins and customer service."
       },
       "push": {
-        "title": "Push leads from external systems",
-        "desc": "Website forms, ad platforms and other external systems push new leads into the CRM automatically."
+        "title": "External systems",
+        "desc": "Ad platforms and business systems push leads through the API, with the same processing rules as website forms."
       },
-      "keyCount": "Keys: {{count}}"
+      "keyCount": "Keys: {{count}}",
+      "sites": {
+        "title": "Websites",
+        "desc": "Visitor tracking and form leads for your websites: one site key per website, set up once."
+      },
+      "siteCount": "{{count}} websites connected"
     },
     "mcp": {
       "stepsTitle": "Set up in three steps",
@@ -1106,7 +1115,9 @@
       "defaultName": "Website form",
       "empty": "No push keys yet",
       "docsToggle": "API reference",
-      "llmsHint": "AIs with web access can read the live API reference directly:"
+      "llmsHint": "AIs with web access can read the live API reference directly:",
+      "siteHint": "For website forms, submitting to the site's /_t/lead is recommended: no push key is needed and the visitor source is linked automatically. Both ways use the same processing rules.",
+      "siteLink": "Go to Sites"
     },
     "keys": {
       "lastUsed": "Last used {{time}}",
@@ -1117,10 +1128,6 @@
   "analytics": {
     "title": "Visitors",
     "subtitle": "Where website visitors come from, what they view and do, and whether they have become leads.",
-    "tabs": {
-      "visitors": "Visitors",
-      "sites": "Sites"
-    },
     "channels": {
       "paid": "Paid",
       "search": "Search",
@@ -1148,7 +1155,7 @@
       "withoutLead": "Not yet leads",
       "total": "Visitors: {{count}}",
       "empty": "No visitor data yet. Once a website is connected, visits will appear here.",
-      "noSites": "No websites connected yet. An admin can add a site under Sites and deploy the integration code.",
+      "noSites": "No websites connected yet.",
       "cols": {
         "lastSeen": "Last visit",
         "source": "First source",
@@ -1157,7 +1164,8 @@
         "location": "IP / location / ISP",
         "actions": "Key actions",
         "lead": "Lead"
-      }
+      },
+      "goSites": "Connect a website"
     },
     "journey": {
       "title": "Visitor journey",
@@ -1186,7 +1194,27 @@
       "rotate": "Rotate key",
       "rotateConfirm": "Rotate the site key for \"{{name}}\"? The old key stops working immediately; update the website's CRM_SITE_KEY.",
       "disable": "Disable",
-      "enable": "Enable"
+      "enable": "Enable",
+      "stat": {
+        "visitors": "24h visitors",
+        "leads": "Leads",
+        "blocked": "Blocked",
+        "failures": "Open failures"
+      },
+      "stale": "No data for over 24 hours",
+      "neverSeen": "No data received yet",
+      "submissions": {
+        "title": "Form submissions for \"{{name}}\"",
+        "hint": "The last 50 website form submissions, including those blocked by spam protection. Click a lead name to open it.",
+        "empty": "No form submissions yet",
+        "status": {
+          "ok": "Lead created",
+          "invalid": "Incomplete",
+          "rate_limited": "Too frequent",
+          "spam": "Likely bot",
+          "error": "Failed"
+        }
+      }
     },
     "guide": {
       "title": "Connect “{{name}}”",
@@ -1195,7 +1223,8 @@
         "secrets": "Variables",
         "code": "Proxy code",
         "script": "Page script",
-        "verify": "Check"
+        "verify": "Check",
+        "form": "Forms"
       },
       "prev": "Back",
       "next": "Next",
@@ -1250,8 +1279,8 @@
         "aiHint": "Give this prompt to a coding AI (Claude Code, Cursor, etc.) in the website repository. Enter the key yourself in the Cloudflare dashboard; do not send it to the AI or commit it."
       },
       "aiConnect": {
-        "binding": "The website and the CRM are in the same Cloudflare account: use the service binding CRM (uppercase).",
-        "url": "The website and the CRM are in different Cloudflare accounts: use the encrypted environment variable CRM_URL (the CRM address, no trailing /)."
+        "binding": "The website and the CRM are in the same Cloudflare account: use a service binding named CRM (uppercase) pointing to the CRM Worker: {{worker}}.",
+        "url": "The website and the CRM are in different Cloudflare accounts: use the encrypted environment variable CRM_URL with the value {{origin}} (no trailing /). Set this address only as a Secret in the Cloudflare dashboard; never put it in code, config files or the repository."
       },
       "aiPlace": {
         "pages": "Create functions/_t/[[path]].js in the project root; if there is a custom _routes.json, make sure /_t/* is included.",
@@ -1272,7 +1301,8 @@
         "checkHint": "The CRM calls the website's /_t/t.js and /_t/collect from its server to check the proxy code and site key. No visitor data is created. The domain is saved to the site.",
         "rows": {
           "script": "Tracking script /_t/t.js",
-          "collect": "Proxy and site key /_t/collect"
+          "collect": "Proxy and site key /_t/collect",
+          "lead": "Form leads /_t/lead"
         },
         "reasons": {
           "ok": "OK",
@@ -1295,6 +1325,17 @@
         "manual3": "/_t/collect should return 204.",
         "manual4": "To test source detection, add ?utm_source=test&utm_medium=cpc to the URL in a private window; First source should show Paid.",
         "multi": "More websites? Add another site afterwards; each website uses its own key, then repeat this guide. Pages under the same domain belong to one site."
+      },
+      "form": {
+        "intro": "Website forms submit straight to /_t/lead on the same site, and the same proxy code hands them to the CRM to create a lead. No API key and no backend code are needed, and the lead is linked to the visitor's source and journey automatically. Pick either way:",
+        "htmlLabel": "Option 1: native form (set action to /_t/lead)",
+        "jsLabel": "Option 2: custom front end (call submitLead from the tracking script)",
+        "fields": "Fields: name (name) and a contact (phone / mobile / wechat / email) are required, message goes into notes, and any other field is kept in notes too.",
+        "source": "The source defaults to the site name \"{{name}}\"; pass a source field to override it, e.g. to tell landing pages apart.",
+        "protect": "Built-in spam protection: a hidden bot trap field, at most 5 submissions per IP and 3 per visitor in 10 minutes.",
+        "backend": "Sites whose backend already pushes to /api/v1/leads can stay as they are; just include the form's crm_vid. Both paths use the same processing rules.",
+        "aiHint": "Give this to a coding AI to switch the website's existing lead forms to /_t/lead.",
+        "aiPrompt": "Please connect this website's existing lead forms to the CRM (visitor tracking is already set up and the /_t/* proxy code is deployed; do not change it):\n1. Submit forms to /_t/lead on the same site. No key or CRM address is needed.\n2. Native forms: set action to /_t/lead and method to post. Custom front ends: call window.__crmTracker.submitLead(data) and show the result based on ok.\n3. Field names: name for the name, phone (or wechat, email) for the contact, message for the message; keep other fields as they are. Add a source field to tell landing pages apart.\n4. Do not remove the hidden fields added by the tracking script (crm_vid, _hp, _page).\n5. When done, list the pages you changed.\n\nNative form example:\n{{html}}\n\nCustom front end example:\n{{js}}"
       }
     },
     "source": {

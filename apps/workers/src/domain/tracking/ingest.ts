@@ -38,7 +38,7 @@ const int = (v: unknown, max: number): number | null =>
   typeof v === 'number' && Number.isFinite(v) && v >= 0 ? Math.min(Math.round(v), max) : null
 const nowSql = () => new Date().toISOString().slice(0, 19).replace('T', ' ')
 
-async function hashIp(ip: string | null | undefined, salt: string): Promise<string | null> {
+export async function hashIp(ip: string | null | undefined, salt: string): Promise<string | null> {
   if (!ip) return null
   const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(salt), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'])
   const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(`ip:${ip}`))
@@ -53,6 +53,15 @@ export function validIp(v: unknown): string | null {
   if (typeof v !== 'string') return null
   const ip = v.trim()
   return IPV4_RE.test(ip) || (ip.includes(':') && IPV6_RE.test(ip)) ? ip : null
+}
+
+const HOST_RE = /^(?=.{1,253}$)[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?$/
+
+/** 浏览器上报的域名：只接受合法主机名（小写），其它丢弃 */
+export function validHost(v: unknown): string | null {
+  if (typeof v !== 'string') return null
+  const h = v.trim().toLowerCase()
+  return HOST_RE.test(h) ? h : null
 }
 
 function cleanParams(q: unknown): Record<string, string> {
@@ -104,7 +113,7 @@ export async function ingestEvents(db: D1Database, site: TrackingSite, payload: 
     const first = pageviews[0] ?? events[0]!
     const params = cleanParams(first.q)
     const referrer = str(first.r, 500)
-    const pageHost = str(first.h, 200) ?? undefined
+    const pageHost = validHost(first.h) ?? undefined
     const src = classifySource({ referrer: referrer ?? undefined, pageHost, params, userAgent: ctx.userAgent })
     const externalReferrer = referrer && !isInternalReferrer(referrer, pageHost) ? referrer : null
     const landing = str(first.p, 500)
@@ -113,21 +122,21 @@ export async function ingestEvents(db: D1Database, site: TrackingSite, payload: 
     stmts.push(db.prepare(`
       INSERT INTO visits (id, site_id, visitor_id, started_at, ended_at, pageviews, duration_sec, landing_path, referrer, channel,
         utm_source, utm_medium, utm_campaign, utm_term, utm_content, click_id_type, click_id,
-        device_type, os, browser, screen, language, network, country, region, city, isp, ip_hash, ip)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        device_type, os, browser, screen, language, network, country, region, city, isp, ip_hash, ip, landing_host)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(id) DO UPDATE SET ended_at = excluded.ended_at, pageviews = visits.pageviews + excluded.pageviews,
         duration_sec = visits.duration_sec + excluded.duration_sec`,
     ).bind(
       visitId, site.id, visitorId, now, now, pageviews.length, durationSec, landing, externalReferrer, src.channel,
       ...utm, src.clickIdType, src.clickId,
       ua.deviceType, ua.os, ua.browser, str(payload.scr, 20), str(payload.lg, 20), str(payload.net, 10),
-      geo.country ?? null, geo.region ?? null, geo.city ?? null, geo.isp ?? null, ipHash, ip,
+      geo.country ?? null, geo.region ?? null, geo.city ?? null, geo.isp ?? null, ipHash, ip, pageHost ?? null,
     ))
     stmts.push(db.prepare(`
       INSERT INTO visitors (site_id, id, first_seen_at, last_seen_at, visit_count, pageview_count,
         first_channel, first_referrer, first_landing, first_utm_source, first_utm_medium, first_utm_campaign, first_click_id_type,
-        last_channel, device_type, os, browser, country, region, city, isp, last_ip)
-      VALUES (?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        last_channel, device_type, os, browser, country, region, city, isp, last_ip, first_host)
+      VALUES (?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(site_id, id) DO UPDATE SET last_seen_at = excluded.last_seen_at, visit_count = visitors.visit_count + 1,
         pageview_count = visitors.pageview_count + excluded.pageview_count, last_channel = excluded.last_channel,
         device_type = excluded.device_type, os = excluded.os, browser = excluded.browser,
@@ -136,7 +145,7 @@ export async function ingestEvents(db: D1Database, site: TrackingSite, payload: 
     ).bind(
       site.id, visitorId, now, now, pageviews.length,
       src.channel, externalReferrer, landing, utm[0], utm[1], utm[2], src.clickIdType,
-      src.channel, ua.deviceType, ua.os, ua.browser, geo.country ?? null, geo.region ?? null, geo.city ?? null, geo.isp ?? null, ip,
+      src.channel, ua.deviceType, ua.os, ua.browser, geo.country ?? null, geo.region ?? null, geo.city ?? null, geo.isp ?? null, ip, pageHost ?? null,
     ))
   } else {
     stmts.push(db.prepare('UPDATE visits SET ended_at = ?, pageviews = pageviews + ?, duration_sec = duration_sec + ? WHERE id = ?')
@@ -150,11 +159,11 @@ export async function ingestEvents(db: D1Database, site: TrackingSite, payload: 
   for (const e of events) {
     const meta = e.m && typeof e.m === 'object' ? JSON.stringify(e.m).slice(0, 500) : null
     stmts.push(db.prepare(`
-      INSERT OR IGNORE INTO track_events (id, site_id, visitor_id, visit_id, type, path, title, duration_ms, scroll_pct, meta, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      INSERT OR IGNORE INTO track_events (id, site_id, visitor_id, visit_id, type, path, title, duration_ms, scroll_pct, meta, created_at, host)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     ).bind(
       (e.id as string).toLowerCase(), site.id, visitorId, visitId, e.t, str(e.p, 500), str(e.ti, 200),
-      int(e.d, 6 * 3600 * 1000), int(e.sc, 100), meta, now,
+      int(e.d, 6 * 3600 * 1000), int(e.sc, 100), meta, now, validHost(e.h),
     ))
   }
   stmts.push(db.prepare('UPDATE tracking_sites SET last_seen_at = ? WHERE id = ?').bind(now, site.id))
