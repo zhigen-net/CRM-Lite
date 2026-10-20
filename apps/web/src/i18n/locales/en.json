@@ -95,7 +95,9 @@
     "language": "语言",
     "aiAccess": "AI Access",
     "analytics": "Visitors",
-    "groupSettings": "Settings"
+    "groupSettings": "Settings",
+    "collapse": "Collapse sidebar",
+    "expand": "Expand sidebar"
   },
   "auth": {
     "title": "CRM System",

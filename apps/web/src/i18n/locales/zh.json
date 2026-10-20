@@ -95,7 +95,9 @@
     "language": "Language",
     "aiAccess": "AI 接入",
     "analytics": "访客",
-    "groupSettings": "设置"
+    "groupSettings": "设置",
+    "collapse": "收起导航",
+    "expand": "展开导航"
   },
   "auth": {
     "title": "内部管理系统",
