@@ -1,7 +1,8 @@
 import { sendEmail } from '../shared/email'
 
+// lead_assigned：线索分配给销售；lead_resubmitted：已有线索的客户再次提交（外部入口去重合并后提醒负责人）
 interface NotificationMessage {
-  type: 'lead_assigned'
+  type: 'lead_assigned' | 'lead_resubmitted'
   leadId: string
   assignedToUserId: string
 }
@@ -29,7 +30,7 @@ export async function handleNotificationBatch(
 }
 
 async function processNotification(msg: NotificationMessage, env: Env): Promise<void> {
-  if (msg.type !== 'lead_assigned') return
+  if (msg.type !== 'lead_assigned' && msg.type !== 'lead_resubmitted') return
 
   const user = await env.DB.prepare(
     'SELECT name, email, notification_config FROM users WHERE id = ?',
@@ -49,10 +50,12 @@ async function processNotification(msg: NotificationMessage, env: Env): Promise<
   if (!lead) return
 
   const leadNo = lead.lead_no != null ? `L-${String(lead.lead_no).padStart(4, '0')} ` : ''
-  const subject = `新线索已分配给你：${leadNo}${lead.name}`
-  const body = `你好 ${user.name}，\n\n以下线索已分配给你，请及时跟进：\n\n姓名：${lead.name}\n联系方式：${lead.contact_info}\n来源：${lead.source ?? '未知'}\n\n请登录 CRM 查看详情。`
+  const resubmit = msg.type === 'lead_resubmitted'
+  const subject = resubmit ? `客户再次提交：${leadNo}${lead.name}` : `新线索已分配给你：${leadNo}${lead.name}`
+  const intro = resubmit ? '你负责的线索再次提交了信息（内容见线索的跟进记录），请及时跟进：' : '以下线索已分配给你，请及时跟进：'
+  const body = `你好 ${user.name}，\n\n${intro}\n\n姓名：${lead.name}\n联系方式：${lead.contact_info}\n来源：${lead.source ?? '未知'}\n\n请登录 CRM 查看详情。`
 
-  const webhookText = `【新线索分配】${leadNo}${lead.name}\n联系方式：${lead.contact_info}\n来源：${lead.source ?? '未知'}\n负责人：${user.name}`
+  const webhookText = `【${resubmit ? '客户再次提交' : '新线索分配'}】${leadNo}${lead.name}\n联系方式：${lead.contact_info}\n来源：${lead.source ?? '未知'}\n负责人：${user.name}`
 
   await Promise.allSettled([
     config.emailEnabled && config.email

@@ -17,7 +17,8 @@ const WINDOW_MINUTES = 10
 const MAX_PER_IP = 5
 const MAX_PER_VISITOR = 3
 
-export type SiteLeadStatus = 'ok' | 'invalid' | 'rate_limited' | 'spam' | 'error'
+// duplicate：30 天内同一联系方式已有线索，已合并到该线索（对网站访客同样显示提交成功）
+export type SiteLeadStatus = 'ok' | 'duplicate' | 'invalid' | 'rate_limited' | 'spam' | 'error'
 export interface SiteLeadResult { status: SiteLeadStatus; leadId?: string; message?: string }
 
 interface SiteForLead { id: string; name: string; domain?: string | null | undefined; ownerId: string | null }
@@ -70,12 +71,12 @@ export async function submitSiteLead(
   if (typeof raw._page === 'string' && /^https?:\/\//.test(raw._page)) adInfoDefaults.url = raw._page.slice(0, 500)
 
   try {
-    const { id } = await submitExternalLead(deps, actor, body, {
+    const { id, duplicate } = await submitExternalLead(deps, actor, body, {
       // 来源记为网站域名（未填域名时用站点名称）；访客从哪个页面提交看访问轨迹
       defaultSource: site.domain || site.name, audit: true, failure: { siteId: site.id }, adInfoDefaults,
     })
-    await log('ok', id)
-    return { status: 'ok', leadId: id }
+    await log(duplicate ? 'duplicate' : 'ok', id)
+    return { status: duplicate ? 'duplicate' : 'ok', leadId: id }
   } catch (err) {
     const status = err instanceof DomainError ? 'invalid' : 'error'
     await log(status)

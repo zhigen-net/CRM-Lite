@@ -249,7 +249,7 @@ describe('新建线索：所有入口都进入分配队列并触发"新建"类�
   it('失败补录新建会触发工作流，并保留广告字段和附加信息', async () => {
     const fid = `f-wf-${Date.now()}`
     await env.DB.prepare('INSERT INTO api_lead_failures (id, request_body, error_message) VALUES (?, ?, ?)')
-      .bind(fid, JSON.stringify({ source: '广告', name: 'wf-补录', contactInfo: '1', intendedServices: ['其他'], campaign: '秋季', 备用: 'x' }), 'boom').run()
+      .bind(fid, JSON.stringify({ source: '广告', name: 'wf-补录', contactInfo: 'wf-retry@example.com', intendedServices: ['其他'], campaign: '秋季', 备用: 'x' }), 'boom').run()
     const res = await api(admin, 'POST', `/api/admin/api-failures/${fid}/create-lead`)
     const { leadId } = ((await res.json()) as { data: { leadId: string } }).data
     expect(await waitForWorkflow(leadId)).toBe(true)
