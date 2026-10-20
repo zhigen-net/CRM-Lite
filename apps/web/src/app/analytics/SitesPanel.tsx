@@ -1,4 +1,4 @@
-// 站点管理（管理员）：新建站点、接入向导、停用、更换密钥
+// 站点管理（管理员）：站点列表与接入状态；概览、接入、记录进入站点详情，停用/启用直接操作
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
@@ -8,12 +8,13 @@ import { formatDate } from '@/shared/utils/format'
 import { Button } from '@/shared/components/Button'
 import { Input } from '@/shared/components/Input'
 import { Modal } from '@/shared/components/Modal'
-import { isStale, Stat } from '@/app/sites/ui'
+import { isStale, Stat, type Platform, type SiteFeatures } from '@/app/sites/ui'
 
 interface Site {
   id: string; name: string; domain: string | null; keyPrefix: string; isActive: boolean
   createdAt: string; lastSeenAt: string | null; visitorCount: number
   visitorsDay?: number; leadsDay?: number; blockedDay?: number; openFailures?: number
+  platform?: Platform | null; features?: SiteFeatures
 }
 export function SitesPanel() {
   const { t } = useTranslation()
@@ -45,10 +46,6 @@ export function SitesPanel() {
     mutationFn: (s: Site) => crmApi.patch(`/admin/tracking-sites/${s.id}`, { isActive: !s.isActive }),
     onSuccess: refresh,
   })
-  const rotateMutation = useMutation({
-    mutationFn: (s: Site) => crmApi.post<{ data: { key: string } }>(`/admin/tracking-sites/${s.id}/rotate-key`, {}),
-    onSuccess: (res, s) => { refresh(); openSite(s.id, 'connect', res.data.data.key) },
-  })
 
   return (
     <div className="overflow-hidden rounded-lg border bg-white">
@@ -73,7 +70,12 @@ export function SitesPanel() {
                   {!s.isActive && <span className="ml-2 rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-500">{t('analytics.sites.disabled')}</span>}
                 </p>
                 <p className="mt-0.5 text-xs text-gray-400">
-                  {s.domain ?? '—'} · <span className="font-mono">{s.keyPrefix}…</span> · {t('analytics.sites.visitors', { count: s.visitorCount })} ·{' '}
+                  {s.domain ?? '—'} ·{' '}
+                  {s.platform
+                    ? t(`siteConnect.platforms.${s.platform}.name`)
+                    : <button type="button" className="text-amber-600 hover:underline" onClick={() => openSite(s.id, 'overview')}>{t('analytics.sites.noPlatform')}</button>}
+                  {' '}· {t(s.features?.forms ? 'analytics.sites.withForms' : 'analytics.sites.trackingOnly')}
+                  {' '}· <span className="font-mono">{s.keyPrefix}…</span> · {t('analytics.sites.visitors', { count: s.visitorCount })} ·{' '}
                   {s.lastSeenAt ? t('analytics.sites.lastSeen', { time: formatDate(s.lastSeenAt) }) : t('analytics.sites.noData')}
                 </p>
                 {/* 近 24 小时接入状态 */}
@@ -83,16 +85,23 @@ export function SitesPanel() {
                   <button type="button" onClick={() => openSite(s.id, 'records')} className="hover:opacity-80">
                     <Stat label={t('analytics.sites.stat.blocked')} value={s.blockedDay ?? 0} tone={(s.blockedDay ?? 0) > 0 ? 'amber' : 'gray'} />
                   </button>
-                  {(s.openFailures ?? 0) > 0 && <Stat label={t('analytics.sites.stat.failures')} value={s.openFailures ?? 0} tone="red" />}
+                  {(s.openFailures ?? 0) > 0 && (
+                    <button type="button" onClick={() => openSite(s.id, 'records')} className="hover:opacity-80">
+                      <Stat label={t('analytics.sites.stat.failures')} value={s.openFailures ?? 0} tone="red" />
+                    </button>
+                  )}
                   {s.isActive && isStale(s.lastSeenAt) && (
                     <span className="rounded bg-amber-50 px-1.5 py-0.5 text-amber-700">{s.lastSeenAt ? t('analytics.sites.stale') : t('analytics.sites.neverSeen')}</span>
                   )}
                 </div>
               </div>
               <div className="flex items-center gap-3 text-xs">
-                <button className="text-primary-600 hover:text-primary-800" onClick={() => openSite(s.id, 'connect')}>{t('analytics.sites.viewCode')}</button>
-                <button className="text-gray-600 hover:text-gray-800" onClick={() => { if (confirm(t('analytics.sites.rotateConfirm', { name: s.name }))) rotateMutation.mutate(s) }}>{t('analytics.sites.rotate')}</button>
-                <button className={s.isActive ? 'text-red-500 hover:text-red-700' : 'text-green-600 hover:text-green-800'} onClick={() => toggleMutation.mutate(s)}>
+                {(['overview', 'connect', 'records'] as const).map((tab) => (
+                  <button key={tab} type="button" className="text-primary-600 hover:text-primary-800" onClick={() => openSite(s.id, tab)}>{t(`siteConnect.tabs.${tab}`)}</button>
+                ))}
+                <span className="h-3 w-px bg-gray-200" />
+                <button type="button" disabled={toggleMutation.isPending} className={s.isActive ? 'text-red-500 hover:text-red-700' : 'text-green-600 hover:text-green-800'}
+                  onClick={() => { if (!s.isActive || confirm(t('analytics.sites.disableConfirm', { name: s.name }))) toggleMutation.mutate(s) }}>
                   {s.isActive ? t('analytics.sites.disable') : t('analytics.sites.enable')}
                 </button>
               </div>

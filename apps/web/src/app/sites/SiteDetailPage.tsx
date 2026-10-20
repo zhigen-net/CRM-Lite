@@ -91,7 +91,7 @@ export default function SiteDetailPage() {
           <div className="space-y-4">
             <Overview site={site} />
             <Settings site={site} onSaved={refresh} onGoConnect={() => setSearchParams({ tab: 'connect' })}
-              onToggle={() => toggle.mutate()} toggling={toggle.isPending}
+              onToggle={() => { if (!site.isActive || confirm(t('analytics.sites.disableConfirm', { name: site.name }))) toggle.mutate() }} toggling={toggle.isPending}
               onRotate={() => { if (confirm(t('analytics.sites.rotateConfirm', { name: site.name }))) rotate.mutate() }} rotating={rotate.isPending} />
           </div>
         )}
