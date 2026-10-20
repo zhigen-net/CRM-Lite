@@ -6,7 +6,7 @@ import { crmApi } from '@/shared/utils/request'
 import { Badge } from '@/shared/components/Badge'
 import { formatDate } from '@/shared/utils/format'
 import type { Client, User } from '@/shared/types'
-import { useOptionGroup, getOptionColor } from '@/shared/hooks/useOptions'
+import { useOptionGroup, getOptionColor, getOptionLabel } from '@/shared/hooks/useOptions'
 import { ActivityModal } from '@/shared/components/ActivityModal'
 import type { ActivitySubmitData } from '@/shared/components/ActivityModal'
 import { Pagination } from '@/shared/components/Pagination'
@@ -226,7 +226,7 @@ export default function ClientsPage() {
                     <td className="px-4 py-3">
                       {client.contractStatus ? (
                         <Badge variant={getOptionColor(contractStatusOpts, client.contractStatus)}>
-                          {client.contractStatus}
+                          {getOptionLabel(contractStatusOpts, client.contractStatus)}
                         </Badge>
                       ) : (
                         <span className="text-gray-400">—</span>
@@ -270,51 +270,45 @@ export default function ClientsPage() {
             </table>
           </div>
 
-          {/* 移动端卡片列表 */}
-          <div className="sm:hidden space-y-3">
-            {filtered.map((client) => (
-              <div key={client.id} className="rounded-lg border bg-white overflow-hidden">
-                <Link
-                  to={`/app/clients/${client.id}`}
-                  className="block p-4 hover:bg-gray-50 transition-colors"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <p className="font-medium text-gray-900 truncate">{client.name}</p>
-                      <p className="mt-0.5 text-xs text-gray-500">
-                        {client.leadNo != null && (
-                          <span className="font-mono text-gray-400 mr-1">L-{String(client.leadNo).padStart(4, '0')}</span>
-                        )}
-                        {client.phone ?? client.email ?? t('clients.noContact')}
-                      </p>
+          {/* 移动端卡片列表：紧凑排布，电话可直接拨打，跟进按钮在卡片右下角 */}
+          <ul className="sm:hidden space-y-2">
+            {filtered.map((client) => {
+              const overdue = !!client.nextContactDate && new Date(client.nextContactDate) < new Date()
+              const contact = client.phone ?? client.email
+              return (
+                <li key={client.id} className="rounded-lg border bg-white">
+                  <Link to={`/app/clients/${client.id}`} className="block px-3 pt-3 active:bg-gray-50">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="min-w-0 truncate font-medium text-gray-900">{client.name}</p>
+                      {client.contractStatus && (
+                        <Badge variant={getOptionColor(contractStatusOpts, client.contractStatus)} className="flex-shrink-0">
+                          {getOptionLabel(contractStatusOpts, client.contractStatus)}
+                        </Badge>
+                      )}
                     </div>
-                    {client.contractStatus ? (
-                      <Badge variant={getOptionColor(contractStatusOpts, client.contractStatus)} className="flex-shrink-0">
-                        {client.contractStatus}
-                      </Badge>
-                    ) : null}
+                    <p className="mt-0.5 truncate text-xs text-gray-500">
+                      {client.leadNo != null && <span className="mr-1 font-mono text-gray-400">L-{String(client.leadNo).padStart(4, '0')}</span>}
+                      {(client.servicePlans ?? []).join('、') || t('clients.detail.noPlan')}
+                    </p>
+                  </Link>
+                  <div className="flex items-center gap-2 px-3 pb-2.5 pt-1.5 text-xs">
+                    {contact
+                      ? <a href={client.phone ? `tel:${client.phone}` : `mailto:${client.email}`} className="min-w-0 truncate text-primary-600">{contact}</a>
+                      : <span className="text-gray-400">{t('clients.noContact')}</span>}
+                    {client.nextContactDate && (
+                      <span className={overdue ? 'shrink-0 font-medium text-red-500' : 'shrink-0 text-gray-400'}>
+                        {t('clients.detail.nextContact')}{formatDate(client.nextContactDate).slice(5)}
+                      </span>
+                    )}
+                    <button onClick={(e) => openFollowUp(client, e)}
+                      className="ml-auto shrink-0 rounded-md border border-primary-200 px-2 py-1 font-medium text-primary-600 active:bg-primary-50">
+                      {t('clients.addActivity')}
+                    </button>
                   </div>
-                  <div className="mt-2 flex items-center gap-3 text-xs text-gray-500">
-                    <span>{(client.servicePlans ?? []).join('、') || t('clients.detail.noPlan')}</span>
-                    <span className="ml-auto">{formatDate(client.createdAt)}</span>
-                  </div>
-                  {client.nextContactDate && (
-                    <div className="mt-1 text-xs text-gray-400">
-                      {t('clients.detail.nextContact')}<span className={new Date(client.nextContactDate) < new Date() ? 'text-red-500 font-medium' : 'text-gray-500'}>{formatDate(client.nextContactDate)}</span>
-                    </div>
-                  )}
-                </Link>
-                <div className="border-t px-4 py-2 flex justify-end">
-                  <button
-                    onClick={(e) => openFollowUp(client, e)}
-                    className="text-sm text-primary-600 font-medium"
-                  >
-                    {t('activityModal.title')}
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
+                </li>
+              )
+            })}
+          </ul>
 
           <Pagination page={page} totalPages={totalPages} total={total} pageSize={PAGE_SIZE} onPageChange={setPage} />
         </>

@@ -1,7 +1,7 @@
 // 仪表盘：所选时间段内的线索、客户、跟进、访客概况；销售只看自己的，访客与团队排行只给管理员、运营
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { crmApi } from '@/shared/utils/request'
 import { useCrmAuth } from '@/app/auth/CrmAuthContext'
 import { getOptionLabel, useOptionGroup } from '@/shared/hooks/useOptions'
@@ -12,6 +12,8 @@ import { BarChart } from './BarChart'
 interface Metric { value: number; prev: number }
 interface Dashboard {
   range: { from: string; to: string; days: string[] }
+  source: string | null
+  visitorSite: string | null
   kpis: { newLeads: Metric; newClients: Metric; convertedLeads: number; followups: Metric; visitors?: Metric; siteLeads?: number }
   trend: { day: string; leads: number; visitors?: number }[]
   sources: { source: string; count: number }[]
@@ -81,16 +83,26 @@ export default function DashboardPage() {
   const { user } = useCrmAuth()
   const staff = user?.role !== 'sales'
   const [range, setRange] = useDateRangeParam('7d')
+  // 按线索来源筛选（地址栏 ?source=）；来源是某个网站时访客也只统计这个网站
+  const [params, setParams] = useSearchParams()
+  const source = params.get('source') ?? ''
+  const setSource = (v: string) => setParams((p) => { if (v) p.set('source', v); else p.delete('source'); return p }, { replace: true })
+  const { data: sources } = useQuery({
+    queryKey: ['lead-sources'],
+    queryFn: () => crmApi.get<{ data: string[] }>('/leads/sources').then((r) => r.data.data),
+  })
   const { options: statusOpts } = useOptionGroup('lead_status')
 
   const { data, isFetching, isError } = useQuery({
-    queryKey: ['dashboard', range.from, range.to],
-    queryFn: () => crmApi.get<{ data: Dashboard }>(`/dashboard?from=${range.from}&to=${range.to}`).then((r) => r.data.data),
+    queryKey: ['dashboard', range.from, range.to, source],
+    queryFn: () => crmApi.get<{ data: Dashboard }>(`/dashboard?${new URLSearchParams({ from: range.from, to: range.to, ...(source ? { source } : {}) })}`).then((r) => r.data.data),
     // 切换时间段时保留上一次的结果（半透明），不闪烁
     placeholderData: keepPreviousData,
   })
 
   const k = data?.kpis
+  // 有访客数据时，新增线索和网站访客画在同一张图里（共用纵轴，可点图例隐藏某一项）
+  const hasVisitors = staff && data?.trend[0]?.visitors !== undefined
   const todoItems = data ? [
     { key: 'overdueLeads', n: data.todo.overdueLeads, to: '/app/leads?nextContact=overdue', tone: 'red' },
     { key: 'todayLeads', n: data.todo.todayLeads, to: '/app/leads?nextContact=today', tone: 'amber' },
@@ -106,6 +118,11 @@ export default function DashboardPage() {
       </div>
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <DateRangePicker value={range} onChange={setRange} />
+        <select value={source} onChange={(e) => setSource(e.target.value)} aria-label={t('dashboard.source')}
+          className="max-w-[12rem] rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-700 shadow-sm">
+          <option value="">{t('dashboard.allSources')}</option>
+          {(sources ?? []).map((s) => <option key={s} value={s}>{s}</option>)}
+        </select>
         {isFetching && data && <span className="text-xs text-gray-400">{t('common.loading')}</span>}
       </div>
 
@@ -127,8 +144,12 @@ export default function DashboardPage() {
           </div>
 
           <div className="grid gap-4 lg:grid-cols-3">
-            <Card title={t('dashboard.trend.leads')} className="lg:col-span-2">
-              <BarChart label={t('dashboard.trend.leads')} data={data.trend.map((d) => ({ day: d.day, value: d.leads }))} />
+            <Card title={t(hasVisitors ? 'dashboard.trend.both' : 'dashboard.trend.leads')} className="lg:col-span-2">
+              <BarChart label={t(hasVisitors ? 'dashboard.trend.both' : 'dashboard.trend.leads')} data={data.trend}
+                series={[
+                  ...(hasVisitors ? [{ key: 'visitors', label: t('dashboard.kpi.visitors'), color: '#2a78d6' }] : []),
+                  { key: 'leads', label: t('dashboard.kpi.newLeads'), color: '#eb6834' },
+                ]} />
             </Card>
             <Card title={t('dashboard.todo.title')}>
               <ul className="divide-y divide-gray-100">
@@ -145,12 +166,6 @@ export default function DashboardPage() {
               <p className="mt-2 text-xs text-gray-400">{t('dashboard.todo.hint')}</p>
             </Card>
           </div>
-
-          {staff && data.trend[0]?.visitors !== undefined && (
-            <Card title={t('dashboard.trend.visitors')}>
-              <BarChart label={t('dashboard.trend.visitors')} data={data.trend.map((d) => ({ day: d.day, value: d.visitors ?? 0 }))} />
-            </Card>
-          )}
 
           <div className="grid gap-4 lg:grid-cols-2">
             <Card title={t('dashboard.sources')}>

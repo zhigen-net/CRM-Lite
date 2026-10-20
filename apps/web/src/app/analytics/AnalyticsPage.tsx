@@ -9,7 +9,7 @@ import { Pagination } from '@/shared/components/Pagination'
 import { DateRangePicker, useDateRangeParam } from '@/shared/components/DateRangePicker'
 import { JourneyDrawer, place } from './Journey'
 
-interface SiteOption { id: string; name: string; domain: string | null; isActive: boolean }
+interface SiteOption { id: string; name: string; domain: string | null; isActive: boolean; lastSeenAt: string | null }
 interface Visitor {
   id: string; siteId: string; firstSeenAt: string; lastSeenAt: string; visitCount: number; pageviewCount: number
   firstChannel: string | null; firstUtmSource: string | null; firstUtmCampaign: string | null; firstLanding: string | null
@@ -18,7 +18,7 @@ interface Visitor {
 }
 const CHANNELS = ['paid', 'search', 'social', 'referral', 'direct'] as const
 const PAGE_SIZE = 30
-const selectCls = 'rounded border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-700'
+const selectCls = 'w-full min-w-0 rounded border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-700 sm:w-auto'
 
 function VisitorsPanel() {
   const { t } = useTranslation()
@@ -27,14 +27,19 @@ function VisitorsPanel() {
   const [withLead, setWithLead] = useState('')
   const [page, setPage] = useState(1)
   const [openVisitor, setOpenVisitor] = useState<string | null>(null)
-  // 时间段：默认不限，选择后只看该时间段内有访问的访客
-  const [range, setRange] = useDateRangeParam('all')
+  // 时间段：默认今天，可选「全部时间」
+  const [range, setRange] = useDateRangeParam('today')
 
   const { data: sites } = useQuery({
     queryKey: ['tracking-sites'],
     queryFn: () => crmApi.get<{ data: SiteOption[] }>('/tracking/sites').then((r) => r.data.data),
   })
-  useEffect(() => { if (!siteId && sites?.length) setSiteId(sites[0]!.id) }, [sites, siteId])
+  // 默认选最近有数据的启用站点
+  useEffect(() => {
+    if (siteId || !sites?.length) return
+    const best = [...sites].sort((a, b) => Number(b.isActive) - Number(a.isActive) || (b.lastSeenAt ?? '').localeCompare(a.lastSeenAt ?? ''))[0]!
+    setSiteId(best.id)
+  }, [sites, siteId])
 
   const { data, isLoading } = useQuery({
     queryKey: ['tracking-visitors', siteId, channel, withLead, range.from, range.to, page],
@@ -59,8 +64,9 @@ function VisitorsPanel() {
 
   return (
     <div className="overflow-hidden rounded-lg border bg-white">
-      <div className="flex flex-wrap items-center gap-2 border-b px-4 py-3">
-        <DateRangePicker value={range} onChange={(v) => { setRange(v); setPage(1) }} allowAll />
+      {/* 筛选：手机上两列排布 */}
+      <div className="grid grid-cols-2 items-center gap-2 border-b px-3 py-3 sm:flex sm:flex-wrap sm:px-4">
+        <div className="col-span-2 sm:col-span-1"><DateRangePicker value={range} onChange={(v) => { setRange(v); setPage(1) }} allowAll /></div>
         <select className={selectCls} value={siteId} onChange={(e) => { setSiteId(e.target.value); setPage(1) }}>
           {(sites ?? []).map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
         </select>
@@ -73,14 +79,38 @@ function VisitorsPanel() {
           <option value="true">{t('analytics.visitors.withLead')}</option>
           <option value="false">{t('analytics.visitors.withoutLead')}</option>
         </select>
-        {data && <span className="ml-auto text-xs text-gray-400">{t('analytics.visitors.total', { count: data.total })}</span>}
+        {data && <span className="col-span-2 text-xs text-gray-400 sm:ml-auto">{t('analytics.visitors.total', { count: data.total })}</span>}
       </div>
       {isLoading || !siteId ? (
         <div className="px-4 py-6 text-sm text-gray-400">{t('common.loading')}</div>
       ) : !data?.data.length ? (
         <div className="px-4 py-10 text-center text-sm text-gray-400">{t('analytics.visitors.empty')}</div>
       ) : (
-        <div className="overflow-x-auto">
+        <>
+        {/* 手机：卡片列表 */}
+        <ul className="divide-y divide-gray-100 sm:hidden">
+          {data.data.map((v) => (
+            <li key={v.id}>
+              <button type="button" onClick={() => setOpenVisitor(v.id)} className="block w-full px-3 py-3 text-left active:bg-gray-50">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-sm font-medium text-gray-900">{v.firstChannel ? t(`analytics.channels.${v.firstChannel}`, { defaultValue: v.firstChannel }) : '—'}
+                    {(v.firstUtmSource || v.firstUtmCampaign) && <span className="ml-1 text-xs font-normal text-gray-400">{[v.firstUtmSource, v.firstUtmCampaign].filter(Boolean).join(' / ')}</span>}
+                  </span>
+                  <span className="shrink-0 text-xs text-gray-400">{formatDate(v.lastSeenAt)}</span>
+                </div>
+                <p className="mt-1 truncate text-xs text-gray-500">
+                  {[v.deviceType && t(`analytics.devices.${v.deviceType}`), v.browser, place(v), v.lastIp].filter(Boolean).join(' · ')}
+                </p>
+                <div className="mt-1.5 flex items-center gap-2 text-xs">
+                  <span className="text-gray-500">{t('analytics.visitors.cols.visits')} {v.visitCount} / {v.pageviewCount}</span>
+                  {v.keyActions > 0 && <span className="rounded bg-amber-100 px-1.5 py-0.5 text-amber-700">{t('analytics.visitors.cols.actions')} {v.keyActions}</span>}
+                  {v.leadId && <span className="ml-auto rounded bg-green-50 px-1.5 py-0.5 text-green-700">{v.leadName ?? t('analytics.journey.viewLead')}</span>}
+                </div>
+              </button>
+            </li>
+          ))}
+        </ul>
+        <div className="hidden overflow-x-auto sm:block">
           <table className="w-full text-sm">
             <thead className="border-b bg-gray-50">
               <tr>
@@ -112,9 +142,10 @@ function VisitorsPanel() {
             </tbody>
           </table>
         </div>
+        </>
       )}
       {data && (
-        <div className="px-4 pb-3">
+        <div className="px-3 pb-3 sm:px-4">
           <Pagination page={page} totalPages={Math.ceil(data.total / PAGE_SIZE)} total={data.total} pageSize={PAGE_SIZE} onPageChange={setPage} />
         </div>
       )}
