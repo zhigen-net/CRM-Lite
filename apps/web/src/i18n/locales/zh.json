@@ -1714,8 +1714,8 @@
       "siteRateHint": "网站留资 {{leads}} 条"
     },
     "trend": {
-      "leads": "每日新增线索",
-      "visitors": "每日网站访客"
+      "both": "每日网站访客与新增线索",
+      "leads": "每日新增线索"
     },
     "todo": {
       "title": "待跟进",
@@ -1733,7 +1733,10 @@
       "leads": "新分配线索",
       "followups": "跟进次数",
       "clients": "新增客户"
-    }
+    },
+    "source": "线索来源",
+    "allSources": "全部来源",
+    "day": "日期"
   },
   "eventCleanup": {
     "title": "浏览明细清理",

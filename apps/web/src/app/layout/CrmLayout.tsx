@@ -253,7 +253,8 @@ export default function CrmLayout() {
         </button>
       </aside>
 
-      <main className="flex-1 overflow-y-auto pt-14 md:pt-0">
+      {/* 手机上底部留出空间，避免右下角的 AI 按钮挡住最后一条的操作 */}
+      <main className="flex-1 overflow-y-auto pb-20 pt-14 md:pb-0 md:pt-0">
         {/* 页面加载时只在内容区显示加载中，导航保持可见 */}
         <Suspense fallback={<div className="flex h-full min-h-[50vh] items-center justify-center"><LoadingSpinner /></div>}>
           <Outlet />
