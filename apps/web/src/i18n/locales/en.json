@@ -1497,7 +1497,6 @@
     "open": "Guide"
   },
   "siteConnect": {
-    "back": "Back to websites",
     "keyNotice": "Copy the site key now; it will not be shown again after you leave this page. Keep it on the website's server side only (encrypted environment variable or server config). Do not give it to the AI or commit it.",
     "tabs": {
       "overview": "Overview",

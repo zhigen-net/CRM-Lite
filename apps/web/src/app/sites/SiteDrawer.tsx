@@ -1,6 +1,7 @@
-// 站点详情：概览（接入状态 + 站点设置：名称、域名、部署平台、功能、启停）、接入（提示词与检测）、记录（表单提交与失败）
+// 站点详情抽屉：概览（接入状态 + 站点设置：名称、域名、部署平台、功能、启停）、接入（提示词与检测）、记录（表单提交与失败）
+// 从「接入 → 网站」的站点列表打开，与访问轨迹一样用右侧抽屉，不离开列表
 import { useEffect, useState, type ReactNode } from 'react'
-import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { crmApi } from '@/shared/utils/request'
@@ -14,30 +15,39 @@ import {
   type Platform, type SiteDetail, type SiteFeatures,
 } from './ui'
 
-const TABS = ['overview', 'connect', 'records'] as const
-type Tab = typeof TABS[number]
+export const SITE_TABS = ['overview', 'connect', 'records'] as const
+export type SiteTab = typeof SITE_TABS[number]
+export const toSiteTab = (v: string | null): SiteTab => (SITE_TABS as readonly string[]).includes(v ?? '') ? v as SiteTab : 'overview'
 
 interface Submission { id: string; status: string; createdAt: string; leadId: string | null; leadName: string | null }
 interface DetectResult { host: string; reachable: boolean; platform: Platform | null; evidence: string[]; behindCloudflare: boolean }
 
-export default function SiteDetailPage() {
-  const { t } = useTranslation()
+/** 旧的站点详情地址 /app/ai-access/sites/:id 跳转到列表并打开抽屉 */
+export default function SiteDetailRedirect() {
   const { id } = useParams<{ id: string }>()
-  const navigate = useNavigate()
-  const location = useLocation()
+  const [searchParams] = useSearchParams()
+  return <Navigate replace to={`/app/ai-access?tab=sites&site=${id}&view=${toSiteTab(searchParams.get('tab'))}`} />
+}
+
+export function SiteDrawer({ id, tab, onTab, initialKey, onClose }: {
+  id: string; tab: SiteTab; onTab: (tab: SiteTab) => void; initialKey?: string | null | undefined; onClose: () => void
+}) {
+  const { t } = useTranslation()
   const queryClient = useQueryClient()
-  const [searchParams, setSearchParams] = useSearchParams()
   // 新建或更换密钥后，明文密钥只在这里显示一次
-  const [siteKey, setSiteKey] = useState<string | null>((location.state as { key?: string } | null)?.key ?? null)
+  const [siteKey, setSiteKey] = useState<string | null>(initialKey ?? null)
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
 
   const { data: site, isLoading } = useQuery({
     queryKey: ['tracking-site', id],
     queryFn: () => crmApi.get<{ data: SiteDetail }>(`/admin/tracking-sites/${id}`).then((r) => r.data.data),
     refetchInterval: 15_000,
   })
-  // 旧的 ?tab=features 并入概览
-  const tabParam = searchParams.get('tab')
-  const tab: Tab = (TABS as readonly string[]).includes(tabParam ?? '') ? tabParam as Tab : 'overview'
 
   const refresh = () => {
     queryClient.invalidateQueries({ queryKey: ['tracking-site', id] })
@@ -52,51 +62,57 @@ export default function SiteDetailPage() {
     onSuccess: refresh,
   })
 
-  if (isLoading || !site) return <div className="p-6 text-sm text-gray-400">{t('common.loading')}</div>
-
   return (
-    <div className="p-4 sm:p-6">
-      <div className="max-w-4xl space-y-4">
-        <button type="button" onClick={() => navigate('/app/ai-access?tab=sites')} className="text-sm text-gray-500 hover:text-gray-700">← {t('siteConnect.back')}</button>
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="min-w-0">
-            <h1 className="flex items-center gap-2 text-lg font-semibold text-gray-900 sm:text-xl">
-              {site.name}
-              {!site.isActive && <span className="rounded bg-gray-100 px-1.5 py-0.5 text-xs font-normal text-gray-500">{t('analytics.sites.disabled')}</span>}
-            </h1>
-            <p className="mt-0.5 text-sm text-gray-500">
-              {site.domain ?? '—'} · <span className="font-mono">{site.keyPrefix}…</span>
-              {site.platform && <> · {t(`siteConnect.platforms.${site.platform}.name`)}</>}
-            </p>
+    <div className="fixed inset-0 z-50 flex justify-end bg-black/30" onClick={onClose}>
+      <div className="flex h-full w-full max-w-3xl flex-col bg-white shadow-xl" onClick={(e) => e.stopPropagation()}>
+        <div className="border-b px-5 pt-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h2 className="flex items-center gap-2 text-base font-semibold text-gray-900">
+                <span className="truncate">{site?.name ?? '…'}</span>
+                {site && !site.isActive && <span className="rounded bg-gray-100 px-1.5 py-0.5 text-xs font-normal text-gray-500">{t('analytics.sites.disabled')}</span>}
+              </h2>
+              {site && (
+                <p className="mt-0.5 truncate text-xs text-gray-500">
+                  {site.domain ?? '—'} · <span className="font-mono">{site.keyPrefix}…</span>
+                  {site.platform && <> · {t(`siteConnect.platforms.${site.platform}.name`)}</>}
+                </p>
+              )}
+            </div>
+            <button type="button" onClick={onClose} className="flex h-8 w-8 flex-none items-center justify-center rounded-full text-xl text-gray-400 hover:bg-gray-100">×</button>
+          </div>
+          <div className="mt-3 flex gap-1 overflow-x-auto">
+            {SITE_TABS.map((k) => (
+              <button key={k} type="button" onClick={() => onTab(k)}
+                className={`-mb-px flex-none border-b-2 px-4 py-2 text-sm font-medium ${tab === k ? 'border-primary-600 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
+                {t(`siteConnect.tabs.${k}`)}
+              </button>
+            ))}
           </div>
         </div>
 
-        {siteKey && (
-          <div className="rounded-lg border border-amber-300 bg-amber-50 p-3">
-            <p className="mb-2 text-xs text-amber-800">{t('siteConnect.keyNotice')}</p>
-            <CopyBlock label="CRM_SITE_KEY" code={siteKey} />
-          </div>
-        )}
-
-        <div className="flex gap-1 overflow-x-auto border-b">
-          {TABS.map((k) => (
-            <button key={k} type="button" onClick={() => setSearchParams({ tab: k })}
-              className={`-mb-px flex-none border-b-2 px-4 py-2 text-sm font-medium ${tab === k ? 'border-primary-600 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
-              {t(`siteConnect.tabs.${k}`)}
-            </button>
-          ))}
+        <div className="flex-1 space-y-4 overflow-y-auto bg-gray-50 p-5">
+          {isLoading || !site ? <p className="text-sm text-gray-400">{t('common.loading')}</p> : (
+            <>
+              {siteKey && (
+                <div className="rounded-lg border border-amber-300 bg-amber-50 p-3">
+                  <p className="mb-2 text-xs text-amber-800">{t('siteConnect.keyNotice')}</p>
+                  <CopyBlock label="CRM_SITE_KEY" code={siteKey} />
+                </div>
+              )}
+              {tab === 'overview' && (
+                <div className="space-y-4">
+                  <Overview site={site} />
+                  <Settings site={site} onSaved={refresh} onGoConnect={() => onTab('connect')}
+                    onToggle={() => { if (!site.isActive || confirm(t('analytics.sites.disableConfirm', { name: site.name }))) toggle.mutate() }} toggling={toggle.isPending}
+                    onRotate={() => { if (confirm(t('analytics.sites.rotateConfirm', { name: site.name }))) rotate.mutate() }} rotating={rotate.isPending} />
+                </div>
+              )}
+              {tab === 'connect' && <SiteConnect site={site} siteKey={siteKey} onRotate={() => rotate.mutate()} rotating={rotate.isPending} onGoFeatures={() => onTab('overview')} />}
+              {tab === 'records' && <Records site={site} />}
+            </>
+          )}
         </div>
-
-        {tab === 'overview' && (
-          <div className="space-y-4">
-            <Overview site={site} />
-            <Settings site={site} onSaved={refresh} onGoConnect={() => setSearchParams({ tab: 'connect' })}
-              onToggle={() => { if (!site.isActive || confirm(t('analytics.sites.disableConfirm', { name: site.name }))) toggle.mutate() }} toggling={toggle.isPending}
-              onRotate={() => { if (confirm(t('analytics.sites.rotateConfirm', { name: site.name }))) rotate.mutate() }} rotating={rotate.isPending} />
-          </div>
-        )}
-        {tab === 'connect' && <SiteConnect site={site} siteKey={siteKey} onRotate={() => rotate.mutate()} rotating={rotate.isPending} onGoFeatures={() => setSearchParams({ tab: 'overview' })} />}
-        {tab === 'records' && <Records site={site} />}
       </div>
     </div>
   )
