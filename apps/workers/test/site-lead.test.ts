@@ -86,6 +86,13 @@ describe('网站表单留资', () => {
     expect(await (await siteLead(evil, { type: 'application/x-www-form-urlencoded' })).text()).not.toContain('evil.example')
   })
 
+  it('站点填了域名时，来源默认用域名', async () => {
+    const res = await api(admin, 'POST', '/api/admin/tracking-sites', { name: '域名来源站', domain: 'www.source-test.example' })
+    const site = ((await res.json()) as { data: { key: string } }).data
+    expect((await siteLead({ name: '域名来源', phone: '13700000031' }, { key: site.key })).status).toBe(200)
+    expect(await leadRow("contact_info = '13700000031'")).toMatchObject({ source: 'www.source-test.example' })
+  })
+
   it('原生表单多选意向服务：同名字段合并为数组，未收录的记为兜底服务', async () => {
     const svc = `表单服务-${Date.now()}`
     await env.DB.prepare('INSERT INTO services (id, name) VALUES (?, ?)').bind(`svc-form-${Date.now()}`, svc).run()

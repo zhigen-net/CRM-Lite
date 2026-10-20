@@ -10,7 +10,8 @@ export interface PromptContext {
   tpl: Integration
   platform: Platform
   features: SiteFeatures
-  siteName: string
+  /** 网站表单线索的来源：站点域名，未填域名时为站点名称（与后端一致） */
+  leadSource: string
   origin: string
   workerName: string | null
   /** CRM「产品与服务」里的服务名：表单的意向服务只能用这些值 */
@@ -51,10 +52,10 @@ const fallbackService = (services: string[]) =>
 
 /** 表单留资：字段说明、可选的意向服务与示例 */
 function formsBody(ctx: PromptContext): string {
-  const { t, tpl, siteName, services } = ctx
+  const { t, tpl, leadSource, services } = ctx
   const parts = [
     t('siteConnect.prompt.forms'),
-    `${t('siteConnect.prompt.fieldsTitle')}\n${t('siteConnect.prompt.fields', { name: siteName, fallback: fallbackService(services) })}`,
+    `${t('siteConnect.prompt.fieldsTitle')}\n${t('siteConnect.prompt.fields', { source: leadSource, fallback: fallbackService(services) })}`,
   ]
   if (services.length > 0) {
     const options = services.map((s) => `  <label><input type="checkbox" name="intendedServices" value="${s}"> ${s}</label>`).join('\n')

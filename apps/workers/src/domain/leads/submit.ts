@@ -8,7 +8,7 @@ import { normalizeExternalLead } from './intake'
 import { createLead, type CreateLeadInput } from './service'
 
 export interface SubmitOptions {
-  /** 没有 source 时使用的来源（网站表单默认用站点名称） */
+  /** 没有 source 时使用的来源（网站表单默认用站点域名） */
   defaultSource?: string | undefined
   /** 记审计日志（MCP / AI 助手由能力注册表统一记录，这里不重复） */
   audit?: boolean | undefined

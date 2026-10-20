@@ -1635,7 +1635,7 @@
       "formsTitle": "表单留资",
       "forms": "让网站的留资表单提交到同域的 /_t/lead（不需要密钥，也不需要 CRM 地址）。网站已有留资表单时改造现有表单；还没有时按下面的字段新建一个，样式与网站保持一致，手机端要好用：\n· 原生表单：action=\"/_t/lead\" method=\"post\"，可加隐藏字段 _redirect 指定提交成功后跳转的站内路径\n· 自定义前端：调用 window.__crmTracker.submitLead(数据)，根据返回的 ok 提示用户，失败时显示返回的 message\n· 不要删除采集脚本自动加入的隐藏字段（crm_vid、_hp、_page）",
       "fieldsTitle": "字段说明（字段名必须一致）：",
-      "fields": "· name：姓名，必填\n· phone：手机号；wechat：微信号；email：邮箱。至少填一个，CRM 以第一个有值的作为联系方式，其余的写入备注\n· message：咨询内容或留言，选填，写入线索备注\n· intendedServices：意向服务，选填，可多选。值必须是下面列出的服务名：原生表单用多个同名 checkbox（或 <select multiple>），submitLead 传字符串数组。不在列表里的值会记为「{{fallback}}」，原值写入备注\n· source：来源，选填，默认「{{name}}」。需要区分页面或落地页时填写，如「{{name}}-首页」\n· 其它字段（如年龄、所在城市）按原名提交即可，会以「字段名：值」写入备注",
+      "fields": "· name：姓名，必填\n· phone：手机号；wechat：微信号；email：邮箱。至少填一个，CRM 以第一个有值的作为联系方式，其余的写入备注\n· message：咨询内容或留言，选填，写入线索备注\n· intendedServices：意向服务，选填，可多选。值必须是下面列出的服务名：原生表单用多个同名 checkbox（或 <select multiple>），submitLead 传字符串数组。不在列表里的值会记为「{{fallback}}」，原值写入备注\n· 不要加 source 字段：来源自动记为网站域名「{{source}}」，访客从哪个页面提交可以在 CRM 的访问轨迹里看到\n· 其它字段（如年龄、所在城市）按原名提交即可，会以「字段名：值」写入备注",
       "services": "可选的意向服务（来自 CRM「产品与服务」，以后 CRM 里增删服务时需要同步更新表单）：{{list}}",
       "servicesNone": "CRM 的「产品与服务」里还没有服务，表单先不加意向服务；以后在 CRM 里添加服务后再加。",
       "formHtml": "原生表单示例：",
