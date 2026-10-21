@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { Link, useSearchParams } from 'react-router-dom'
 import { crmApi } from '@/shared/utils/request'
 import { useCrmAuth } from '@/app/auth/CrmAuthContext'
-import { getOptionLabel, useOptionGroup } from '@/shared/hooks/useOptions'
+import { getOptionColor, getOptionLabel, useOptionGroup, type OptionItem } from '@/shared/hooks/useOptions'
 import { DateRangePicker, useDateRangeParam } from '@/shared/components/DateRangePicker'
 import { cn } from '@/shared/utils/cn'
 import { BarChart } from './BarChart'
@@ -16,7 +16,7 @@ interface Dashboard {
   visitorSite: string | null
   kpis: { newLeads: Metric; newClients: Metric; convertedLeads: number; followups: Metric; visitors?: Metric; siteLeads?: number }
   trend: { day: string; leads: number; visitors?: number }[]
-  sources: { source: string; count: number }[]
+  sources: { source: string; count: number; statuses: Record<string, number> }[]
   statuses: { status: string; count: number }[]
   todo: { overdueLeads: number; todayLeads: number; overdueClients: number; todayClients: number }
   leaderboard?: { userId: string; name: string; leads: number; followups: number; clients: number }[]
@@ -56,25 +56,56 @@ function StatTile({ label, value, prev, hint }: { label: string; value: string |
   )
 }
 
-/** 横向条形列表：名称、数值，条长按最大值比例 */
-function BarList({ rows }: { rows: { label: string; count: number }[] }) {
+// 选项颜色（选项配置里的颜色名）对应的条形颜色
+const STATUS_FILL: Record<OptionItem['color'], string> = {
+  gray: '#9ca3af', blue: '#3b82f6', green: '#22c55e', yellow: '#eab308', red: '#ef4444', purple: '#a855f7',
+}
+
+/** 线索来源与状态：每个来源一行，条长按线索数，条内按状态分段；顶部图例是各状态合计 */
+function SourceStatusList({ sources, statuses, statusOpts }: {
+  sources: Dashboard['sources']; statuses: Dashboard['statuses']; statusOpts: OptionItem[]
+}) {
   const { t } = useTranslation()
-  if (!rows.length) return <p className="py-6 text-center text-sm text-gray-400">{t('dashboard.noData')}</p>
-  const max = Math.max(...rows.map((r) => r.count))
+  if (!sources.length) return <p className="py-6 text-center text-sm text-gray-400">{t('dashboard.noData')}</p>
+  // 状态顺序按选项配置，配置里没有的排在后面
+  const order = [...statusOpts.map((o) => o.value), ...statuses.map((s) => s.status)]
+  const shown = statuses.slice().sort((a, b) => order.indexOf(a.status) - order.indexOf(b.status))
+  const fill = (st: string) => STATUS_FILL[getOptionColor(statusOpts, st)] ?? STATUS_FILL.gray
+  const max = Math.max(...sources.map((r) => r.count))
   return (
-    <ul className="space-y-2.5">
-      {rows.map((r) => (
-        <li key={r.label} className="text-sm">
-          <div className="mb-1 flex justify-between gap-2">
-            <span className="truncate text-gray-700">{r.label}</span>
-            <span className="font-medium text-gray-900">{r.count}</span>
-          </div>
-          <div className="h-1.5 rounded-full bg-primary-50">
-            <div className="h-1.5 rounded-full bg-primary-500" style={{ width: `${Math.max(2, (r.count / max) * 100)}%` }} />
-          </div>
-        </li>
-      ))}
-    </ul>
+    <div>
+      <div className="mb-3 flex flex-wrap gap-x-3 gap-y-1 text-xs">
+        {shown.map((s) => (
+          <span key={s.status} className="inline-flex items-center gap-1.5">
+            <span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ background: fill(s.status) }} />
+            <span className="text-gray-600">{getOptionLabel(statusOpts, s.status)}</span>
+            <span className="font-medium text-gray-900">{s.count}</span>
+          </span>
+        ))}
+      </div>
+      <ul className="space-y-2.5">
+        {sources.map((r) => {
+          const label = r.source === '__other__' ? t('dashboard.other') : r.source
+          return (
+            <li key={r.source} className="text-sm">
+              <div className="mb-1 flex justify-between gap-2">
+                <span className="truncate text-gray-700" title={label}>{label}</span>
+                <span className="font-medium text-gray-900">{r.count}</span>
+              </div>
+              <div className="h-2 rounded-full bg-gray-100">
+                <div className="flex h-2 gap-[2px] overflow-hidden rounded-full" style={{ width: `${Math.max(2, (r.count / max) * 100)}%` }}>
+                  {shown.filter((s) => r.statuses[s.status]).map((s) => {
+                    const n = r.statuses[s.status]!
+                    const tip = `${label} · ${getOptionLabel(statusOpts, s.status)} ${n}`
+                    return <span key={s.status} title={tip} aria-label={tip} className="h-full" style={{ flexGrow: n, flexBasis: 0, background: fill(s.status) }} />
+                  })}
+                </div>
+              </div>
+            </li>
+          )
+        })}
+      </ul>
+    </div>
   )
 }
 
@@ -169,14 +200,9 @@ export default function DashboardPage() {
             </Card>
           </div>
 
-          <div className="grid gap-3 sm:gap-4 lg:grid-cols-2">
-            <Card title={t('dashboard.sources')}>
-              <BarList rows={data.sources.map((s) => ({ label: s.source === '__other__' ? t('dashboard.other') : s.source, count: s.count }))} />
-            </Card>
-            <Card title={t('dashboard.statuses')}>
-              <BarList rows={data.statuses.map((s) => ({ label: getOptionLabel(statusOpts, s.status), count: s.count }))} />
-            </Card>
-          </div>
+          <Card title={t('dashboard.sourceStatus')}>
+            <SourceStatusList sources={data.sources} statuses={data.statuses} statusOpts={statusOpts} />
+          </Card>
 
           {staff && data.leaderboard && (
             <Card title={t('dashboard.leaderboard.title')}>
