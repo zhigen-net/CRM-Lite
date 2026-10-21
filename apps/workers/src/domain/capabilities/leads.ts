@@ -3,6 +3,7 @@ import * as leads from '../leads/service'
 import { recentActivities } from '../activities/service'
 import { badRequest } from '../errors'
 import { submitExternalLead } from '../leads/submit'
+import { listContactMatches } from '../leads/dedupe'
 import type { Capability } from './types'
 import { visitorSourceSummary } from '../tracking/attribution'
 
@@ -39,6 +40,21 @@ export const queryLeads: Capability = {
         nextContactDate: l.nextContactDate, intendedServices: l.intendedServices, assignedToName: l.assignedToName,
       })),
     }
+  },
+}
+
+export const findContactMatches: Capability = {
+  name: 'find_contact_matches',
+  description: '按联系方式查找已有的线索和客户（不限时间，电话只比数字），用于判断是否重复、之前是谁负责。canView 为 false 的记录当前用户无权打开。',
+  scope: 'leads:read',
+  readOnly: true,
+  inputSchema: {
+    type: 'object',
+    properties: { contactInfo: { type: 'string', description: '电话、邮箱或微信等联系方式' } },
+    required: ['contactInfo'],
+  },
+  async run({ db }, actor, input) {
+    return { matches: await listContactMatches(db, actor, String(input.contactInfo ?? '').slice(0, 200)) }
   },
 }
 
