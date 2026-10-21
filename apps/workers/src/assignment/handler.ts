@@ -1,3 +1,5 @@
+import { recordOperation } from '../domain/operationLog'
+import { leadLabel } from '../domain/leads/service'
 interface Lead {
   id: string
   intended_services: string
@@ -98,6 +100,13 @@ async function assignLead(leadId: string, env: Env): Promise<void> {
   await env.DB.prepare(
     'UPDATE users SET current_leads_count = current_leads_count + 1 WHERE id = ?',
   ).bind(assignedUser.id).run()
+
+  const info = await env.DB.prepare('SELECT l.name, l.lead_no, u.name AS user_name FROM leads l LEFT JOIN users u ON u.id = ? WHERE l.id = ?')
+    .bind(assignedUser.id, leadId).first<{ name: string; lead_no: number | null; user_name: string | null }>()
+  await recordOperation(env.DB, null, {
+    action: 'lead.assign', targetType: 'lead', targetId: leadId, targetLabel: info ? leadLabel(info.lead_no, info.name) : null,
+    summary: `自动分配给 ${info?.user_name ?? assignedUser.id}`, changes: [{ field: 'assignedToUserId', from: null, to: info?.user_name ?? assignedUser.id }],
+  })
 
   await env.NOTIFICATION_QUEUE.send({ type: 'lead_assigned', leadId, assignedToUserId: assignedUser.id })
 }

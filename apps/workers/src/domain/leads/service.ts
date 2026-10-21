@@ -9,6 +9,7 @@ import { insertActivityStatement, insertAttachmentStatements, insertSystemActivi
 import { assertCanChangeLeadTeam, assertCanEditLead, assertCanViewLead, leadVisibility } from './policy'
 import { assertDate, assertDateTime, assertOptionValue } from '../validation'
 import { linkVisitorStatement, parseVisitorId } from '../tracking/link'
+import { diffFields, recordOperation } from '../operationLog'
 
 // 与 leads 表的 CHECK 约束一致
 export const LEAD_STATUSES = ['New', 'Contacted', 'Qualified', 'Converted', 'Lost'] as const
@@ -24,6 +25,7 @@ const SELECT_COLS = 'SELECT l.*, u.name as created_by_name, assign_u.name as ass
 
 interface LeadRow {
   id: string
+  lead_no?: number | null
   name: string
   source: string
   status: string
@@ -37,6 +39,17 @@ interface LeadRow {
 }
 
 export type Lead = Record<string, unknown>
+
+/** 操作记录里的对象名称：编号 + 姓名 */
+export const leadLabel = (no: number | null | undefined, name: string) =>
+  `${no != null ? `L-${String(no).padStart(4, '0')} ` : ''}${name}`
+
+const userNames = async (db: D1Database, ids: (string | null | undefined)[]) => {
+  const list = [...new Set(ids.filter((v): v is string => !!v))]
+  if (list.length === 0) return new Map<string, string>()
+  const rows = await db.prepare(`SELECT id, name FROM users WHERE id IN (${list.map(() => '?').join(',')})`).bind(...list).all<{ id: string; name: string }>()
+  return new Map(rows.results.map((r) => [r.id, r.name]))
+}
 
 function parseLead(row: Record<string, unknown>): Lead {
   const lead = toCamel(row) as Record<string, unknown>
@@ -193,6 +206,11 @@ export async function createLead(deps: Deps, actor: Actor, input: CreateLeadInpu
   } catch (err) {
     console.error(`[leads] 推送分配队列失败 ${id}:`, err)
   }
+  const created = await deps.db.prepare('SELECT lead_no FROM leads WHERE id = ?').bind(id).first<{ lead_no: number | null }>()
+  await recordOperation(deps.db, actor, {
+    action: 'lead.create', targetType: 'lead', targetId: id, targetLabel: leadLabel(created?.lead_no, input.name),
+    summary: `来源：${input.source}；联系方式：${input.contactInfo}${input.intendedServices.length > 0 ? `；意向服务：${input.intendedServices.join('、')}` : ''}`,
+  })
   fireWorkflow(deps, 'lead', id, { type: 'on_create' })
   return id
 }
@@ -299,6 +317,31 @@ export async function updateLead(deps: Deps, actor: Actor, id: string, patch: Up
     await insertSystemActivityStatement(db, { leadId: id }, actor.userId, changes.join('；')).run()
   }
 
+  // 操作记录：所有入口（含工作流）都记，字段保存改前改后的完整值；负责人、团队记名称
+  const fieldDiff = diffFields(
+    { name: lead.name, status: lead.status, lostReason: lead.lost_reason, source: lead.source, notes: lead.notes,
+      contactInfo: lead.contact_info, intendedServices: oldServices, nextContactDate: lead.next_contact_date,
+      assignedToUserId: lead.assigned_to_userId, assignedToTeamId: lead.assigned_to_teamId },
+    { name: patch.name, status: patch.status, lostReason: patch.lostReason, source: patch.source, notes: patch.notes,
+      contactInfo: patch.contactInfo, intendedServices: patch.intendedServices, nextContactDate: patch.nextContactDate,
+      assignedToUserId: patch.assignedToUserId, assignedToTeamId: patch.assignedToTeamId, adInfo: patch.adInfo },
+  )
+  if (fieldDiff.length > 0) {
+    const names = await userNames(db, [lead.assigned_to_userId, patch.assignedToUserId])
+    const teamIds = [lead.assigned_to_teamId, patch.assignedToTeamId].filter((v): v is string => !!v)
+    const teams = teamIds.length > 0
+      ? new Map((await db.prepare(`SELECT id, name FROM teams WHERE id IN (${teamIds.map(() => '?').join(',')})`).bind(...teamIds).all<{ id: string; name: string }>()).results.map((r) => [r.id, r.name]))
+      : new Map<string, string>()
+    for (const c of fieldDiff) {
+      if (c.field === 'assignedToUserId') { c.from = names.get(String(c.from)) ?? c.from; c.to = names.get(String(c.to)) ?? c.to }
+      if (c.field === 'assignedToTeamId') { c.from = teams.get(String(c.from)) ?? c.from; c.to = teams.get(String(c.to)) ?? c.to }
+    }
+    await recordOperation(db, actor, {
+      action: 'lead.update', targetType: 'lead', targetId: id, targetLabel: leadLabel(lead.lead_no, patch.name ?? lead.name),
+      summary: changes.join('；') || null, changes: fieldDiff,
+    })
+  }
+
   // "字段变化"类工作流
   const fieldChanges: Array<[string, unknown, unknown]> = [
     ['status', lead.status, patch.status],
@@ -372,6 +415,14 @@ export async function transitionLeadStatus(deps: Deps, actor: Actor, id: string,
     await adjustLeadsCount(db, lead.assigned_to_userId, -1)
   }
 
+  await recordOperation(db, actor, {
+    action: 'lead.status', targetType: 'lead', targetId: id, targetLabel: leadLabel(lead.lead_no, lead.name),
+    summary: [`状态：${STATUS_LABELS[lead.status] ?? lead.status} → ${STATUS_LABELS[body.targetStatus] ?? body.targetStatus}`,
+      `跟进（${body.activity.activityType}）：${description ?? ''}`].join('\n'),
+    changes: diffFields({ status: lead.status, lostReason: lead.lost_reason, nextContactDate: lead.next_contact_date, intendedServices: (() => { try { return JSON.parse(lead.intended_services) as string[] } catch { return [] } })() },
+      { status: body.targetStatus, lostReason: fields.lostReason || undefined, nextContactDate: fields.nextContactDate || undefined, intendedServices: fields.intendedServices }),
+  })
+
   const triggers: Array<[string, unknown]> = [
     ['status', body.targetStatus],
     ...(fields.lostReason ? [['lostReason', fields.lostReason] as [string, unknown]] : []),
@@ -400,6 +451,7 @@ export async function softDeleteLead(db: D1Database, actor: Actor, id: string): 
   await db.prepare('UPDATE leads SET deleted_at = CURRENT_TIMESTAMP WHERE id = ? AND deleted_at IS NULL').bind(id).run()
   // 重新统计而不是 -1：重复请求、历史上未同步的删除都不会让计数出错
   if (lead.assigned_to_userId) await recountLeads(db, lead.assigned_to_userId)
+  await recordOperation(db, actor, { action: 'lead.delete', targetType: 'lead', targetId: id, targetLabel: leadLabel(lead.lead_no, lead.name), summary: '移入回收站' })
 }
 
 /** 从回收站恢复线索，并重新统计负责人线索数 */

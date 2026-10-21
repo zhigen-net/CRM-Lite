@@ -139,7 +139,7 @@ describe('工具与权限', () => {
     expect(String(row?.notes)).toContain('火星旅行')
     let audit: { via: string; action: string } | null = null
     for (let i = 0; i < 20 && !audit; i++) {
-      audit = await env.DB.prepare('SELECT via, action FROM audit_log WHERE target_id = ?').bind(leadId).first()
+      audit = await env.DB.prepare("SELECT via, action FROM audit_log WHERE target_id = ? AND category = 'call'").bind(leadId).first()
       if (!audit) await new Promise((r) => setTimeout(r, 25))
     }
     expect(audit).toMatchObject({ via: 'mcp', action: 'create_lead' })

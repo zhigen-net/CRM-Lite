@@ -6,6 +6,7 @@ import type { Actor, Deps } from '../actor'
 import { DomainError, forbidden, notFound } from '../errors'
 import { fireWorkflow } from '../workflows'
 import { insertSystemActivityStatement } from '../activities/records'
+import { diffFields, recordOperation } from '../operationLog'
 import { assertCanEditLead } from '../leads/policy'
 import { adjustLeadsCount, findActiveLead } from '../leads/service'
 import { assertCanEditClient, assertCanViewClient, clientVisibility } from './policy'
@@ -24,6 +25,7 @@ interface ClientRow {
   contract_status: string | null
   assigned_sales_userId: string | null
   next_contact_date: string | null
+  detailed_profile?: string | null
 }
 
 function parseClient(row: Record<string, unknown>): Client {
@@ -156,6 +158,10 @@ export async function createClient(deps: Deps, actor: Actor, input: CreateClient
     fireWorkflow(deps, 'lead', input.leadId, { type: 'field_change', field: 'status', to: 'Converted' })
   }
 
+  await recordOperation(db, actor, {
+    action: input.leadId ? 'client.convert' : 'client.create', targetType: 'client', targetId: id, targetLabel: input.name,
+    summary: input.leadId ? `由线索转化（线索 ID：${input.leadId}）` : null,
+  })
   fireWorkflow(deps, 'client', id, { type: 'on_create' })
   return id
 }
@@ -231,6 +237,21 @@ export async function updateClient(deps: Deps, actor: Actor, id: string, patch: 
     await insertSystemActivityStatement(db, { clientId: id }, actor.userId, changes.join('；')).run()
   }
 
+  // 操作记录：所有入口（含工作流）都记，字段保存改前改后的完整值
+  const profile = (() => { try { return JSON.parse(existing.detailed_profile ?? '{}') as Record<string, unknown> } catch { return {} } })()
+  const fieldDiff = diffFields(
+    { name: existing.name, phone: existing.phone, email: existing.email, servicePlans: oldPlans, contractStatus: existing.contract_status,
+      nextContactDate: existing.next_contact_date, assignedSalesUserId: existing.assigned_sales_userId, detailedProfile: profile },
+    { name: patch.name, phone: patch.phone, email: patch.email, servicePlans: patch.servicePlans, contractStatus: patch.contractStatus,
+      nextContactDate: patch.nextContactDate, assignedSalesUserId: patch.assignedSalesUserId, detailedProfile: patch.detailedProfile },
+  )
+  if (fieldDiff.length > 0) {
+    await recordOperation(db, actor, {
+      action: 'client.update', targetType: 'client', targetId: id, targetLabel: patch.name ?? existing.name,
+      summary: changes.join('；') || null, changes: fieldDiff,
+    })
+  }
+
   const fieldChanges: Array<[string, unknown, unknown]> = [
     ['contractStatus', existing.contract_status, patch.contractStatus],
     ['assignedSalesUserId', existing.assigned_sales_userId, patch.assignedSalesUserId],
@@ -249,6 +270,7 @@ export async function updateClient(deps: Deps, actor: Actor, id: string, patch: 
 
 export async function softDeleteClient(db: D1Database, actor: Actor, id: string): Promise<void> {
   if (actor.role !== 'admin') throw forbidden('权限不足')
-  await findActiveClient(db, id)
+  const client = await findActiveClient(db, id)
   await db.prepare('UPDATE clients SET deleted_at = CURRENT_TIMESTAMP WHERE id = ?').bind(id).run()
+  await recordOperation(db, actor, { action: 'client.delete', targetType: 'client', targetId: id, targetLabel: client.name, summary: '移入回收站' })
 }

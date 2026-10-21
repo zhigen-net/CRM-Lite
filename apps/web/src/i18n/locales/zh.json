@@ -87,7 +87,6 @@
     "dashboard": "仪表盘",
     "leads": "线索",
     "clients": "客户",
-    "activities": "跟进记录",
     "products": "产品与服务",
     "users": "用户",
     "settings": "系统设置",
@@ -98,7 +97,8 @@
     "analytics": "访客",
     "groupSettings": "设置",
     "collapse": "收起导航",
-    "expand": "展开导航"
+    "expand": "展开导航",
+    "operationLog": "操作记录"
   },
   "auth": {
     "title": "内部管理系统",
@@ -758,35 +758,6 @@
       "Europe/London": "英国时间 (UTC+0/+1)",
       "Europe/Paris": "欧洲中部时间 (UTC+1/+2)"
     },
-    "auditLog": {
-      "title": "审计日志",
-      "subtitle": "通过对外接口（API Key）、AI 助手、MCP 发生的调用。点击一行查看参数。",
-      "allVia": "全部入口",
-      "allStatus": "全部结果",
-      "empty": "暂无记录",
-      "via": {
-        "api": "API Key",
-        "assistant": "AI 助手",
-        "mcp": "MCP"
-      },
-      "status": {
-        "ok": "成功",
-        "error": "失败"
-      },
-      "cols": {
-        "time": "时间",
-        "user": "用户",
-        "via": "入口",
-        "action": "操作",
-        "target": "对象",
-        "result": "结果"
-      },
-      "target": {
-        "lead": "线索",
-        "client": "客户"
-      },
-      "input": "参数"
-    },
     "aiUsage": {
       "title": "AI 助手模型与免费额度",
       "defaultModel": "助手默认模型",
@@ -920,7 +891,7 @@
           "mcp": "MCP（AI 直接操作 CRM）",
           "push": "推送线索"
         },
-        "intro": "在 Claude Code、Cursor、Claude Desktop 等支持 MCP 的 AI 工具里添加下面的配置，AI 就能按这把密钥的权限查询和维护 CRM 数据。所有调用都记录在本页下方的「审计日志」中（管理员可见）。",
+        "intro": "在 Claude Code、Cursor、Claude Desktop 等支持 MCP 的 AI 工具里添加下面的配置，AI 就能按这把密钥的权限查询和维护 CRM 数据。所有调用都记录在「设置 → 操作记录」中（管理员可见）。",
         "url": "MCP 地址",
         "claudeCode": "Claude Code 命令",
         "json": "JSON 配置（Cursor、Claude Desktop 等）",
@@ -1123,7 +1094,7 @@
       },
       "step3": {
         "title": "直接说需求",
-        "desc": "AI 会按你的权限和角色操作 CRM，每一步都记录在审计日志。"
+        "desc": "AI 会按你的权限和角色操作 CRM，每一步都记录在操作记录里。"
       },
       "examplesTitle": "可以这样对 AI 说：",
       "example1": "今天有哪些客户需要跟进？",
@@ -1775,5 +1746,108 @@
     "continue": "继续清理",
     "confirm": "确定删除 {{count}} 条早于 {{days}} 天的浏览明细吗？删除后无法恢复。",
     "done": "已删除 {{deleted}} 条，还剩 {{remaining}} 条可清理。"
+  },
+  "opLog": {
+    "title": "操作记录",
+    "summary": "共 {{total}} 条操作记录。所有入口（界面、对外接口、AI 助手、MCP、网站表单、工作流、系统）的操作都记在这里，只能查看，不能修改或删除。",
+    "allCategories": "全部分类",
+    "allUsers": "全部操作人",
+    "allVia": "全部入口",
+    "allStatus": "全部结果",
+    "searchPlaceholder": "搜索对象、内容",
+    "none": "暂无操作记录",
+    "empty": "（空）",
+    "systemUser": "系统",
+    "input": "参数",
+    "noDetail": "没有更多详情",
+    "cols": {
+      "time": "时间",
+      "user": "操作人",
+      "via": "入口",
+      "action": "操作",
+      "target": "对象",
+      "content": "内容",
+      "result": "结果",
+      "field": "字段",
+      "before": "改前",
+      "after": "改后"
+    },
+    "status": {
+      "ok": "成功",
+      "error": "失败"
+    },
+    "via": {
+      "web": "界面",
+      "api": "对外接口",
+      "assistant": "AI 助手",
+      "mcp": "MCP",
+      "site": "网站表单",
+      "workflow": "工作流",
+      "system": "系统",
+      "history": "历史导入"
+    },
+    "category": {
+      "lead": "线索",
+      "client": "客户",
+      "activity": "跟进记录",
+      "file": "附件",
+      "login": "登录",
+      "account": "个人账号",
+      "user": "用户",
+      "team": "团队",
+      "settings": "系统设置",
+      "options": "选项配置",
+      "service": "产品与服务",
+      "workflow": "工作流",
+      "assignment": "分配规则",
+      "aiConfig": "AI 配置",
+      "apiKey": "API Key",
+      "site": "网站接入",
+      "recycleBin": "回收站",
+      "apiFailure": "失败补录",
+      "milestone": "服务进度",
+      "partner": "合作方",
+      "call": "接口调用",
+      "other": "其它"
+    },
+    "verb": {
+      "create": "新建",
+      "update": "修改",
+      "delete": "删除",
+      "status": "变更状态",
+      "assign": "自动分配",
+      "merge": "重复提交合并",
+      "repeat": "重复提交忽略",
+      "convert": "转化为客户",
+      "system": "系统记录",
+      "login": "登录",
+      "download": "下载",
+      "view": "查看",
+      "action": "操作"
+    },
+    "target": {
+      "lead": "线索",
+      "client": "客户",
+      "other": "对象"
+    },
+    "fields": {
+      "name": "姓名",
+      "status": "状态",
+      "lostReason": "丢失原因",
+      "source": "来源",
+      "notes": "备注",
+      "contactInfo": "联系方式",
+      "intendedServices": "意向服务",
+      "nextContactDate": "下次联系",
+      "assignedToUserId": "负责人",
+      "assignedToTeamId": "团队",
+      "adInfo": "广告信息",
+      "phone": "电话",
+      "email": "邮箱",
+      "servicePlans": "服务套餐",
+      "contractStatus": "合同状态",
+      "assignedSalesUserId": "负责人",
+      "detailedProfile": "详细资料"
+    }
   }
 }
