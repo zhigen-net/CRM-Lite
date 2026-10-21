@@ -95,6 +95,29 @@ describe('更新线索：附带处理', () => {
     expect((await api(admin, 'PUT', `/api/leads/${converted}`, { notes: 'x' })).status).toBe(403)
   })
 
+  it('界面：管理员修正姓名、联系方式、来源 → 写系统记录；不能改成空', async () => {
+    const id = await insertLead({ createdBy: admin.id, teamId: teamA, name: '刘昆' })
+    const res = await api(admin, 'PUT', `/api/leads/${id}`, { name: ' 刘坤 ', contactInfo: '18515451980', source: '官网' })
+    expect(res.status).toBe(200)
+    expect(await leadRow(id)).toMatchObject({ name: '刘坤', contact_info: '18515451980', source: '官网' })
+    const log = (await systemActivities(id)).join()
+    expect(log).toContain('姓名：刘昆 → 刘坤')
+    expect(log).toContain('联系方式：13800000000 → 18515451980')
+    expect(log).toContain('来源：test → 官网')
+    expect((await api(admin, 'PUT', `/api/leads/${id}`, { name: '  ' })).status).toBe(400)
+    expect((await api(salesB, 'PUT', `/api/leads/${id}`, { name: 'x' })).status).toBe(403)
+  })
+
+  it('AI 助手：update_lead 也能修正姓名，与界面一致', async () => {
+    const owner = await createUser('sales', teamA, 3)
+    const id = await insertLead({ createdBy: admin.id, assignedTo: owner.id, teamId: teamA, name: '旧名' })
+    const { ctx, settle } = agentCtx(owner)
+    const out = await executeTool(ctx as never, 'update_lead', { id, name: '新名' }) as { error?: string }
+    await settle()
+    expect(out.error).toBeUndefined()
+    expect((await leadRow(id))?.name).toBe('新名')
+  })
+
   it('AI 助手：update_lead 改为已丢失 → 线索数 -1，写系统记录', async () => {
     const owner = await createUser('sales', teamA, 3)
     const id = await insertLead({ createdBy: admin.id, assignedTo: owner.id, teamId: teamA })
