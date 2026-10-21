@@ -5,6 +5,7 @@ import { requireAuth, requireAdmin } from '../middleware/auth'
 import { actorFromJwt, depsFrom } from '../../domain/actor'
 import * as leads from '../../domain/leads/service'
 import { getLeadAttribution } from '../../domain/tracking/attribution'
+import { listContactMatches } from '../../domain/leads/dedupe'
 
 // 线索接口：只做参数解析与响应格式，业务规则在 domain/leads
 export const leadsRoutes = new Hono<{ Bindings: Env }>()
@@ -35,6 +36,14 @@ leadsRoutes.get('/', async (c) => {
     page: Number(q.page ?? '1'), pageSize: Number(q.pageSize ?? '20'),
   })
   return c.json(result)
+})
+
+// GET /api/leads/contact-matches?contact=&excludeId= — 相同联系方式的线索和客户（新建、详情页提示可能重复）
+leadsRoutes.get('/contact-matches', async (c) => {
+  const contact = (c.req.query('contact') ?? '').slice(0, 200)
+  const excludeId = c.req.query('excludeId')
+  if (excludeId) await leads.getLead(c.env.DB, actorFromJwt(c.get('jwtPayload'), 'web'), excludeId)
+  return c.json({ data: await listContactMatches(c.env.DB, actorFromJwt(c.get('jwtPayload'), 'web'), contact, excludeId) })
 })
 
 // GET /api/leads/:id

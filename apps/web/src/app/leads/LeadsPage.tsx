@@ -12,6 +12,7 @@ import { Badge } from '@/shared/components/Badge'
 import { Modal } from '@/shared/components/Modal'
 import { Textarea } from '@/shared/components/Textarea'
 import { Combobox } from '@/shared/components/Combobox'
+import { ContactMatches } from './ContactMatches'
 import { Pagination } from '@/shared/components/Pagination'
 import { ActivityModal } from '@/shared/components/ActivityModal'
 import type { ActivitySubmitData } from '@/shared/components/ActivityModal'
@@ -524,6 +525,7 @@ export default function LeadsPage() {
             />
             <Input label={t('common.name')} error={errors.name?.message} {...register('name')} />
             <Input label={t('leads.cols.contact')} error={errors.contactInfo?.message} {...register('contactInfo')} />
+            <ContactMatches contact={watch('contactInfo') ?? ''} />
             <div>
               <p className="mb-1.5 text-sm font-medium text-gray-700">{t('leads.cols.service')}</p>
               <div className="flex flex-wrap gap-2">

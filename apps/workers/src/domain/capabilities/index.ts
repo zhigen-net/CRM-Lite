@@ -5,7 +5,7 @@ import { recordAudit, shouldAudit } from '../audit'
 import { DomainError, forbidden, notFound } from '../errors'
 import { createActivity, listActivities } from './activities'
 import { convertLead, getClient, queryClients, updateClient } from './clients'
-import { createLead, getLead, queryLeads, updateLead } from './leads'
+import { createLead, findContactMatches, getLead, queryLeads, updateLead } from './leads'
 import { getOptions, queryTeams, queryUsers, whoami } from './meta'
 import type { Capability, CapabilityInput, Scope } from './types'
 import { validateInput } from './validate'
@@ -15,7 +15,7 @@ export type { Capability, CapabilityInput, InputSchema, Scope } from './types'
 export { SCOPES } from './types'
 
 export const CAPABILITIES: readonly Capability[] = [
-  queryLeads, getLead, queryClients, getClient,
+  queryLeads, getLead, findContactMatches, queryClients, getClient,
   createActivity, updateLead, updateClient,
   getOptions, queryUsers,
   createLead, listActivities, whoami,

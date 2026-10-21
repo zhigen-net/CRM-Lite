@@ -83,3 +83,60 @@ describe('30 天内同一联系方式合并到已有线索', () => {
     expect((await v1Lead({ source: '推送', name: '删除的', contactInfo: '13733334444' })).status).toBe(201)
   })
 })
+
+describe('连点与并发提交', () => {
+  const resubmits = async (leadId: string) => (await env.DB.prepare(
+    "SELECT COUNT(*) AS n FROM sales_activities WHERE lead_id = ? AND description LIKE '客户再次提交%'",
+  ).bind(leadId).first<{ n: number }>())!.n
+
+  it('10 分钟内内容相同的重复提交不再写记录；有新留言时照常合并', async () => {
+    const body = { name: '连点客户', phone: '13744445555', message: '想咨询' }
+    expect((await siteLead(body)).status).toBe(200)
+    expect((await siteLead(body)).status).toBe(200)
+    expect((await siteLead(body)).status).toBe(200)
+    const lead = (await env.DB.prepare("SELECT id FROM leads WHERE contact_info = '13744445555'").first<{ id: string }>())!
+    expect(await resubmits(lead.id)).toBe(0)
+
+    expect((await siteLead({ ...body, message: '补充：周末有空' })).status).toBe(200)
+    expect(await resubmits(lead.id)).toBe(1)
+    expect((await siteLead({ ...body, message: '补充：周末有空' })).status).toBe(200)
+    expect(await resubmits(lead.id)).toBe(1)
+    expect(await countByContact('13744445555')).toBe(1)
+  })
+
+  it('同一联系方式同时提交只建一条线索', async () => {
+    const results = await Promise.all([1, 2, 3].map(() => v1Lead({ source: '推送', name: '并发', contactInfo: '13755556666' })))
+    expect(results.map((r) => r.status).sort()).toEqual([200, 200, 201])
+    expect(await countByContact('13755556666')).toBe(1)
+    const locks = await env.DB.prepare('SELECT COUNT(*) AS n FROM lead_submit_locks').first<{ n: number }>()
+    expect(locks!.n).toBe(0)
+  })
+})
+
+describe('相同联系方式的历史记录', () => {
+  it('超过 30 天再次提交：新建线索并说明之前来过；界面接口列出相同联系方式的记录', async () => {
+    const old = await v1Lead({ source: '推送', name: '回头客', contactInfo: '137 6666 7777' })
+    const oldId = ((await old.json()) as { data: { id: string } }).data.id
+    await env.DB.prepare("UPDATE leads SET created_at = datetime('now', '-40 days') WHERE id = ?").bind(oldId).run()
+
+    const again = await v1Lead({ source: '推送', name: '回头客', contactInfo: '+86 13766667777' })
+    expect(again.status).toBe(201)
+    const newId = ((await again.json()) as { data: { id: string } }).data.id
+    const note = await env.DB.prepare("SELECT description FROM sales_activities WHERE lead_id = ? AND description LIKE '该联系方式之前来过%'")
+      .bind(newId).first<{ description: string }>()
+    expect(note?.description).toContain('回头客')
+
+    const res = await api(admin, 'GET', `/api/leads/contact-matches?contact=${encodeURIComponent('13766667777')}&excludeId=${newId}`)
+    expect(res.status).toBe(200)
+    const { data } = (await res.json()) as { data: { id: string; type: string; canView: boolean }[] }
+    expect(data).toEqual([expect.objectContaining({ id: oldId, type: 'lead', canView: true })])
+
+    // 线索分配给别人后，销售能看到有重复，但不能打开
+    await env.DB.prepare('UPDATE leads SET assigned_to_userId = ? WHERE id IN (?, ?)').bind(admin.id, oldId, newId).run()
+    const sales = await createUser('sales')
+    const salesRes = await api(sales, 'GET', `/api/leads/contact-matches?contact=13766667777`)
+    const salesData = ((await salesRes.json()) as { data: { canView: boolean }[] }).data
+    expect(salesData.length).toBe(2)
+    expect(salesData.every((m) => !m.canView)).toBe(true)
+  })
+})

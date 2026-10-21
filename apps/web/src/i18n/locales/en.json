@@ -204,6 +204,12 @@
       "button": "Edit",
       "title": "Edit lead",
       "hint": "Changes are recorded in the lead's activity log (system record)."
+    },
+    "matches": {
+      "title": "{{count}} existing record(s) with this contact:",
+      "client": "Client {{name}}",
+      "owner": "Owner {{name}}",
+      "unassigned": "Unassigned"
     }
   },
   "clients": {
