@@ -200,37 +200,40 @@ export default function DashboardPage() {
             </Card>
           </div>
 
-          <Card title={t('dashboard.sourceStatus')}>
-            <SourceStatusList sources={data.sources} statuses={data.statuses} statusOpts={statusOpts} />
-          </Card>
-
-          {staff && data.leaderboard && (
-            <Card title={t('dashboard.leaderboard.title')}>
-              {!data.leaderboard.length ? <p className="py-4 text-center text-sm text-gray-400">{t('dashboard.noData')}</p> : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b text-left text-xs text-gray-500">
-                        {(['name', 'leads', 'followups', 'clients'] as const).map((c) => (
-                          <th key={c} className={cn('whitespace-nowrap px-2 py-2 font-medium', c !== 'name' && 'text-right')}>{t(`dashboard.leaderboard.${c}`)}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100">
-                      {data.leaderboard.map((r) => (
-                        <tr key={r.userId}>
-                          <td className="px-2 py-2 text-gray-800">{r.name}</td>
-                          <td className="px-2 py-2 text-right tabular-nums text-gray-700">{r.leads}</td>
-                          <td className="px-2 py-2 text-right tabular-nums text-gray-700">{r.followups}</td>
-                          <td className="px-2 py-2 text-right tabular-nums font-medium text-gray-900">{r.clients}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+          {/* 来源与状态、销售排行并排（电脑上一行两列；没有排行时来源占满） */}
+          <div className="grid gap-3 sm:gap-4 lg:grid-cols-2">
+            <Card title={t('dashboard.sourceStatus')} className={staff && data.leaderboard ? '' : 'lg:col-span-2'}>
+              <SourceStatusList sources={data.sources} statuses={data.statuses} statusOpts={statusOpts} />
             </Card>
-          )}
+
+            {staff && data.leaderboard && (
+              <Card title={t('dashboard.leaderboard.title')}>
+                {!data.leaderboard.length ? <p className="py-4 text-center text-sm text-gray-400">{t('dashboard.noData')}</p> : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b text-left text-xs text-gray-500">
+                          {(['name', 'leads', 'followups', 'clients'] as const).map((c) => (
+                            <th key={c} className={cn('whitespace-nowrap px-2 py-2 font-medium', c !== 'name' && 'text-right')}>{t(`dashboard.leaderboard.${c}`)}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {data.leaderboard.map((r) => (
+                          <tr key={r.userId}>
+                            <td className="px-2 py-2 text-gray-800">{r.name}</td>
+                            <td className="px-2 py-2 text-right tabular-nums text-gray-700">{r.leads}</td>
+                            <td className="px-2 py-2 text-right tabular-nums text-gray-700">{r.followups}</td>
+                            <td className="px-2 py-2 text-right tabular-nums font-medium text-gray-900">{r.clients}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </Card>
+            )}
+          </div>
         </div>
       )}
     </div>
