@@ -10,6 +10,7 @@ import { DateRangePicker, useDateRangeParam } from '@/shared/components/DateRang
 import { JourneyDrawer, place } from './Journey'
 import { AnomalyIcons, type Anomaly } from './AnomalyIcons'
 import { CountryFlag } from './CountryFlag'
+import { languageName } from './language'
 
 interface SiteOption { id: string; name: string; domain: string | null; isActive: boolean; lastSeenAt: string | null }
 interface Visitor {
@@ -18,6 +19,8 @@ interface Visitor {
   deviceType: string | null; os: string | null; browser: string | null; country: string | null; region: string | null; city: string | null; isp: string | null
   leadId: string | null; leadName: string | null; keyActions: number; lastIp: string | null
   anomalies?: Anomaly[]
+  /** 最近一次访问的浏览器语言 */
+  lastLanguage?: string | null
 }
 const CHANNELS = ['paid', 'search', 'social', 'referral', 'direct'] as const
 const PAGE_SIZE = 30
@@ -35,7 +38,7 @@ function FilterSelect({ value, onChange, label, children }: { value: string; onC
 }
 
 function VisitorsPanel() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const [siteId, setSiteId] = useState('')
   const [channel, setChannel] = useState('')
   const [withLead, setWithLead] = useState('')
@@ -123,9 +126,10 @@ function VisitorsPanel() {
                   {[v.deviceType && t(`analytics.devices.${v.deviceType}`), v.browser, place(v), v.lastIp].filter(Boolean).join(' · ')}
                 </p>
                 <div className="mt-1.5 flex items-center gap-2 text-xs">
-                  <span className="text-gray-500">{t('analytics.visitors.cols.visits')} {v.visitCount} / {v.pageviewCount}</span>
-                  {v.keyActions > 0 && <span className="rounded bg-amber-100 px-1.5 py-0.5 text-amber-700">{t('analytics.visitors.cols.actions')} {v.keyActions}</span>}
-                  {v.leadId && <span className="ml-auto rounded bg-green-50 px-1.5 py-0.5 text-green-700">{v.leadName ?? t('analytics.journey.viewLead')}</span>}
+                  <span className="shrink-0 whitespace-nowrap text-gray-500">{v.visitCount} / {v.pageviewCount}</span>
+                  {v.lastLanguage && <span className="min-w-0 truncate text-gray-400" title={v.lastLanguage}>{languageName(v.lastLanguage, i18n.language)}</span>}
+                  {v.keyActions > 0 && <span className="shrink-0 whitespace-nowrap rounded bg-amber-100 px-1.5 py-0.5 text-amber-700">{t('analytics.visitors.cols.actions')} {v.keyActions}</span>}
+                  {v.leadId && <span className="ml-auto max-w-[40%] shrink-0 truncate whitespace-nowrap rounded bg-green-50 px-1.5 py-0.5 text-green-700">{v.leadName ?? t('analytics.journey.viewLead')}</span>}
                 </div>
               </div>
             </li>
@@ -149,7 +153,10 @@ function VisitorsPanel() {
                     {(v.firstUtmSource || v.firstUtmCampaign) && <span className="block text-xs text-gray-400">{[v.firstUtmSource, v.firstUtmCampaign].filter(Boolean).join(' / ')}</span>}
                   </td>
                   <td className="whitespace-nowrap px-4 py-2.5 text-gray-600">{v.visitCount} / {v.pageviewCount}</td>
-                  <td className="whitespace-nowrap px-4 py-2.5 text-gray-600">{[v.deviceType && t(`analytics.devices.${v.deviceType}`), v.browser].filter(Boolean).join(' · ')}</td>
+                  <td className="whitespace-nowrap px-4 py-2.5 text-gray-600">
+                    {[v.deviceType && t(`analytics.devices.${v.deviceType}`), v.browser].filter(Boolean).join(' · ')}
+                    {v.lastLanguage && <span className="block text-xs text-gray-400" title={v.lastLanguage}>{languageName(v.lastLanguage, i18n.language)}</span>}
+                  </td>
                   <td className="px-4 py-2.5 text-gray-600">
                     {(v.lastIp || !!v.anomalies?.length) && (
                       <span className="flex items-center gap-1 font-mono text-xs text-gray-700">{v.lastIp}<AnomalyIcons items={v.anomalies} /></span>

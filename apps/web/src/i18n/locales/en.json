@@ -1174,7 +1174,7 @@
         "lastSeen": "Last visit",
         "source": "First source",
         "visits": "Visits / views",
-        "device": "Device",
+        "device": "Device / language",
         "location": "IP / location / ISP",
         "actions": "Key actions",
         "lead": "Lead"
@@ -1291,7 +1291,8 @@
       "visits": "Visits",
       "visitsValue": "{{visits}} visits, {{pages}} pages viewed",
       "ip": "Last IP",
-      "location": "Location"
+      "location": "Location",
+      "language": "Browser language"
     },
     "anomaly": {
       "bot": "Likely bot",
