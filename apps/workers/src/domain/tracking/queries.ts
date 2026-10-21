@@ -29,7 +29,9 @@ export async function listVisitors(db: D1Database, f: VisitorListFilters) {
   }
 
   const [count, rows] = await Promise.all([
-    db.prepare(`SELECT COUNT(*) AS total FROM visitors v ${where}`).bind(...params).first<{ total: number }>(),
+    // 总数与概况（已留资、有关键行为的访客数），用于列表上方的统计总结
+    db.prepare(`SELECT COUNT(*) AS total, COALESCE(SUM(v.lead_id IS NOT NULL), 0) AS with_lead, COALESCE(SUM(v.key_actions > 0), 0) AS with_actions FROM visitors v ${where}`)
+      .bind(...params).first<{ total: number; with_lead: number; with_actions: number }>(),
     db.prepare(`
       SELECT v.*, l.name AS lead_name,
         -- 最近一次访问的屏幕与语言，用于异常标识（走 visit 索引，每行读一条）
@@ -42,7 +44,7 @@ export async function listVisitors(db: D1Database, f: VisitorListFilters) {
     ...toCamel(r),
     anomalies: detectAnomalies({ isp: r.isp as string, screen: r.last_screen as string, language: r.last_language as string, deviceType: r.device_type as string }),
   }))
-  return { data, total: count?.total ?? 0, page, pageSize }
+  return { data, total: count?.total ?? 0, summary: { withLead: count?.with_lead ?? 0, withActions: count?.with_actions ?? 0 }, page, pageSize }
 }
 
 /** 访客详情：基本信息 + 最近 50 次访问 + 每次访问的事件时间线 */

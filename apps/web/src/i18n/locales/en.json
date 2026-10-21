@@ -1141,7 +1141,7 @@
   },
   "analytics": {
     "title": "Visitors",
-    "subtitle": "Where website visitors come from, what they view and do, and whether they have become leads.",
+    "summary": "{{range}} · {{site}}: {{total}} visitors, {{leads}} left contact details, {{actions}} with key actions",
     "channels": {
       "paid": "Paid",
       "search": "Search",
@@ -1167,7 +1167,6 @@
       "allVisitors": "All visitors",
       "withLead": "Became leads",
       "withoutLead": "Not yet leads",
-      "total": "Visitors: {{count}}",
       "empty": "No visitor data yet. Once a website is connected, visits will appear here.",
       "noSites": "No websites connected yet.",
       "cols": {
