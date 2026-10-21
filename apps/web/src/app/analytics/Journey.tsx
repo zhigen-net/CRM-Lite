@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { AnomalyIcons, type Anomaly } from './AnomalyIcons'
 import { CountryFlag, countryName } from './CountryFlag'
+import { languageName } from './language'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
@@ -23,7 +24,7 @@ export interface TrackEvent { id: string; type: string; host?: string | null; pa
 export interface Visit {
   id: string; startedAt: string; endedAt: string; pageviews: number; durationSec: number; landingPath: string | null; landingHost?: string | null
   referrer: string | null; channel: string | null; utmSource: string | null; utmCampaign: string | null; clickIdType: string | null
-  deviceType: string | null; os: string | null; browser: string | null; screen: string | null; network: string | null
+  deviceType: string | null; os: string | null; browser: string | null; screen: string | null; network: string | null; language?: string | null
   country?: string | null; region: string | null; city: string | null; isp: string | null; ip?: string | null; events: TrackEvent[]
   anomalies?: Anomaly[]
 }
@@ -63,7 +64,7 @@ export const place = (v: { region: string | null; city: string | null }) =>
 
 /** 访问轨迹抽屉：url 为访客轨迹或线索 / 客户来源接口（两者返回同样的 visitor + visits） */
 export function JourneyDrawer({ url, onClose }: { url: string; onClose: () => void }) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const { data, isLoading } = useJourney(url)
   const ch = (c: string | null) => (c ? t(`analytics.channels.${c}`, { defaultValue: c }) : '—')
 
@@ -92,7 +93,7 @@ export function JourneyDrawer({ url, onClose }: { url: string; onClose: () => vo
                 <div className="border-b bg-gray-50 px-3 py-2 text-xs">
                   <p className="font-medium text-gray-800">{formatDate(v.startedAt)} · {ch(v.channel)}{v.utmSource ? ` · ${v.utmSource}` : ''}{v.utmCampaign ? ` / ${v.utmCampaign}` : ''} <AnomalyIcons items={v.anomalies} /></p>
                   <p className="mt-0.5 text-gray-500">
-                    {t('analytics.journey.visitSummary', { pages: v.pageviews, time: duration(v.durationSec) })} · {[v.deviceType && t(`analytics.devices.${v.deviceType}`), v.os, v.browser].filter(Boolean).join(' / ')}
+                    {t('analytics.journey.visitSummary', { pages: v.pageviews, time: duration(v.durationSec) })} · {[v.deviceType && t(`analytics.devices.${v.deviceType}`), v.os, v.browser].filter(Boolean).join(' / ')}{v.language ? ` · ${languageName(v.language, i18n.language)}` : ''}
                     {' · '}{v.ip ? `${v.ip} · ` : ''}<CountryFlag code={v.country} /> {place(v)}{v.isp ? ` · ${v.isp}` : ''}{v.network ? ` · ${v.network}` : ''}
                   </p>
                   {v.referrer && <p className="mt-0.5 truncate text-gray-400">{t('analytics.journey.referrer')}：{v.referrer}</p>}
@@ -144,6 +145,8 @@ export function VisitorSourceCard({ url }: { url: string }) {
     [t('analytics.source.firstSeen'), formatDate(v.firstSeenAt)],
     [t('analytics.source.visits'), t('analytics.source.visitsValue', { visits: v.visitCount, pages: v.pageviewCount })],
     ...(v.lastIp ? [[t('analytics.source.ip'), v.lastIp] as [string, string]] : []),
+    // 浏览器语言：取最近一次访问
+    ...(data.visits[0]?.language ? [[t('analytics.source.language'), languageName(data.visits[0].language, i18n.language) ?? data.visits[0].language, data.visits[0].language] as [string, string, string]] : []),
     // 地区：国旗 + 国家 + 省市
     [t('analytics.source.location'), (
       <span className="inline-flex items-center gap-1.5"><CountryFlag code={v.country} />{[v.country ? countryName(v.country, i18n.language) : null, place(v) === '—' ? null : place(v)].filter(Boolean).join(' · ') || '—'}</span>
