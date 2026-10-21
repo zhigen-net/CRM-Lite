@@ -13,6 +13,7 @@ import { AskAiButton } from '@/shared/components/AskAiButton'
 import { useCrmAuth } from '@/app/auth/CrmAuthContext'
 import { VisitorSourceCard } from '@/app/analytics/Journey'
 import { LeadEditModal } from './LeadEditModal'
+import { ContactMatches } from './ContactMatches'
 import { useWorkflows } from '@/shared/hooks/useWorkflows'
 import type { ActivityConfig } from '@/shared/hooks/useWorkflows'
 import type { Lead, LeadStatus, SalesActivity, User } from '@/shared/types'
@@ -206,6 +207,9 @@ export default function LeadDetailPage() {
             ))}
           </div>
         </div>
+
+        {/* 相同联系方式的其它线索 / 客户 */}
+        <div className="mt-3 empty:hidden"><ContactMatches contact={lead.contactInfo} excludeId={lead.id} /></div>
 
         <div className="mt-4 flex flex-wrap items-center gap-2">
           <span className="text-sm text-gray-600">{t('leads.detail.status')}</span>

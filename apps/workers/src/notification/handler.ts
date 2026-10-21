@@ -1,10 +1,12 @@
+import { describeContactMatches, findContactMatches } from '../domain/leads/dedupe'
 import { sendEmail } from '../shared/email'
 
-// lead_assigned：线索分配给销售；lead_resubmitted：已有线索的客户再次提交（外部入口去重合并后提醒负责人）
+// lead_assigned：线索分配给销售；lead_resubmitted：已有线索的客户再次提交（外部入口去重合并后提醒负责人，已转化的带 clientId 提醒客户负责人）
 interface NotificationMessage {
   type: 'lead_assigned' | 'lead_resubmitted'
   leadId: string
   assignedToUserId: string
+  clientId?: string
 }
 
 interface NotificationConfig {
@@ -52,10 +54,16 @@ async function processNotification(msg: NotificationMessage, env: Env): Promise<
   const leadNo = lead.lead_no != null ? `L-${String(lead.lead_no).padStart(4, '0')} ` : ''
   const resubmit = msg.type === 'lead_resubmitted'
   const subject = resubmit ? `客户再次提交：${leadNo}${lead.name}` : `新线索已分配给你：${leadNo}${lead.name}`
-  const intro = resubmit ? '你负责的线索再次提交了信息（内容见线索的跟进记录），请及时跟进：' : '以下线索已分配给你，请及时跟进：'
-  const body = `你好 ${user.name}，\n\n${intro}\n\n姓名：${lead.name}\n联系方式：${lead.contact_info}\n来源：${lead.source ?? '未知'}\n\n请登录 CRM 查看详情。`
+  const intro = !resubmit ? '以下线索已分配给你，请及时跟进：'
+    : msg.clientId ? '你负责的客户再次提交了信息（内容见客户的跟进记录），请及时跟进：'
+      : '你负责的线索再次提交了信息（内容见线索的跟进记录），请及时跟进：'
+  // 新分配的线索：联系方式以前出现过时，写明之前的线索 / 客户和负责人
+  const history = resubmit ? '' : await findContactMatches(env.DB, lead.contact_info, msg.leadId)
+    .then((m) => (m.length > 0 ? `\n\n该联系方式之前来过：\n${describeContactMatches(m)}` : ''))
+    .catch(() => '')
+  const body = `你好 ${user.name}，\n\n${intro}\n\n姓名：${lead.name}\n联系方式：${lead.contact_info}\n来源：${lead.source ?? '未知'}${history}\n\n请登录 CRM 查看详情。`
 
-  const webhookText = `【${resubmit ? '客户再次提交' : '新线索分配'}】${leadNo}${lead.name}\n联系方式：${lead.contact_info}\n来源：${lead.source ?? '未知'}\n负责人：${user.name}`
+  const webhookText = `【${resubmit ? '客户再次提交' : '新线索分配'}】${leadNo}${lead.name}\n联系方式：${lead.contact_info}\n来源：${lead.source ?? '未知'}\n负责人：${user.name}${history}`
 
   await Promise.allSettled([
     config.emailEnabled && config.email

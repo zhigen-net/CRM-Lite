@@ -3,8 +3,9 @@
 // 各入口只负责鉴权和响应格式，不要在入口里另写规则，避免几条路径的数据不一致
 import type { Actor, Deps } from '../actor'
 import { recordAudit } from '../audit'
+import { recordOperation } from '../operationLog'
 import { badRequest } from '../errors'
-import { findDuplicateLead, mergeIntoLead } from './dedupe'
+import { findDuplicateLead, isRepeatSubmission, mergeIntoLead, noteContactHistory, withContactLock } from './dedupe'
 import { normalizeExternalLead } from './intake'
 import { createLead, type CreateLeadInput } from './service'
 
@@ -60,15 +61,27 @@ export async function submitExternalLead(
 ): Promise<{ id: string; lead: CreateLeadInput; duplicate: boolean }> {
   const lead = await prepareExternalLead(deps.db, raw, opts)
   try {
-    const existing = await findDuplicateLead(deps.db, lead.contactInfo)
-    if (existing) {
-      await mergeIntoLead(deps, actor, existing, lead)
-      if (opts.audit) recordAudit(deps, actor, { action: 'create_lead', status: 'ok', targetType: 'lead', targetId: existing.id, input: { ...raw, _merged: true } })
-      return { id: existing.id, lead, duplicate: true }
-    }
-    const id = await createLead(deps, actor, { ...lead, linkCreatorTeam: opts.linkCreatorTeam })
-    if (opts.audit) recordAudit(deps, actor, { action: 'create_lead', status: 'ok', targetType: 'lead', targetId: id, input: raw })
-    return { id, lead, duplicate: false }
+    // 同一联系方式同时提交时排队，保证只建一条
+    return await withContactLock(deps.db, lead.contactInfo, async () => {
+      const existing = await findDuplicateLead(deps.db, lead.contactInfo)
+      if (existing) {
+        // 10 分钟内没有新内容的重复提交（连点、刷新重发）：不再写记录和提醒
+        const repeat = await isRepeatSubmission(deps.db, existing, lead)
+        if (!repeat) await mergeIntoLead(deps, actor, existing, lead)
+        await recordOperation(deps.db, actor, {
+          action: repeat ? 'lead.repeat' : 'lead.merge', targetType: 'lead', targetId: existing.id, targetLabel: lead.name,
+          summary: `${repeat ? '10 分钟内内容相同的重复提交，已忽略' : '再次提交，已合并到已有线索'}（来源：${lead.source}；联系方式：${lead.contactInfo}）`,
+          input: raw,
+        })
+        if (opts.audit) recordAudit(deps, actor, { action: 'create_lead', status: 'ok', targetType: 'lead', targetId: existing.id, input: { ...raw, _merged: true, ...(repeat ? { _repeat: true } : {}) } })
+        return { id: existing.id, lead, duplicate: true }
+      }
+      const id = await createLead(deps, actor, { ...lead, linkCreatorTeam: opts.linkCreatorTeam })
+      // 超过 30 天的线索或已有客户：在新线索上说明之前来过（失败不影响新建）
+      await noteContactHistory(deps, actor, id, lead.contactInfo).catch((err) => console.error(`[leads] 记录历史失败 ${id}:`, err))
+      if (opts.audit) recordAudit(deps, actor, { action: 'create_lead', status: 'ok', targetType: 'lead', targetId: id, input: raw })
+      return { id, lead, duplicate: false }
+    })
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
     if (opts.audit) recordAudit(deps, actor, { action: 'create_lead', status: 'error', input: raw, error: message })

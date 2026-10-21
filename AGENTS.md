@@ -37,12 +37,13 @@
 - 对 AI 开放的能力（AI 助手工具、MCP 工具 `/api/mcp`）统一登记在 `domain/capabilities/`：名称、说明、输入 schema、所需 scope 只定义一次，各入口从注册表生成工具列表并通过 `invokeCapability` 调用，不要在入口里单独定义工具。
 - MCP 主要给管理员、客服日常维护线索和客户使用：界面上新增可维护的字段或操作时，同步在能力注册表开放（走同一套 domain 权限规则），不要只做成推送或只读。
 - 通过 API Key / MCP 读取时，没有 `contacts:read` 权限的联系方式会打码（`domain/capabilities/redact.ts`）；能力返回新的联系方式字段时同步补充 `CONTACT_KEYS`。非界面入口的调用记录在 `audit_log`（`domain/audit.ts`）。
+- 操作记录（用户决定，「设置 → 操作记录」，仅管理员）：所有入口的写操作都记在 `audit_log`，只增不改，不提供修改、删除和自动清理。线索、客户、跟进记录由 domain 服务调用 `domain/operationLog.ts` 的 `recordOperation` 记录（带字段改前改后）；其它写接口由 `crm/middleware/operationLog.ts` 按请求记录。新增业务写操作时同步调用 `recordOperation`，新增管理接口时确认中间件已覆盖并补充分类（`PATH_CATEGORIES`）。
 - 跟进记录和附件的写库语句只在 `domain/activities/records.ts`，其它地方不要直接 INSERT。
 - 下载 R2 文件前必须经过 `domain/files.ts` 的权限检查（销售只能下载自己负责的线索/客户下的附件）；新增文件类型时同步补充规则。
 - 选项类字段（状态、合同状态、丢失原因等）和日期字段写库前用 `domain/validation.ts` 校验（选项值必须在「选项配置」中启用；日期 `YYYY-MM-DD`），新增此类字段时同步调用。
 - 业务错误抛 `DomainError`（带状态码），由入口转换：HTTP 接口返回对应状态码，AI 助手工具返回 `{ error }`。
 - 外部提交线索（`/api/v1/leads`、网站表单 `/api/t/lead`、AI 能力 `create_lead`、失败补录）统一走 `domain/leads/submit.ts` 的 `submitExternalLead`：校验、字段别名、整理、新建、审计、失败记录只在这里实现，入口只做鉴权和响应格式，保证各入口数据一致。
-- 外部提交去重（用户决定）：30 天内同一联系方式（电话只比数字，其它忽略大小写和空格）已有未删除的线索时不新建，合并到已有线索（系统跟进记录 + 补充意向服务 / 访客 + 提醒负责人），见 `domain/leads/dedupe.ts`；界面手动新建不去重。
+- 外部提交去重（用户决定）：30 天内同一联系方式（电话只比数字，其它忽略大小写和空格）已有未删除的线索时不新建，合并到已有线索（系统跟进记录 + 补充意向服务 / 访客 + 提醒负责人），10 分钟内内容相同的重复提交不再写记录，同一联系方式并发提交用 `lead_submit_locks` 排队；超过 30 天新建线索并说明之前来过，见 `domain/leads/dedupe.ts`；界面手动新建不去重，只提示相同联系方式的记录。
 - 对外接口 `/api/v1/*` 的字段或行为变化时，同步更新 `crm/routes/v1Docs.ts`（`llms.txt` / `openapi.json`）和前端接入提示词（`profile.api.prompt.*`），AI 接入依赖它们。
 
 ## 通用核心与行业模板

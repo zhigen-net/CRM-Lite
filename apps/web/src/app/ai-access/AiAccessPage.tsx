@@ -16,7 +16,6 @@ import { formatDate } from '@/shared/utils/format'
 import { ApiIntegrationDialog } from './ApiIntegrationDialog'
 import { ApiScopePicker, ScopeSummary, SCOPE_PRESETS, type ApiScope } from './ApiScopePicker'
 import { ApiFailuresPanel } from './ApiFailuresPanel'
-import { AuditLogPanel } from './AuditLogPanel'
 import { SitesPanel } from '@/app/analytics/SitesPanel'
 import { EventsCleanupPanel } from '@/app/sites/EventsCleanupPanel'
 
@@ -285,7 +284,6 @@ export default function AiAccessPage() {
         )}
 
         {/* 管理员：MCP / API Key 的调用记录；对外接口推送失败的请求 */}
-        {isAdmin && section === 'mcp' && <AuditLogPanel />}
         {isAdmin && section === 'push' && <ApiFailuresPanel source="api" />}
       </div>
 

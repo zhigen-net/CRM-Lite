@@ -9,6 +9,7 @@ import { Input } from '@/shared/components/Input'
 import { Textarea } from '@/shared/components/Textarea'
 import { Button } from '@/shared/components/Button'
 import { Combobox } from '@/shared/components/Combobox'
+import { ContactMatches } from './ContactMatches'
 import type { Lead, Service } from '@/shared/types'
 
 export function LeadEditModal({ lead, onClose }: { lead: Lead; onClose: () => void }) {
@@ -63,6 +64,7 @@ export function LeadEditModal({ lead, onClose }: { lead: Lead; onClose: () => vo
       <div className="space-y-3">
         <Input label={t('common.name')} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
         <Input label={t('leads.cols.contact')} value={form.contactInfo} onChange={(e) => setForm({ ...form, contactInfo: e.target.value })} />
+        {form.contactInfo.trim() !== lead.contactInfo && <ContactMatches contact={form.contactInfo} excludeId={lead.id} />}
         <Combobox label={t('leads.cols.source')} value={form.source} onChange={(v) => setForm({ ...form, source: v })}
           options={sources ?? []} placeholder={t('leads.form.sourcePlaceholder')} />
         <div>

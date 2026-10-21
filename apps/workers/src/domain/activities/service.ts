@@ -1,6 +1,8 @@
 // 跟进记录业务服务：界面接口与 AI 助手共用。
 // 负责：跟进类型校验、对关联线索/客户的权限、写库（含附件）、同步下次联系时间、里程碑推进、工作流。
 import { toCamel, toCamelList } from '../../shared/db'
+import { recordOperation } from '../operationLog'
+import { leadLabel } from '../leads/service'
 import type { Actor, Deps } from '../actor'
 import { badRequest, notFound } from '../errors'
 import { assertDate, assertDateTime } from '../validation'
@@ -139,13 +141,13 @@ export async function createActivity(deps: Deps, actor: Actor, input: CreateActi
 
   // 关联对象必须存在，且操作者有修改权限
   const lead = leadId
-    ? await db.prepare('SELECT assigned_to_userId, assigned_to_teamId FROM leads WHERE id = ? AND deleted_at IS NULL')
-      .bind(leadId).first<{ assigned_to_userId: string | null; assigned_to_teamId: string | null }>()
+    ? await db.prepare('SELECT assigned_to_userId, assigned_to_teamId, name, lead_no FROM leads WHERE id = ? AND deleted_at IS NULL')
+      .bind(leadId).first<{ assigned_to_userId: string | null; assigned_to_teamId: string | null; name: string; lead_no: number | null }>()
     : null
   if (leadId && !lead) throw notFound('线索不存在')
   const client = clientId
-    ? await db.prepare('SELECT assigned_sales_userId FROM clients WHERE id = ? AND deleted_at IS NULL')
-      .bind(clientId).first<{ assigned_sales_userId: string | null }>()
+    ? await db.prepare('SELECT assigned_sales_userId, name FROM clients WHERE id = ? AND deleted_at IS NULL')
+      .bind(clientId).first<{ assigned_sales_userId: string | null; name: string }>()
     : null
   if (clientId && !client) throw notFound('客户不存在')
   assertCanWriteActivity(actor, lead, client)
@@ -171,6 +173,14 @@ export async function createActivity(deps: Deps, actor: Actor, input: CreateActi
     ...(nextContactDate && clientId ? [db.prepare('UPDATE clients SET next_contact_date = ? WHERE id = ?').bind(nextContactDate, clientId)] : []),
     ...(nextContactDate && leadId ? [db.prepare('UPDATE leads SET next_contact_date = ? WHERE id = ?').bind(nextContactDate, leadId)] : []),
   ])
+
+  const files = (input.attachments ?? []).map((a) => a.name)
+  await recordOperation(db, actor, {
+    action: 'activity.create', targetType: clientId ? 'client' : 'lead', targetId: clientId ?? leadId,
+    targetLabel: client ? client.name : lead ? leadLabel(lead.lead_no, lead.name) : null,
+    summary: [`[${input.activityType}] ${input.description ?? ''}`.trim(), nextContactDate ? `下次联系：${nextContactDate}` : '',
+      files.length > 0 ? `附件：${files.join('、')}` : ''].filter(Boolean).join('\n'),
+  })
 
   if (milestoneMapping && clientId) {
     deps.waitUntil(applyMilestoneMapping(db, clientId, milestoneMapping)

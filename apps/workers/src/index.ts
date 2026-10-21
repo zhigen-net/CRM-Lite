@@ -30,6 +30,7 @@ import { apiFailuresRoutes } from './crm/routes/apiFailures'
 import { milestonesRoutes } from './crm/routes/milestones'
 import { v1DocsRoutes } from './crm/routes/v1Docs'
 import { auditLogRoutes } from './crm/routes/auditLog'
+import { operationLogMiddleware } from './crm/middleware/operationLog'
 import { mcpRoutes } from './crm/routes/mcp'
 import { trackingCollectRoutes, trackingRoutes, trackingSitesAdminRoutes } from './crm/routes/tracking'
 import { dashboardRoutes } from './crm/routes/dashboard'
@@ -159,6 +160,8 @@ app.post('/api/v1/leads', requireApiKey, requireScope('leads:create'), async (c)
 })
 
 // CRM 内部 API（/api/*）
+// 操作记录：线索、客户、跟进记录之外的写操作按请求记录（见 crm/middleware/operationLog.ts）
+app.use('/api/*', operationLogMiddleware)
 app.route('/api/auth', authRoutes)
 app.route('/api/leads', leadsRoutes)
 app.route('/api/clients', clientsRoutes)
