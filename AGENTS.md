@@ -71,6 +71,7 @@
 
 - 界面文字一律走 i18n（`apps/web/src/i18n/locales/zh.json` 与 `en.json`），**两个文件的 key 必须同时增删**，不要在组件里写死文字。
 - React Query 的同一个 `queryKey` 在各处的 `queryFn` 必须返回同样格式的数据（统一取到 `r.data.data`），否则先打开的页面会把另一种格式写进缓存，别处读到空数据。
+- 列表页统一用 `shared/components/ListLayout.tsx`（用户决定）：`PageHeader` 标题区 → `ListCard`（筛选放卡片顶部 toolbar、分页放 footer）→ `DesktopTable` / `MobileList`；表格类名用 `tableCls`（行高 `py-2.5`、单元格不换行，长文字用 `Clip` 截断，次要信息用 `Sub`）。不要在页面里另写表格、筛选栏样式。
 - 给用户的接入、配置指引做在系统界面里（分步向导、自动检测、可复制的代码），不要只写成仓库文档。
 
 ## 代码与提交

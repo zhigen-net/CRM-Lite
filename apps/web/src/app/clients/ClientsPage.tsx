@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { Clip, DesktopTable, ListCard, ListMessage, MobileList, PageHeader, SearchBox, Sub, tableCls } from '@/shared/components/ListLayout'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -101,38 +102,17 @@ export default function ClientsPage() {
 
   return (
     <div className="p-4 sm:p-6">
-      <div className="mb-4 flex items-center justify-between">
-        <div>
-          <h1 className="text-lg sm:text-xl font-semibold text-gray-900">{t('clients.title')}</h1>
-          <p className="mt-0.5 text-xs sm:text-sm text-gray-500">{t('common.total')} {total} {t('clients.count')}</p>
-        </div>
-      </div>
+      <PageHeader title={t('clients.title')} summary={`${t('common.total')} ${total} ${t('clients.count')}`} />
 
-      {/* 搜索框 + 筛选 */}
-      <div className="mb-4 relative" ref={filterPanelRef}>
-        <div className="flex items-center rounded-md border border-gray-300 bg-white shadow-sm transition-colors focus-within:border-primary-500 focus-within:ring-1 focus-within:ring-primary-500">
-          <input
-            className="flex-1 px-3 py-2 text-sm bg-transparent outline-none placeholder:text-gray-400"
-            placeholder={t('clients.search')}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-          <button
-            onClick={() => setShowFilterPanel((v) => !v)}
-            className="relative flex items-center gap-1 px-3 py-2 border-l border-gray-200 text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            {hasFilter && (
-              <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-primary-500" />
-            )}
-            <span className="text-xs">{t('activities.filterLabel')}</span>
-            <svg
-              className={`w-3.5 h-3.5 transition-transform ${showFilterPanel ? 'rotate-180' : ''}`}
-              fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-            </svg>
-          </button>
-        </div>
+      <ListCard
+        footer={<Pagination page={page} totalPages={totalPages} total={total} pageSize={PAGE_SIZE} onPageChange={setPage} />}
+        toolbar={
+      /* 搜索框 + 筛选 */
+      <div className="relative" ref={filterPanelRef}>
+        <SearchBox
+          value={search} onChange={setSearch} placeholder={t('clients.search')}
+          filter={{ label: t('activities.filterLabel'), active: !!hasFilter, open: showFilterPanel, onToggle: () => setShowFilterPanel((v) => !v) }}
+        />
 
         {showFilterPanel && (
           <div className="absolute z-20 top-full left-0 right-0 mt-1 rounded-md border border-gray-200 bg-white shadow-lg p-3">
@@ -186,44 +166,41 @@ export default function ClientsPage() {
           </div>
         )}
       </div>
-
+      }>
       {isLoading ? (
-        <div className="py-12 text-center text-sm text-gray-500">{t('common.loading')}</div>
+        <ListMessage>{t('common.loading')}</ListMessage>
       ) : !filtered?.length ? (
-        <div className="py-12 text-center text-sm text-gray-500">
-          {debouncedSearch || hasFilter ? t('clients.noMatch') : t('clients.empty')}
-        </div>
+        <ListMessage>{debouncedSearch || hasFilter ? t('clients.noMatch') : t('clients.empty')}</ListMessage>
       ) : (
         <>
           {/* 桌面端表格 */}
-          <div className="hidden sm:block rounded-lg border bg-white overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-b">
+          <DesktopTable>
+              <thead className={tableCls.thead}>
                 <tr>
-                  <th className="px-4 py-3 text-left font-medium text-gray-700">{t('clients.cols.id')}</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-700">{t('common.name')}</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-700">{t('clients.cols.contact')}</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-700">{t('clients.cols.plan')}</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-700">{t('clients.cols.contractStatus')}</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-700">{t('clients.cols.nextContact')}</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-700">{t('clients.cols.createdBy')}</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-700">{t('clients.cols.createdAt')}</th>
-                  <th className="px-4 py-3"></th>
+                  <th className={tableCls.th}>{t('clients.cols.id')}</th>
+                  <th className={tableCls.th}>{t('common.name')}</th>
+                  <th className={tableCls.th}>{t('clients.cols.contact')}</th>
+                  <th className={tableCls.th}>{t('clients.cols.plan')}</th>
+                  <th className={tableCls.th}>{t('clients.cols.contractStatus')}</th>
+                  <th className={tableCls.th}>{t('clients.cols.nextContact')}</th>
+                  <th className={tableCls.th}>{t('clients.cols.createdBy')}</th>
+                  <th className={tableCls.th}>{t('clients.cols.createdAt')}</th>
+                  <th className="sticky right-0 bg-gray-50 px-4 py-2.5 shadow-[-6px_0_6px_-6px_rgba(0,0,0,0.12)]"></th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className={tableCls.tbody}>
                 {filtered.map((client) => (
-                  <tr key={client.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 text-gray-400 text-xs font-mono">{client.leadNo != null ? `L-${String(client.leadNo).padStart(4, '0')}` : '—'}</td>
-                    <td className="px-4 py-3 font-medium text-gray-900">{client.name}</td>
-                    <td className="px-4 py-3 text-gray-600">
-                      <div>{client.phone ?? '—'}</div>
-                      {client.email && <div className="text-xs text-gray-400">{client.email}</div>}
+                  <tr key={client.id} className={`group ${tableCls.tr}`}>
+                    <td className={`${tableCls.td} font-mono text-xs text-gray-400`}>{client.leadNo != null ? `L-${String(client.leadNo).padStart(4, '0')}` : '—'}</td>
+                    <td className={`${tableCls.td} font-medium text-gray-900`}><Clip text={client.name} className="max-w-[10rem]" /></td>
+                    <td className={`${tableCls.td} text-gray-600`}>
+                      <div>{client.phone ?? (client.email ? null : '—')}</div>
+                      {client.email && (client.phone ? <Sub title={client.email}>{client.email}</Sub> : <Clip text={client.email} className="max-w-[12rem]" />)}
                     </td>
-                    <td className="px-4 py-3 text-gray-600">
-                      {(client.servicePlans ?? []).join(t('common.sep')) || '—'}
+                    <td className={`${tableCls.td} text-gray-600`}>
+                      <Clip text={(client.servicePlans ?? []).join(t('common.sep')) || '—'} className="max-w-[10rem]" />
                     </td>
-                    <td className="px-4 py-3">
+                    <td className={tableCls.td}>
                       {client.contractStatus ? (
                         <Badge variant={getOptionColor(contractStatusOpts, client.contractStatus)}>
                           {getOptionLabel(contractStatusOpts, client.contractStatus)}
@@ -232,15 +209,16 @@ export default function ClientsPage() {
                         <span className="text-gray-400">—</span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-xs">
+                    <td className={`${tableCls.td} text-xs`}>
                       {client.nextContactDate
                         ? <span className={new Date(client.nextContactDate) < new Date() ? 'text-red-500 font-medium' : 'text-gray-500'}>{formatDate(client.nextContactDate)}</span>
                         : <span className="text-gray-300">—</span>}
                     </td>
-                    <td className="px-4 py-3 text-gray-600">{client.createdByName ?? '—'}</td>
-                    <td className="px-4 py-3 text-gray-500">{formatDate(client.createdAt)}</td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
+                    <td className={`${tableCls.td} text-gray-600`}>{client.createdByName ?? '—'}</td>
+                    <td className={`${tableCls.td} text-gray-500`}>{formatDate(client.createdAt)}</td>
+                    {/* 操作列固定在右侧，表格横向滚动时也能看到 */}
+                    <td className="sticky right-0 whitespace-nowrap bg-white px-4 py-2.5 shadow-[-6px_0_6px_-6px_rgba(0,0,0,0.12)] group-hover:bg-gray-50">
+                      <div className="flex items-center justify-end gap-2">
                         <button
                           onClick={(e) => openFollowUp(client, e)}
                           className="text-xs text-primary-600 hover:text-primary-800 font-medium"
@@ -267,16 +245,15 @@ export default function ClientsPage() {
                   </tr>
                 ))}
               </tbody>
-            </table>
-          </div>
+          </DesktopTable>
 
           {/* 移动端卡片列表：紧凑排布，电话可直接拨打，跟进按钮在卡片右下角 */}
-          <ul className="sm:hidden space-y-2">
+          <MobileList>
             {filtered.map((client) => {
               const overdue = !!client.nextContactDate && new Date(client.nextContactDate) < new Date()
               const contact = client.phone ?? client.email
               return (
-                <li key={client.id} className="rounded-lg border bg-white">
+                <li key={client.id}>
                   <Link to={`/app/clients/${client.id}`} className="block px-3 pt-3 active:bg-gray-50">
                     <div className="flex items-center justify-between gap-2">
                       <p className="min-w-0 truncate font-medium text-gray-900">{client.name}</p>
@@ -308,11 +285,10 @@ export default function ClientsPage() {
                 </li>
               )
             })}
-          </ul>
-
-          <Pagination page={page} totalPages={totalPages} total={total} pageSize={PAGE_SIZE} onPageChange={setPage} />
+          </MobileList>
         </>
       )}
+      </ListCard>
 
       {followUpTarget && (
         <ActivityModal

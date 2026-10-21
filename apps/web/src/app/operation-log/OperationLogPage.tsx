@@ -8,6 +8,7 @@ import { formatDate } from '@/shared/utils/format'
 import { Pagination } from '@/shared/components/Pagination'
 import { DateRangePicker, useDateRangeParam } from '@/shared/components/DateRangePicker'
 import type { User } from '@/shared/types'
+import { DesktopTable, FilterSelect as Select, ListCard, ListMessage, MobileList, PageHeader, ToolbarRow, tableCls, Clip, SearchBox } from '@/shared/components/ListLayout'
 
 interface FieldChange { field: string; from: unknown; to: unknown }
 
@@ -36,18 +37,6 @@ const PAGE_SIZE = 50
 const CATEGORIES = ['lead', 'client', 'activity', 'file', 'login', 'account', 'user', 'team', 'settings', 'options', 'service',
   'workflow', 'assignment', 'aiConfig', 'apiKey', 'site', 'recycleBin', 'apiFailure', 'milestone', 'call'] as const
 const VIAS = ['web', 'api', 'assistant', 'mcp', 'site', 'workflow', 'system', 'history'] as const
-
-function Select({ value, onChange, label, children }: { value: string; onChange: (v: string) => void; label: string; children: React.ReactNode }) {
-  return (
-    <div className="relative min-w-0">
-      <select value={value} onChange={(e) => onChange(e.target.value)} aria-label={label}
-        className="h-9 w-full min-w-0 appearance-none truncate rounded-md border border-gray-300 bg-white py-0 pl-2.5 pr-7 text-sm text-gray-700 shadow-sm sm:w-auto">
-        {children}
-      </select>
-      <svg className="pointer-events-none absolute right-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
-    </div>
-  )
-}
 
 export default function OperationLogPage() {
   const { t } = useTranslation()
@@ -147,83 +136,79 @@ export default function OperationLogPage() {
 
   return (
     <div className="p-4 sm:p-6">
-      <div className="mb-3 sm:mb-4">
-        <h1 className="text-lg font-semibold text-gray-900 sm:text-xl">{t('opLog.title')}</h1>
-        <p className="mt-0.5 text-sm text-gray-500">{data ? t('opLog.summary', { total: data.total }) : ' '}</p>
-      </div>
+      <PageHeader title={t('opLog.title')} summary={data ? t('opLog.summary', { total: data.total }) : undefined} />
 
-      <div className="overflow-hidden rounded-lg border bg-white">
-        {/* 筛选：时间段、分类、操作人、入口、结果、关键词 */}
-        <div className="space-y-2 border-b px-3 py-3 sm:flex sm:flex-wrap sm:items-center sm:gap-2 sm:space-y-0 sm:px-4">
-          <DateRangePicker value={range} onChange={(v) => { setRange(v); setPage(1) }} allowAll />
-          <div className="grid grid-cols-2 gap-2 sm:contents">
-            <Select value={category} onChange={reset(setCategory)} label={t('opLog.allCategories')}>
-              <option value="">{t('opLog.allCategories')}</option>
-              {CATEGORIES.map((c) => <option key={c} value={c}>{t(`opLog.category.${c}`)}</option>)}
-            </Select>
-            <Select value={userId} onChange={reset(setUserId)} label={t('opLog.allUsers')}>
-              <option value="">{t('opLog.allUsers')}</option>
-              {(usersData?.data ?? []).map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
-            </Select>
-            <Select value={via} onChange={reset(setVia)} label={t('opLog.allVia')}>
-              <option value="">{t('opLog.allVia')}</option>
-              {VIAS.map((v) => <option key={v} value={v}>{t(`opLog.via.${v}`)}</option>)}
-            </Select>
-            <Select value={status} onChange={reset(setStatus)} label={t('opLog.allStatus')}>
-              <option value="">{t('opLog.allStatus')}</option>
-              <option value="ok">{t('opLog.status.ok')}</option>
-              <option value="error">{t('opLog.status.error')}</option>
-            </Select>
-          </div>
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t('opLog.searchPlaceholder')}
-            className="h-9 w-full rounded-md border border-gray-300 px-2.5 text-sm shadow-sm sm:w-56" />
-        </div>
-
+      <ListCard
+        toolbar={
+          /* 筛选：时间段、分类、操作人、入口、结果、关键词 */
+          <ToolbarRow>
+            <DateRangePicker value={range} onChange={(v) => { setRange(v); setPage(1) }} allowAll />
+            <div className="grid grid-cols-2 gap-2 sm:contents">
+              <Select value={category} onChange={reset(setCategory)} label={t('opLog.allCategories')}>
+                <option value="">{t('opLog.allCategories')}</option>
+                {CATEGORIES.map((c) => <option key={c} value={c}>{t(`opLog.category.${c}`)}</option>)}
+              </Select>
+              <Select value={userId} onChange={reset(setUserId)} label={t('opLog.allUsers')}>
+                <option value="">{t('opLog.allUsers')}</option>
+                {(usersData?.data ?? []).map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
+              </Select>
+              <Select value={via} onChange={reset(setVia)} label={t('opLog.allVia')}>
+                <option value="">{t('opLog.allVia')}</option>
+                {VIAS.map((v) => <option key={v} value={v}>{t(`opLog.via.${v}`)}</option>)}
+              </Select>
+              <Select value={status} onChange={reset(setStatus)} label={t('opLog.allStatus')}>
+                <option value="">{t('opLog.allStatus')}</option>
+                <option value="ok">{t('opLog.status.ok')}</option>
+                <option value="error">{t('opLog.status.error')}</option>
+              </Select>
+            </div>
+            <SearchBox value={search} onChange={setSearch} placeholder={t('opLog.searchPlaceholder')} />
+          </ToolbarRow>
+        }
+        footer={data && data.total > PAGE_SIZE
+          ? <Pagination page={page} totalPages={Math.ceil(data.total / PAGE_SIZE)} total={data.total} pageSize={PAGE_SIZE} onPageChange={setPage} />
+          : undefined}
+      >
         {isLoading ? (
-          <div className="py-10 text-center text-sm text-gray-400">{t('common.loading')}</div>
+          <ListMessage>{t('common.loading')}</ListMessage>
         ) : rows.length === 0 ? (
-          <div className="py-10 text-center text-sm text-gray-400">{t('opLog.none')}</div>
+          <ListMessage>{t('opLog.none')}</ListMessage>
         ) : (
           <>
-            {/* 桌面端表格 */}
-            <div className="hidden overflow-x-auto md:block">
-              <table className="w-full text-sm">
-                <thead className="border-b bg-gray-50">
-                  <tr>
-                    {(['time', 'user', 'via', 'action', 'target', 'content', 'result'] as const).map((c) => (
-                      <th key={c} className="whitespace-nowrap px-4 py-2 text-left font-medium text-gray-700">{t(`opLog.cols.${c}`)}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {rows.map((o) => (
+            <DesktopTable>
+              <thead className={tableCls.thead}>
+                <tr>
+                  {(['time', 'user', 'via', 'action', 'target', 'content', 'result'] as const).map((c) => (
+                    <th key={c} className={tableCls.th}>{t(`opLog.cols.${c}`)}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className={tableCls.tbody}>
+                {rows.map((o) => {
+                  const content = o.summary ?? (o.changes?.length ? o.changes.map((c) => t(`opLog.fields.${c.field}`, { defaultValue: c.field })).join('、') : '')
+                  return (
                     <Fragment key={o.id}>
-                      <tr className="cursor-pointer hover:bg-gray-50" onClick={() => setExpanded(expanded === o.id ? null : o.id)}>
-                        <td className="whitespace-nowrap px-4 py-2 text-gray-500">{formatDate(o.createdAt)}</td>
-                        <td className="whitespace-nowrap px-4 py-2 text-gray-800">{o.userName ?? t('opLog.systemUser')}</td>
-                        <td className="whitespace-nowrap px-4 py-2 text-gray-600">{viaLabel(o)}</td>
-                        <td className="whitespace-nowrap px-4 py-2 text-gray-800">{opLabel(o)}</td>
-                        <td className="px-4 py-2"><div className="max-w-[11rem] truncate">{target(o)}</div></td>
-                        <td className="px-4 py-2 text-gray-500">
-                          <div className="max-w-[14rem] truncate 2xl:max-w-[28rem]">
-                            {o.summary ?? (o.changes?.length ? o.changes.map((c) => t(`opLog.fields.${c.field}`, { defaultValue: c.field })).join('、') : '')}
-                          </div>
-                        </td>
-                        <td className="whitespace-nowrap px-4 py-2">{result(o)}</td>
+                      <tr className={`cursor-pointer ${tableCls.tr}`} onClick={() => setExpanded(expanded === o.id ? null : o.id)}>
+                        <td className={`${tableCls.td} text-gray-500`}>{formatDate(o.createdAt)}</td>
+                        <td className={`${tableCls.td} text-gray-800`}>{o.userName ?? t('opLog.systemUser')}</td>
+                        <td className={`${tableCls.td} text-gray-600`}>{viaLabel(o)}</td>
+                        <td className={`${tableCls.td} text-gray-800`}>{opLabel(o)}</td>
+                        <td className={tableCls.td}><Clip text={o.targetLabel} className="max-w-[11rem]">{target(o)}</Clip></td>
+                        <td className={`${tableCls.td} text-gray-500`}><Clip text={content} className="max-w-[14rem] 2xl:max-w-[28rem]" /></td>
+                        <td className={tableCls.td}>{result(o)}</td>
                       </tr>
                       {expanded === o.id && (
                         <tr><td colSpan={7} className="bg-gray-50 px-4 py-3">{detail(o)}</td></tr>
                       )}
                     </Fragment>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  )
+                })}
+              </tbody>
+            </DesktopTable>
 
-            {/* 手机端卡片 */}
-            <div className="divide-y md:hidden">
+            <MobileList>
               {rows.map((o) => (
-                <div key={o.id} className="px-3 py-3" onClick={() => setExpanded(expanded === o.id ? null : o.id)}>
+                <li key={o.id} className="px-3 py-3" onClick={() => setExpanded(expanded === o.id ? null : o.id)}>
                   <div className="flex items-start justify-between gap-2">
                     <p className="text-sm font-medium text-gray-900">{opLabel(o)}</p>
                     {result(o)}
@@ -232,17 +217,12 @@ export default function OperationLogPage() {
                   {o.summary && expanded !== o.id && <p className="mt-0.5 line-clamp-2 break-all text-xs text-gray-500">{o.summary}</p>}
                   <p className="mt-1 text-xs text-gray-400">{formatDate(o.createdAt)} · {o.userName ?? t('opLog.systemUser')} · {viaLabel(o)}</p>
                   {expanded === o.id && <div className="mt-2 rounded bg-gray-50 p-2">{detail(o)}</div>}
-                </div>
+                </li>
               ))}
-            </div>
+            </MobileList>
           </>
         )}
-        {data && data.total > PAGE_SIZE && (
-          <div className="px-4 pb-3">
-            <Pagination page={page} totalPages={Math.ceil(data.total / PAGE_SIZE)} total={data.total} pageSize={PAGE_SIZE} onPageChange={setPage} />
-          </div>
-        )}
-      </div>
+      </ListCard>
     </div>
   )
 }
