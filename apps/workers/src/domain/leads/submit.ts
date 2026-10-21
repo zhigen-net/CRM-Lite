@@ -3,6 +3,7 @@
 // 各入口只负责鉴权和响应格式，不要在入口里另写规则，避免几条路径的数据不一致
 import type { Actor, Deps } from '../actor'
 import { recordAudit } from '../audit'
+import { recordOperation } from '../operationLog'
 import { badRequest } from '../errors'
 import { findDuplicateLead, isRepeatSubmission, mergeIntoLead, noteContactHistory, withContactLock } from './dedupe'
 import { normalizeExternalLead } from './intake'
@@ -67,6 +68,11 @@ export async function submitExternalLead(
         // 10 分钟内没有新内容的重复提交（连点、刷新重发）：不再写记录和提醒
         const repeat = await isRepeatSubmission(deps.db, existing, lead)
         if (!repeat) await mergeIntoLead(deps, actor, existing, lead)
+        await recordOperation(deps.db, actor, {
+          action: repeat ? 'lead.repeat' : 'lead.merge', targetType: 'lead', targetId: existing.id, targetLabel: lead.name,
+          summary: `${repeat ? '10 分钟内内容相同的重复提交，已忽略' : '再次提交，已合并到已有线索'}（来源：${lead.source}；联系方式：${lead.contactInfo}）`,
+          input: raw,
+        })
         if (opts.audit) recordAudit(deps, actor, { action: 'create_lead', status: 'ok', targetType: 'lead', targetId: existing.id, input: { ...raw, _merged: true, ...(repeat ? { _repeat: true } : {}) } })
         return { id: existing.id, lead, duplicate: true }
       }

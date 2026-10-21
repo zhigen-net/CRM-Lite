@@ -52,7 +52,8 @@ export default function App() {
                     <Route path="products" element={<P.products />} />
                     <Route path="services" element={<Navigate to="/app/products" replace />} />
                     <Route path="partners" element={<Navigate to="/app/products" replace />} />
-                    <Route path="activities" element={<P.activities />} />
+                    <Route path="activities" element={<Navigate to="/app/operation-log" replace />} />
+                    <Route path="operation-log" element={<P.operationLog />} />
                     <Route path="users" element={<P.users />} />
                     <Route path="settings" element={<P.settings />} />
                     <Route path="settings/workflows/new" element={<P.workflowEditor />} />

@@ -87,7 +87,6 @@
     "dashboard": "Dashboard",
     "leads": "Leads",
     "clients": "Customers",
-    "activities": "Follow-ups",
     "products": "Products & services",
     "users": "Users",
     "settings": "System settings",
@@ -98,7 +97,8 @@
     "analytics": "Visitors",
     "groupSettings": "Settings",
     "collapse": "Collapse sidebar",
-    "expand": "Expand sidebar"
+    "expand": "Expand sidebar",
+    "operationLog": "Operation log"
   },
   "auth": {
     "title": "CRM System",
@@ -758,35 +758,6 @@
       "Europe/London": "UK Time (UTC+0/+1)",
       "Europe/Paris": "Central European Time (UTC+1/+2)"
     },
-    "auditLog": {
-      "title": "Audit Log",
-      "subtitle": "Calls made through the external API (API keys), the AI assistant and MCP. Click a row to see the parameters.",
-      "allVia": "All channels",
-      "allStatus": "All results",
-      "empty": "No records yet",
-      "via": {
-        "api": "API key",
-        "assistant": "AI assistant",
-        "mcp": "MCP"
-      },
-      "status": {
-        "ok": "Success",
-        "error": "Failed"
-      },
-      "cols": {
-        "time": "Time",
-        "user": "User",
-        "via": "Channel",
-        "action": "Action",
-        "target": "Target",
-        "result": "Result"
-      },
-      "target": {
-        "lead": "Lead",
-        "client": "Client"
-      },
-      "input": "Parameters"
-    },
     "aiUsage": {
       "title": "AI assistant model and free quota",
       "defaultModel": "Default assistant model",
@@ -920,7 +891,7 @@
           "mcp": "MCP (AI works in the CRM)",
           "push": "Push leads"
         },
-        "intro": "Add the configuration below to an MCP-capable AI tool such as Claude Code, Cursor or Claude Desktop, and the AI can read and update CRM data within this key's permissions. Every call is recorded in the Audit log at the bottom of this page (visible to admins).",
+        "intro": "Add the configuration below to an MCP-capable AI tool such as Claude Code, Cursor or Claude Desktop, and the AI can read and update CRM data within this key's permissions. Every call is recorded in Settings → Operation log (visible to admins).",
         "url": "MCP URL",
         "claudeCode": "Claude Code command",
         "json": "JSON config (Cursor, Claude Desktop, etc.)",
@@ -1123,7 +1094,7 @@
       },
       "step3": {
         "title": "Just ask",
-        "desc": "The AI works in the CRM within your permissions and role, and every step is recorded in the audit log."
+        "desc": "The AI works in the CRM within your permissions and role, and every step is recorded in the operation log."
       },
       "examplesTitle": "Things you can ask:",
       "example1": "Which clients need a follow-up today?",
@@ -1775,5 +1746,108 @@
     "continue": "Continue",
     "confirm": "Delete {{count}} event details older than {{days}} days? This cannot be undone.",
     "done": "Deleted {{deleted}}; {{remaining}} left to clean up."
+  },
+  "opLog": {
+    "title": "Operation log",
+    "summary": "{{total}} operations. Every entry point (UI, API, AI assistant, MCP, website forms, workflows, system) is recorded here. Records are read-only and cannot be edited or deleted.",
+    "allCategories": "All categories",
+    "allUsers": "All users",
+    "allVia": "All entry points",
+    "allStatus": "All results",
+    "searchPlaceholder": "Search target or content",
+    "none": "No operations yet",
+    "empty": "(empty)",
+    "systemUser": "System",
+    "input": "Parameters",
+    "noDetail": "No further details",
+    "cols": {
+      "time": "Time",
+      "user": "User",
+      "via": "Entry",
+      "action": "Operation",
+      "target": "Target",
+      "content": "Details",
+      "result": "Result",
+      "field": "Field",
+      "before": "Before",
+      "after": "After"
+    },
+    "status": {
+      "ok": "Success",
+      "error": "Failed"
+    },
+    "via": {
+      "web": "UI",
+      "api": "API",
+      "assistant": "AI assistant",
+      "mcp": "MCP",
+      "site": "Website form",
+      "workflow": "Workflow",
+      "system": "System",
+      "history": "Imported history"
+    },
+    "category": {
+      "lead": "Lead",
+      "client": "Client",
+      "activity": "Follow-up",
+      "file": "Attachment",
+      "login": "Login",
+      "account": "Account",
+      "user": "User",
+      "team": "Team",
+      "settings": "System settings",
+      "options": "Options",
+      "service": "Products & services",
+      "workflow": "Workflow",
+      "assignment": "Assignment rules",
+      "aiConfig": "AI config",
+      "apiKey": "API key",
+      "site": "Website integration",
+      "recycleBin": "Recycle bin",
+      "apiFailure": "Failed submissions",
+      "milestone": "Service progress",
+      "partner": "Partner",
+      "call": "API call",
+      "other": "Other"
+    },
+    "verb": {
+      "create": "Create",
+      "update": "Update",
+      "delete": "Delete",
+      "status": "Change status",
+      "assign": "Auto-assign",
+      "merge": "Merge resubmission",
+      "repeat": "Ignore repeat",
+      "convert": "Convert to client",
+      "system": "System note",
+      "login": "Login",
+      "download": "Download",
+      "view": "View",
+      "action": "Action"
+    },
+    "target": {
+      "lead": "Lead",
+      "client": "Client",
+      "other": "Item"
+    },
+    "fields": {
+      "name": "Name",
+      "status": "Status",
+      "lostReason": "Lost reason",
+      "source": "Source",
+      "notes": "Notes",
+      "contactInfo": "Contact",
+      "intendedServices": "Services of interest",
+      "nextContactDate": "Next contact",
+      "assignedToUserId": "Owner",
+      "assignedToTeamId": "Team",
+      "adInfo": "Ad info",
+      "phone": "Phone",
+      "email": "Email",
+      "servicePlans": "Service plans",
+      "contractStatus": "Contract status",
+      "assignedSalesUserId": "Owner",
+      "detailedProfile": "Profile"
+    }
   }
 }

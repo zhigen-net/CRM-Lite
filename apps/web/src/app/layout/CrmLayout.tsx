@@ -23,7 +23,6 @@ export default function CrmLayout() {
     { to: '/app/analytics', icon: 'analytics', label: t('nav.analytics'), roles: ['admin', 'operations'] },
     { to: '/app/leads', icon: 'leads', label: t('nav.leads') },
     { to: '/app/clients', icon: 'clients', label: t('nav.clients') },
-    { to: '/app/activities', icon: 'activities', label: t('nav.activities') },
     { to: '/app/products', icon: 'products', label: t('nav.products'), roles: ['admin', 'operations'] },
   ]
 
@@ -31,6 +30,7 @@ export default function CrmLayout() {
   const settingsItems: { to: string; label: string; icon: string; roles?: string[] }[] = [
     { to: '/app/ai-access', icon: 'aiAccess', label: t('nav.aiAccess') },
     { to: '/app/users', icon: 'users', label: t('nav.users'), roles: ['admin'] },
+    { to: '/app/operation-log', icon: 'activities', label: t('nav.operationLog'), roles: ['admin'] },
     { to: '/app/settings', icon: 'settings', label: t('nav.settings'), roles: ['admin'] },
   ]
 

@@ -58,7 +58,7 @@ describe('审计日志', () => {
     const res = await postLead(data.key, '审计-推送')
     expect(res.status).toBe(201)
     const { id } = ((await res.json()) as { data: { id: string } }).data
-    const rows = await auditRows('target_id = ?', id)
+    const rows = await auditRows("target_id = ? AND category = 'call'", id)
     expect(rows[0]).toMatchObject({ action: 'create_lead', via: 'api', status: 'ok', api_key_id: data.id, user_id: admin.id })
   })
 
@@ -69,7 +69,7 @@ describe('审计日志', () => {
     await executeTool(ctx as never, 'update_lead', { id, nextContactDate: '2030-01-01' })
     await executeTool(ctx as never, 'update_lead', { id, status: 'Bogus' })
     await settle()
-    const rows = await env.DB.prepare('SELECT action, via, status FROM audit_log WHERE target_id = ? ORDER BY created_at')
+    const rows = await env.DB.prepare("SELECT action, via, status FROM audit_log WHERE target_id = ? AND category = 'call' ORDER BY created_at")
       .bind(id).all<{ action: string; via: string; status: string }>()
     expect(rows.results.map((r) => `${r.action}:${r.status}`).sort()).toEqual(['update_lead:error', 'update_lead:ok'])
     expect(rows.results.every((r) => r.via === 'assistant')).toBe(true)
