@@ -176,11 +176,12 @@ export default function LeadsPage() {
   }
 
   const { options: leadStatusOpts } = useOptionGroup('lead_status')
+  // 与仪表盘共用缓存 ['lead-sources']，两处都存来源数组（同一个 queryKey 的数据格式必须一致）
   const { data: sourcesData } = useQuery({
     queryKey: ['lead-sources'],
-    queryFn: () => crmApi.get<{ data: string[] }>('/leads/sources').then((r) => r.data),
+    queryFn: () => crmApi.get<{ data: string[] }>('/leads/sources').then((r) => r.data.data),
   })
-  const sourceOptions = sourcesData?.data ?? []
+  const sourceOptions = sourcesData ?? []
 
   const { data: servicesData } = useQuery({
     queryKey: ['services'],
