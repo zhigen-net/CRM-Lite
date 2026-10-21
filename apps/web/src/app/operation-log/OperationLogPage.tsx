@@ -146,8 +146,8 @@ export default function OperationLogPage() {
   const rows = data?.data ?? []
 
   return (
-    <div className="space-y-4">
-      <div>
+    <div className="p-4 sm:p-6">
+      <div className="mb-3 sm:mb-4">
         <h1 className="text-lg font-semibold text-gray-900 sm:text-xl">{t('opLog.title')}</h1>
         <p className="mt-0.5 text-sm text-gray-500">{data ? t('opLog.summary', { total: data.total }) : ' '}</p>
       </div>
