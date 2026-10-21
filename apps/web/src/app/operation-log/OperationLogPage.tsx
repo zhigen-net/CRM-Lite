@@ -83,9 +83,11 @@ export default function OperationLogPage() {
   })
 
   const reset = (fn: (v: string) => void) => (v: string) => { fn(v); setPage(1) }
+  // 登录只显示「登录」，接口调用显示能力名，其它为「分类 · 动作」
   const opLabel = (o: Operation) => o.category === 'call'
     ? `${t('opLog.category.call')} · ${o.action}`
-    : `${t(`opLog.category.${o.category}`, { defaultValue: o.category })} · ${t(`opLog.verb.${o.verb}`, { defaultValue: o.verb })}`
+    : o.category === 'login' ? t('opLog.category.login')
+      : `${t(`opLog.category.${o.category}`, { defaultValue: o.category })} · ${t(`opLog.verb.${o.verb}`, { defaultValue: o.verb })}`
   const viaLabel = (o: Operation) => t(`opLog.via.${o.via}`, { defaultValue: o.via })
   const fmt = (v: unknown) => {
     if (v === null || v === undefined || v === '') return t('opLog.empty')
@@ -201,9 +203,11 @@ export default function OperationLogPage() {
                         <td className="whitespace-nowrap px-4 py-2 text-gray-800">{o.userName ?? t('opLog.systemUser')}</td>
                         <td className="whitespace-nowrap px-4 py-2 text-gray-600">{viaLabel(o)}</td>
                         <td className="whitespace-nowrap px-4 py-2 text-gray-800">{opLabel(o)}</td>
-                        <td className="max-w-[12rem] truncate px-4 py-2">{target(o)}</td>
-                        <td className="max-w-[24rem] truncate px-4 py-2 text-gray-500">
-                          {o.summary ?? (o.changes?.length ? o.changes.map((c) => t(`opLog.fields.${c.field}`, { defaultValue: c.field })).join('、') : '')}
+                        <td className="px-4 py-2"><div className="max-w-[11rem] truncate">{target(o)}</div></td>
+                        <td className="px-4 py-2 text-gray-500">
+                          <div className="max-w-[14rem] truncate 2xl:max-w-[28rem]">
+                            {o.summary ?? (o.changes?.length ? o.changes.map((c) => t(`opLog.fields.${c.field}`, { defaultValue: c.field })).join('、') : '')}
+                          </div>
                         </td>
                         <td className="whitespace-nowrap px-4 py-2">{result(o)}</td>
                       </tr>
