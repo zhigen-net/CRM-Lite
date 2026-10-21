@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { Clip, DesktopTable, ListCard, ListMessage, MobileList, PageHeader, SearchBox, tableCls } from '@/shared/components/ListLayout'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
@@ -265,75 +266,63 @@ export default function LeadsPage() {
   const renderTd = (lead: Lead, key: ColKey) => {
     switch (key) {
       case 'leadNo':
-        return <td key={key} className="px-4 py-3 text-gray-400 text-xs font-mono whitespace-nowrap">L-{String(lead.leadNo ?? '').padStart(4, '0')}</td>
+        return <td key={key} className={`${tableCls.td} font-mono text-xs text-gray-400`}>L-{String(lead.leadNo ?? '').padStart(4, '0')}</td>
       case 'name':
-        return <td key={key} className="px-4 py-3 font-medium text-gray-900 min-w-[7rem]">{lead.name}</td>
+        return <td key={key} className={`${tableCls.td} font-medium text-gray-900`}><Clip text={lead.name} className="max-w-[10rem]" /></td>
       case 'contactInfo':
-        return <td key={key} className="px-4 py-3 text-gray-600 break-all min-w-[8rem]">{lead.contactInfo}</td>
+        return <td key={key} className={`${tableCls.td} text-gray-600`}><Clip text={lead.contactInfo} className="max-w-[12rem]" /></td>
       case 'intendedServices':
         return (
-          <td key={key} className="px-4 py-3 min-w-[7rem]">
-            <div className="flex flex-wrap gap-1">
+          <td key={key} className={tableCls.td}>
+            <div className="flex gap-1">
               {(lead.intendedServices ?? []).map((svc) => <Badge key={svc} variant="blue">{svc}</Badge>)}
             </div>
           </td>
         )
       case 'status':
         return (
-          <td key={key} className="px-4 py-3">
+          <td key={key} className={tableCls.td}>
             <Badge variant={getOptionColor(leadStatusOpts, lead.status)}>{getOptionLabel(leadStatusOpts, lead.status)}</Badge>
           </td>
         )
       case 'source':
-        return <td key={key} className="px-4 py-3 text-gray-600 min-w-[6rem]">{lead.source}</td>
+        return <td key={key} className={`${tableCls.td} text-gray-600`}><Clip text={lead.source} className="max-w-[10rem]" /></td>
       case 'assignedToName':
-        return <td key={key} className="px-4 py-3 text-gray-600 whitespace-nowrap">{lead.assignedToName ?? <span className="text-gray-400">{t('leads.detail.unassigned')}</span>}</td>
+        return <td key={key} className={`${tableCls.td} text-gray-600`}>{lead.assignedToName ?? <span className="text-gray-400">{t('leads.detail.unassigned')}</span>}</td>
       case 'nextContactDate':
         return (
-          <td key={key} className="px-4 py-3 text-xs whitespace-nowrap">
+          <td key={key} className={`${tableCls.td} text-xs`}>
             {lead.nextContactDate
               ? <span className={new Date(lead.nextContactDate) < new Date() ? 'text-red-500 font-medium' : 'text-gray-500'}>{formatDate(lead.nextContactDate)}</span>
               : <span className="text-gray-300">—</span>}
           </td>
         )
       case 'activityCount':
-        return <td key={key} className="px-4 py-3 text-gray-500 text-xs">{lead.activityCount ?? 0}</td>
+        return <td key={key} className={`${tableCls.td} text-xs text-gray-500`}>{lead.activityCount ?? 0}</td>
       case 'createdAt':
-        return <td key={key} className="px-4 py-3 text-gray-500 whitespace-nowrap">{formatDate(lead.createdAt)}</td>
+        return <td key={key} className={`${tableCls.td} text-gray-500`}>{formatDate(lead.createdAt)}</td>
     }
   }
 
   return (
     <div className="p-4 sm:p-6">
-      <div className="mb-4 flex items-center justify-between">
-        <div>
-          <h1 className="text-lg sm:text-xl font-semibold text-gray-900">{t('leads.title')}</h1>
-          <p className="mt-0.5 text-xs sm:text-sm text-gray-500">{t('common.total')} {total} {t('leads.count')}</p>
-        </div>
-        <Button onClick={() => setShowCreate(true)} size="sm">{t('leads.new')}</Button>
-      </div>
+      <PageHeader
+        title={t('leads.title')}
+        summary={`${t('common.total')} ${total} ${t('leads.count')}`}
+        actions={<Button onClick={() => setShowCreate(true)} size="sm">{t('leads.new')}</Button>}
+      />
 
-      <div className="mb-3 relative" ref={filterPanelRef}>
-        <div className="flex items-center rounded-md border border-gray-300 bg-white shadow-sm transition-colors focus-within:border-primary-500 focus-within:ring-1 focus-within:ring-primary-500">
-          <input
-            className="flex-1 px-3 py-2 text-sm bg-transparent outline-none placeholder:text-gray-400"
-            placeholder={t('leads.search')}
-            value={search}
-            onChange={(e) => handleSearch(e.target.value)}
-          />
-          <button
-            onClick={() => setShowFilterPanel((v) => !v)}
-            className="relative flex items-center gap-1 px-3 py-2 border-l border-gray-200 text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            {(sourceFilter || assignedToFilter || nextContactFilter || createdAtFilter || activityCountFilter || serviceFilter) && (
-              <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-primary-500" />
-            )}
-            <span className="text-xs">{t('leads.filterBtn')}</span>
-            <svg className={`w-3.5 h-3.5 transition-transform ${showFilterPanel ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-            </svg>
-          </button>
-        </div>
+      <ListCard
+        footer={<Pagination page={page} totalPages={totalPages} total={total} pageSize={PAGE_SIZE} onPageChange={setPage} />}
+        toolbar={<>
+      <div className="relative" ref={filterPanelRef}>
+        <SearchBox
+          value={search} onChange={handleSearch} placeholder={t('leads.search')}
+          filter={{
+            label: t('leads.filterBtn'), open: showFilterPanel, onToggle: () => setShowFilterPanel((v) => !v),
+            active: !!(sourceFilter || assignedToFilter || nextContactFilter || createdAtFilter || activityCountFilter || serviceFilter),
+          }}
+        />
 
         {showFilterPanel && (
           <div className="absolute z-20 top-full left-0 right-0 mt-1 rounded-md border border-gray-200 bg-white shadow-lg p-3">
@@ -404,7 +393,7 @@ export default function LeadsPage() {
         )}
       </div>
 
-      <div className="mb-4">
+      <div className="mt-2">
         <div className="flex gap-1.5 overflow-x-auto overflow-y-hidden pb-0.5 scrollbar-none">
           {statusFilterOptions.map(({ value, label }) => (
             <button key={value} onClick={() => { setStatusFilter(value); setPage(1) }} className={`flex-shrink-0 rounded-full px-3 py-1 text-xs font-medium transition-colors ${statusFilter === value ? 'bg-primary-600 text-white' : 'bg-white text-gray-600 border hover:bg-gray-50'}`}>
@@ -413,32 +402,28 @@ export default function LeadsPage() {
           ))}
         </div>
       </div>
-
+      </>}
+      >
       {isLoading ? (
-        <div className="py-12 text-center text-sm text-gray-500">{t('common.loading')}</div>
+        <ListMessage>{t('common.loading')}</ListMessage>
       ) : !filtered.length ? (
-        <div className="py-12 text-center text-sm text-gray-500">{search ? t('leads.noMatch') : t('leads.empty')}</div>
+        <ListMessage>{search ? t('leads.noMatch') : t('leads.empty')}</ListMessage>
       ) : (
         <>
           {/* 窄屏时表格横向滚动；列设置弹窗放在滚动区域外，避免被裁切 */}
-          <div className="relative hidden sm:block rounded-lg border bg-white">
-            {showColSettings && (
-              <div className="absolute right-2 top-10 z-50">
-                <div className="relative">
-                  <ColSettingsPanel config={colConfig} colLabels={colLabels} onChange={updateColConfig} onClose={() => setShowColSettings(false)} />
-                </div>
+          <DesktopTable overlay={showColSettings && (
+            <div className="absolute right-2 top-10 z-50">
+              <div className="relative">
+                <ColSettingsPanel config={colConfig} colLabels={colLabels} onChange={updateColConfig} onClose={() => setShowColSettings(false)} />
               </div>
-            )}
-            <div className="overflow-x-auto rounded-lg">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-b">
+            </div>
+          )}>
+              <thead className={tableCls.thead}>
                 <tr>
-                  {visibleCols.map((c, idx) => (
-                    <th key={c.key} className={`px-4 py-3 text-left font-medium text-gray-700 whitespace-nowrap${idx === 0 ? ' rounded-tl-lg' : ''}`}>
-                      {colLabels[c.key]}
-                    </th>
+                  {visibleCols.map((c) => (
+                    <th key={c.key} className={tableCls.th}>{colLabels[c.key]}</th>
                   ))}
-                  <th className="sticky right-0 bg-gray-50 px-4 py-3 rounded-tr-lg shadow-[-6px_0_6px_-6px_rgba(0,0,0,0.12)]">
+                  <th className="sticky right-0 bg-gray-50 px-4 py-2.5 shadow-[-6px_0_6px_-6px_rgba(0,0,0,0.12)]">
                     <div className="flex items-center justify-end gap-1 relative">
                       <button onClick={() => setShowColSettings((v) => !v)} className="text-gray-400 hover:text-gray-600 transition-colors">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -449,12 +434,12 @@ export default function LeadsPage() {
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className={tableCls.tbody}>
                 {filtered.map((lead) => (
-                  <tr key={lead.id} className="group hover:bg-gray-50">
+                  <tr key={lead.id} className={`group ${tableCls.tr}`}>
                     {visibleCols.map((c) => renderTd(lead, c.key))}
                     {/* 操作列固定在右侧，表格横向滚动时也能看到 */}
-                    <td className="sticky right-0 bg-white px-4 py-3 whitespace-nowrap shadow-[-6px_0_6px_-6px_rgba(0,0,0,0.12)] group-hover:bg-gray-50">
+                    <td className="sticky right-0 whitespace-nowrap bg-white px-4 py-2.5 shadow-[-6px_0_6px_-6px_rgba(0,0,0,0.12)] group-hover:bg-gray-50">
                       <div className="flex items-center justify-end gap-2">
                         <button onClick={(e) => openFollowUp(lead, e)} className="text-xs text-primary-600 hover:text-primary-800 font-medium">{t('leads.addActivity')}</button>
                         <span className="text-gray-300">|</span>
@@ -470,14 +455,12 @@ export default function LeadsPage() {
                   </tr>
                 ))}
               </tbody>
-            </table>
-            </div>
-          </div>
+          </DesktopTable>
 
-          <div className="sm:hidden space-y-2">
+          <MobileList>
             {filtered.map((lead) => (
-              <div key={lead.id} className="rounded-lg border bg-white overflow-hidden">
-                <Link to={`/app/leads/${lead.id}`} className="block p-4 hover:bg-gray-50 transition-colors">
+              <li key={lead.id}>
+                <Link to={`/app/leads/${lead.id}`} className="block px-3 pt-3 active:bg-gray-50">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <p className="font-medium text-gray-900 truncate">{lead.name}</p>
@@ -490,27 +473,30 @@ export default function LeadsPage() {
                       {getOptionLabel(leadStatusOpts, lead.status)}
                     </Badge>
                   </div>
-                  <div className="mt-2 flex flex-wrap gap-1">
-                    {(lead.intendedServices ?? []).map((svc) => <Badge key={svc} variant="blue">{svc}</Badge>)}
-                  </div>
-                  <div className="mt-2 flex items-center gap-3 text-xs text-gray-500">
-                    <span>{lead.source}</span>
-                    {lead.assignedToName
-                      ? <span>· {t('leads.detail.owner')} {lead.assignedToName}</span>
-                      : <span className="text-gray-400">· {t('leads.detail.unassigned')}</span>}
-                    <span className="ml-auto">{formatDate(lead.createdAt)}</span>
-                  </div>
+                  {(lead.intendedServices ?? []).length > 0 && (
+                    <div className="mt-1.5 flex flex-wrap gap-1">
+                      {(lead.intendedServices ?? []).map((svc) => <Badge key={svc} variant="blue">{svc}</Badge>)}
+                    </div>
+                  )}
                 </Link>
-                <div className="border-t px-4 py-2 flex justify-end">
-                  <button onClick={(e) => openFollowUp(lead, e)} className="text-sm text-primary-600 font-medium">{t('activityModal.title')}</button>
+                {/* 与客户列表一致：来源、负责人单行截断，跟进按钮在右下角 */}
+                <div className="flex items-center gap-2 px-3 pb-2.5 pt-1.5 text-xs">
+                  <span className="min-w-0 truncate text-gray-500">
+                    {lead.source}
+                    {lead.assignedToName ? ` · ${t('leads.detail.owner')} ${lead.assignedToName}` : ` · ${t('leads.detail.unassigned')}`}
+                  </span>
+                  <span className="shrink-0 text-gray-400">{formatDate(lead.createdAt).slice(5, 10)}</span>
+                  <button onClick={(e) => openFollowUp(lead, e)}
+                    className="ml-auto shrink-0 rounded-md border border-primary-200 px-2 py-1 font-medium text-primary-600 active:bg-primary-50">
+                    {t('leads.addActivity')}
+                  </button>
                 </div>
-              </div>
+              </li>
             ))}
-          </div>
-
-          <Pagination page={page} totalPages={totalPages} total={total} pageSize={PAGE_SIZE} onPageChange={setPage} />
+          </MobileList>
         </>
       )}
+      </ListCard>
 
       {showCreate && (
         <Modal title={t('leads.new')} onClose={() => { setShowCreate(false); reset() }}>

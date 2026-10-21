@@ -1,5 +1,6 @@
 // 访客分析：按时间段、站点、来源筛选访客，查看访问轨迹
 import { useEffect, useState } from 'react'
+import { DesktopTable, FilterSelect, ListCard, ListMessage, MobileList, PageHeader, Sub, ToolbarRow, tableCls } from '@/shared/components/ListLayout'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link, Navigate, useSearchParams } from 'react-router-dom'
@@ -25,18 +26,6 @@ interface Visitor {
 const CHANNELS = ['paid', 'search', 'social', 'referral', 'direct'] as const
 const PAGE_SIZE = 30
 /** 筛选下拉框：统一高度和箭头样式（不用各系统自带的样式，手机上排列整齐） */
-function FilterSelect({ value, onChange, label, children }: { value: string; onChange: (v: string) => void; label: string; children: React.ReactNode }) {
-  return (
-    <div className="relative min-w-0">
-      <select value={value} onChange={(e) => onChange(e.target.value)} aria-label={label}
-        className="h-9 w-full min-w-0 appearance-none truncate rounded-md border border-gray-300 bg-white py-0 pl-2.5 pr-7 text-sm text-gray-700 shadow-sm sm:w-auto">
-        {children}
-      </select>
-      <svg className="pointer-events-none absolute right-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
-    </div>
-  )
-}
-
 function VisitorsPanel() {
   const { t, i18n } = useTranslation()
   const [siteId, setSiteId] = useState('')
@@ -73,11 +62,13 @@ function VisitorsPanel() {
   if (sites && sites.length === 0) {
     return (
       <>
-        <h1 className="mb-4 text-lg font-semibold text-gray-900 sm:mb-5 sm:text-xl">{t('analytics.title')}</h1>
-        <div className="rounded-lg border bg-white px-4 py-10 text-center text-sm text-gray-400">
-          {t('analytics.visitors.noSites')}{' '}
-          <Link to="/app/ai-access?tab=sites" className="text-primary-600 hover:underline">{t('analytics.visitors.goSites')}</Link>
-        </div>
+        <PageHeader title={t('analytics.title')} />
+        <ListCard>
+          <ListMessage>
+            {t('analytics.visitors.noSites')}{' '}
+            <Link to="/app/ai-access?tab=sites" className="text-primary-600 hover:underline">{t('analytics.visitors.goSites')}</Link>
+          </ListMessage>
+        </ListCard>
       </>
     )
   }
@@ -86,18 +77,15 @@ function VisitorsPanel() {
   const rangeLabel = range.preset === 'custom' ? `${range.from} ~ ${range.to}` : t(`dateRange.presets.${range.preset}`)
   return (
     <>
-    <div className="mb-4 sm:mb-5">
-      <h1 className="text-lg font-semibold text-gray-900 sm:text-xl">{t('analytics.title')}</h1>
-      {/* 统计总结：随时间段、站点和筛选条件变化 */}
-      <p className="mt-0.5 text-sm text-gray-500">
-        {data && siteName
-          ? t('analytics.summary', { range: rangeLabel, site: siteName, total: data.total, leads: data.summary?.withLead ?? 0, actions: data.summary?.withActions ?? 0 })
-          : '\u00a0'}
-      </p>
-    </div>
-    <div className="overflow-hidden rounded-lg border bg-white">
-      {/* 筛选：第一行时间段；第二行三个下拉框，手机上等宽排成一行（总数在页面标题下的统计总结里） */}
-      <div className="space-y-2 border-b px-3 py-3 sm:flex sm:flex-wrap sm:items-center sm:gap-2 sm:space-y-0 sm:px-4">
+    {/* 统计总结：随时间段、站点和筛选条件变化 */}
+    <PageHeader title={t('analytics.title')} summary={data && siteName
+      ? t('analytics.summary', { range: rangeLabel, site: siteName, total: data.total, leads: data.summary?.withLead ?? 0, actions: data.summary?.withActions ?? 0 })
+      : undefined} />
+    <ListCard
+      footer={data ? <Pagination page={page} totalPages={Math.ceil(data.total / PAGE_SIZE)} total={data.total} pageSize={PAGE_SIZE} onPageChange={setPage} /> : undefined}
+      toolbar={
+      /* 筛选：第一行时间段；第二行三个下拉框，手机上等宽排成一行（总数在页面标题下的统计总结里） */
+      <ToolbarRow>
         <DateRangePicker value={range} onChange={(v) => { setRange(v); setPage(1) }} allowAll />
         <div className="grid grid-cols-3 gap-2 sm:contents">
           <FilterSelect value={siteId} onChange={(v) => { setSiteId(v); setPage(1) }} label={t('analytics.visitors.site')}>
@@ -113,15 +101,16 @@ function VisitorsPanel() {
             <option value="false">{t('analytics.visitors.withoutLead')}</option>
           </FilterSelect>
         </div>
-      </div>
+      </ToolbarRow>
+      }>
       {isLoading || !siteId ? (
-        <div className="px-4 py-6 text-sm text-gray-400">{t('common.loading')}</div>
+        <ListMessage>{t('common.loading')}</ListMessage>
       ) : !data?.data.length ? (
-        <div className="px-4 py-10 text-center text-sm text-gray-400">{t('analytics.visitors.empty')}</div>
+        <ListMessage>{t('analytics.visitors.empty')}</ListMessage>
       ) : (
         <>
         {/* 手机：卡片列表 */}
-        <ul className="divide-y divide-gray-100 sm:hidden">
+        <MobileList>
           {data.data.map((v) => (
             <li key={v.id}>
               <div role="button" tabIndex={0} onClick={() => setOpenVisitor(v.id)} onKeyDown={(e) => { if (e.key === 'Enter') setOpenVisitor(v.id) }}
@@ -146,54 +135,47 @@ function VisitorsPanel() {
               </div>
             </li>
           ))}
-        </ul>
-        <div className="hidden overflow-x-auto sm:block">
-          <table className="w-full text-sm">
-            <thead className="border-b bg-gray-50">
+        </MobileList>
+        <DesktopTable>
+            <thead className={tableCls.thead}>
               <tr>
                 {(['lastSeen', 'source', 'visits', 'device', 'location', 'actions', 'lead'] as const).map((c) => (
-                  <th key={c} className="whitespace-nowrap px-4 py-2 text-left font-medium text-gray-700">{t(`analytics.visitors.cols.${c}`)}</th>
+                  <th key={c} className={tableCls.th}>{t(`analytics.visitors.cols.${c}`)}</th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className={tableCls.tbody}>
               {data.data.map((v) => (
-                <tr key={v.id} className="cursor-pointer hover:bg-gray-50" onClick={() => setOpenVisitor(v.id)}>
-                  <td className="whitespace-nowrap px-4 py-2.5 text-gray-600">{formatDate(v.lastSeenAt)}</td>
-                  <td className="px-4 py-2.5">
+                <tr key={v.id} className={`cursor-pointer ${tableCls.tr}`} onClick={() => setOpenVisitor(v.id)}>
+                  <td className={`${tableCls.td} text-gray-600`}>{formatDate(v.lastSeenAt)}</td>
+                  <td className={tableCls.td}>
                     <span className="text-gray-800">{v.firstChannel ? t(`analytics.channels.${v.firstChannel}`, { defaultValue: v.firstChannel }) : '—'}</span>
-                    {(v.firstUtmSource || v.firstUtmCampaign) && <span className="block text-xs text-gray-400">{[v.firstUtmSource, v.firstUtmCampaign].filter(Boolean).join(' / ')}</span>}
+                    {(v.firstUtmSource || v.firstUtmCampaign) && <Sub title={[v.firstUtmSource, v.firstUtmCampaign].filter(Boolean).join(' / ')}>{[v.firstUtmSource, v.firstUtmCampaign].filter(Boolean).join(' / ')}</Sub>}
                   </td>
-                  <td className="whitespace-nowrap px-4 py-2.5 text-gray-600">{v.visitCount} / {v.pageviewCount}</td>
-                  <td className="whitespace-nowrap px-4 py-2.5 text-gray-600">
+                  <td className={`${tableCls.td} text-gray-600`}>{v.visitCount} / {v.pageviewCount}</td>
+                  <td className={`${tableCls.td} text-gray-600`}>
                     {[v.deviceType && t(`analytics.devices.${v.deviceType}`), v.browser].filter(Boolean).join(' · ')}
-                    {v.lastLanguage && <span className="block text-xs text-gray-400" title={v.lastLanguage}>{languageName(v.lastLanguage, i18n.language)}</span>}
+                    {v.lastLanguage && <Sub title={v.lastLanguage}>{languageName(v.lastLanguage, i18n.language)}</Sub>}
                   </td>
-                  <td className="px-4 py-2.5 text-gray-600">
+                  <td className={`${tableCls.td} text-gray-600`}>
                     {(v.lastIp || !!v.anomalies?.length) && (
                       <span className="flex items-center gap-1 font-mono text-xs text-gray-700">{v.lastIp}<AnomalyIcons items={v.anomalies} /></span>
                     )}
                     <span className="inline-flex items-center gap-1"><CountryFlag code={v.country} />{place(v)}</span>
-                    {v.isp && <span className="block text-xs text-gray-400">{v.isp}</span>}
+                    {v.isp && <Sub title={v.isp}>{v.isp}</Sub>}
                   </td>
-                  <td className="px-4 py-2.5">{v.keyActions > 0 ? <span className="rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-700">{v.keyActions}</span> : <span className="text-gray-300">—</span>}</td>
-                  <td className="px-4 py-2.5">{v.leadId
+                  <td className={tableCls.td}>{v.keyActions > 0 ? <span className="rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-700">{v.keyActions}</span> : <span className="text-gray-300">—</span>}</td>
+                  <td className={tableCls.td}>{v.leadId
                     ? <Link className="text-primary-600 hover:underline" to={`/app/leads/${v.leadId}`} onClick={(e) => e.stopPropagation()}>{v.leadName ?? t('analytics.journey.viewLead')}</Link>
                     : <span className="text-gray-300">—</span>}</td>
                 </tr>
               ))}
             </tbody>
-          </table>
-        </div>
+        </DesktopTable>
         </>
       )}
-      {data && (
-        <div className="px-3 pb-3 sm:px-4">
-          <Pagination page={page} totalPages={Math.ceil(data.total / PAGE_SIZE)} total={data.total} pageSize={PAGE_SIZE} onPageChange={setPage} />
-        </div>
-      )}
-      {openVisitor && <JourneyDrawer url={`/tracking/visitors/${siteId}/${openVisitor}`} onClose={() => setOpenVisitor(null)} />}
-    </div>
+    </ListCard>
+    {openVisitor && <JourneyDrawer url={`/tracking/visitors/${siteId}/${openVisitor}`} onClose={() => setOpenVisitor(null)} />}
     </>
   )
 }
