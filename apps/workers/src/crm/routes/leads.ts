@@ -69,6 +69,8 @@ leadsRoutes.put(
   zValidator(
     'json',
     z.object({
+      name: z.string().max(100).optional(),
+      source: z.string().max(100).optional(),
       status: z.enum(leads.LEAD_STATUSES).optional(),
       notes: z.string().nullable().optional(),
       assignedToUserId: z.string().nullable().optional(),

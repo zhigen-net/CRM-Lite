@@ -61,13 +61,14 @@ export const getLead: Capability = {
 
 export const updateLead: Capability = {
   name: 'update_lead',
-  description: '更新线索字段：状态、丢失原因、来源、联系方式、负责人、所属团队、意向服务、备注、下次联系时间。只传需要修改的字段。状态改为 Lost 时请同时填写 lostReason；重要变更请同时用 create_activity 留下操作记录。',
+  description: '更新线索字段：姓名、状态、丢失原因、来源、联系方式、负责人、所属团队、意向服务、备注、下次联系时间。只传需要修改的字段。状态改为 Lost 时请同时填写 lostReason；重要变更请同时用 create_activity 留下操作记录。',
   scope: 'leads:write',
   readOnly: false,
   inputSchema: {
     type: 'object',
     properties: {
       id:               { type: 'string', description: '线索ID' },
+      name:             { type: 'string', description: '客户姓名或称呼（修正录入错误时使用）' },
       status:           { type: 'string', description: '新状态值，先用 get_options(lead_status) 确认可用值' },
       lostReason:       { type: ['string', 'null'], description: '丢失原因，先用 get_options(lost_reason) 确认可用值' },
       source:           { type: 'string', description: '线索来源' },
@@ -82,6 +83,7 @@ export const updateLead: Capability = {
   },
   async run(deps, actor, input) {
     const patch: leads.UpdateLeadPatch = {}
+    if (input.name !== undefined) patch.name = input.name as string
     if (input.status !== undefined) patch.status = input.status as string
     if (input.lostReason !== undefined) patch.lostReason = input.lostReason as string | null
     if (input.source !== undefined) patch.source = input.source as string

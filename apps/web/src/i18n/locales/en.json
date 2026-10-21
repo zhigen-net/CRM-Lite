@@ -199,6 +199,11 @@
     "form": {
       "sourcePlaceholder": "Type or select existing source...",
       "notes": "Notes"
+    },
+    "edit": {
+      "button": "Edit",
+      "title": "Edit lead",
+      "hint": "Changes are recorded in the lead's activity log (system record)."
     }
   },
   "clients": {

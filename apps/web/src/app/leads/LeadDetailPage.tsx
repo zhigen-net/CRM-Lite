@@ -12,6 +12,7 @@ import { AttachmentList } from '@/shared/components/AttachmentList'
 import { AskAiButton } from '@/shared/components/AskAiButton'
 import { useCrmAuth } from '@/app/auth/CrmAuthContext'
 import { VisitorSourceCard } from '@/app/analytics/Journey'
+import { LeadEditModal } from './LeadEditModal'
 import { useWorkflows } from '@/shared/hooks/useWorkflows'
 import type { ActivityConfig } from '@/shared/hooks/useWorkflows'
 import type { Lead, LeadStatus, SalesActivity, User } from '@/shared/types'
@@ -24,6 +25,7 @@ export default function LeadDetailPage() {
   const queryClient = useQueryClient()
   const { user: me } = useCrmAuth()
   const [showActivity, setShowActivity] = useState(false)
+  const [editing, setEditing] = useState(false)
   const [assigningUserId, setAssigningUserId] = useState<string | null | undefined>(undefined)
   const [pendingStatus, setPendingStatus] = useState<string | null>(null)
   const [pendingPolicy, setPendingPolicy] = useState<ActivityConfig | null>(null)
@@ -145,6 +147,8 @@ export default function LeadDetailPage() {
   // 判断是否正在编辑分配：undefined=未进入编辑，null=选择"取消分配"，string=选择了某用户
   const isEditingAssign = assigningUserId !== undefined
   const isConverted = lead.status === 'Converted'
+  // 修改基本信息：管理员、运营可改任意线索，销售只能改分配给自己的；已转化的线索不可修改（与后端规则一致）
+  const canEdit = !isConverted && (me?.role !== 'sales' || lead.assignedToUserId === me?.id)
 
   return (
     <div className="p-4 sm:p-6 max-w-3xl">
@@ -167,6 +171,11 @@ export default function LeadDetailPage() {
               <h1 className="text-xl font-semibold text-gray-900">{lead.name}</h1>
               {lead.leadNo != null && (
                 <span className="font-mono text-sm text-gray-400">L-{String(lead.leadNo).padStart(4, '0')}</span>
+              )}
+              {canEdit && (
+                <button type="button" onClick={() => setEditing(true)} className="text-xs text-primary-600 hover:text-primary-800 underline">
+                  {t('leads.edit.button')}
+                </button>
               )}
             </div>
             <p className="mt-1 flex items-center gap-1.5 text-sm text-gray-500">
@@ -409,6 +418,7 @@ export default function LeadDetailPage() {
           }
         />
       )}
+      {editing && <LeadEditModal lead={lead} onClose={() => setEditing(false)} />}
     </div>
   )
 }
