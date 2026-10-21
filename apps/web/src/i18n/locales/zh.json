@@ -1739,8 +1739,7 @@
       "todayClients": "今天要联系的客户",
       "hint": "按「下次联系」日期统计，不受时间段影响"
     },
-    "sources": "线索来源",
-    "statuses": "线索状态",
+    "sourceStatus": "线索来源与状态",
     "leaderboard": {
       "title": "销售排行",
       "name": "销售",

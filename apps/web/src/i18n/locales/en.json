@@ -1739,8 +1739,7 @@
       "todayClients": "Clients to contact today",
       "hint": "Based on the next contact date, not the selected period"
     },
-    "sources": "Lead sources",
-    "statuses": "Lead status",
+    "sourceStatus": "Lead sources and status",
     "leaderboard": {
       "title": "Sales leaderboard",
       "name": "Sales rep",

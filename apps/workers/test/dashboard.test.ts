@@ -66,7 +66,7 @@ describe('仪表盘', () => {
     expect(data.kpis).toMatchObject({ newLeads: { value: 3, prev: 1 }, convertedLeads: 1, newClients: { value: 1 }, followups: { value: 1 } })
     expect(data.trend.find((d: { day: string }) => d.day === '2020-03-01').leads).toBe(1)
     expect(data.trend.find((d: { day: string }) => d.day === '2020-03-07').leads).toBe(1)
-    expect(data.sources).toEqual(expect.arrayContaining([{ source: '广告', count: 1 }, { source: 'test', count: 2 }]))
+    expect(data.sources).toEqual(expect.arrayContaining([{ source: '广告', count: 1, statuses: { Converted: 1 } }, { source: 'test', count: 2, statuses: { New: 2 } }]))
     expect(data.kpis.visitors).toBeDefined()
     const row = data.leaderboard.find((r: { userId: string }) => r.userId === salesA.id)
     expect(row).toMatchObject({ leads: 2, followups: 1, clients: 1 })
@@ -112,7 +112,7 @@ describe('按来源筛选', () => {
     expect(data.source).toBe('广告')
     expect(data.kpis).toMatchObject({ newLeads: { value: 1 }, convertedLeads: 1 })
     expect(data.kpis.visitors).toBeUndefined()
-    expect(data.sources).toEqual([{ source: '广告', count: 1 }])
+    expect(data.sources).toEqual([{ source: '广告', count: 1, statuses: { Converted: 1 } }])
     expect(data.leaderboard.find((r: { userId: string }) => r.userId === salesA.id)).toMatchObject({ leads: 1, followups: 0 })
 
     // 上一个用例建了「范围测试站」，范围内有 1 位访客
