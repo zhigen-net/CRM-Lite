@@ -85,8 +85,9 @@ export default function UsersPage() {
   const totalPages = Math.ceil(total / PAGE_SIZE)
 
   const { data: teams } = useQuery({
+    // 与系统设置、工作流共用缓存 ['teams']，都存团队数组
     queryKey: ['teams'],
-    queryFn: () => crmApi.get<{ data: Team[] }>('/teams').then((r) => r.data),
+    queryFn: () => crmApi.get<{ data: Team[] }>('/teams').then((r) => r.data.data),
   })
 
   const { data: servicesResp } = useQuery({
@@ -101,7 +102,7 @@ export default function UsersPage() {
 
   const teamOptions = [
     { value: '', label: t('common.none') },
-    ...((teams?.data ?? []).map((tm) => ({ value: tm.id, label: tm.name }))),
+    ...((teams ?? []).map((tm) => ({ value: tm.id, label: tm.name }))),
   ]
 
   const registerForm = useForm<RegisterForm>({ resolver: zodResolver(registerSchema) })
