@@ -24,6 +24,8 @@ const SELECT_COLS = 'SELECT l.*, u.name as created_by_name, assign_u.name as ass
 
 interface LeadRow {
   id: string
+  name: string
+  source: string
   status: string
   notes: string | null
   contact_info: string
@@ -198,6 +200,7 @@ export async function createLead(deps: Deps, actor: Actor, input: CreateLeadInpu
 // ─── 修改 ────────────────────────────────────────────────────────────────────
 
 export interface UpdateLeadPatch {
+  name?: string | undefined
   status?: string | undefined
   lostReason?: string | null | undefined
   source?: string | undefined
@@ -220,6 +223,14 @@ export async function updateLead(deps: Deps, actor: Actor, id: string, patch: Up
   const byWorkflow = actor.via === 'workflow'
 
   if (patch.status !== undefined) assertValidStatus(patch.status)
+  // 基本信息：姓名、联系方式、来源不能改成空
+  for (const [k, label] of [['name', '姓名'], ['contactInfo', '联系方式'], ['source', '来源']] as const) {
+    const v = patch[k]
+    if (v !== undefined) {
+      if (!v.trim()) throw badRequest(`${label}不能为空`)
+      patch[k] = v.trim()
+    }
+  }
   assertDate(patch.nextContactDate, '下次联系时间')
   // 只校验有变化的值：历史数据里已停用的选项，原样保存时不应报错
   if (patch.lostReason !== undefined && patch.lostReason !== lead.lost_reason) {
@@ -243,6 +254,7 @@ export async function updateLead(deps: Deps, actor: Actor, id: string, patch: Up
   const params: unknown[] = []
   const set = (col: string, val: unknown) => { sets.push(`${col} = ?`); params.push(val) }
 
+  if (patch.name !== undefined) set('name', patch.name)
   if (patch.status !== undefined) set('status', patch.status)
   if (patch.lostReason !== undefined) set('lost_reason', patch.lostReason)
   if (patch.source !== undefined) set('source', patch.source)
@@ -272,8 +284,10 @@ export async function updateLead(deps: Deps, actor: Actor, id: string, patch: Up
   const oldServices = (() => { try { return JSON.parse(lead.intended_services) as string[] } catch { return [] } })()
   const changes: string[] = []
   if (patch.status !== undefined && patch.status !== lead.status) changes.push(`状态→${STATUS_LABELS[patch.status] ?? patch.status}`)
+  if (patch.name !== undefined && patch.name !== lead.name) changes.push(`姓名：${lead.name} → ${patch.name}`)
+  if (patch.source !== undefined && patch.source !== lead.source) changes.push(`来源：${lead.source} → ${patch.source}`)
   if (patch.notes !== undefined && patch.notes !== lead.notes) changes.push('备注已更新')
-  if (patch.contactInfo !== undefined && patch.contactInfo !== lead.contact_info) changes.push('联系方式已更新')
+  if (patch.contactInfo !== undefined && patch.contactInfo !== lead.contact_info) changes.push(`联系方式：${lead.contact_info} → ${patch.contactInfo}`)
   if (patch.intendedServices !== undefined && JSON.stringify(patch.intendedServices) !== JSON.stringify(oldServices)) {
     changes.push(`意向服务：${oldServices.join('、')} → ${patch.intendedServices.join('、')}`)
   }

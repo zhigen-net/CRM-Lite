@@ -199,6 +199,11 @@
     "form": {
       "sourcePlaceholder": "输入或选择已有来源...",
       "notes": "备注"
+    },
+    "edit": {
+      "button": "编辑",
+      "title": "编辑线索",
+      "hint": "修改会记录在线索的跟进记录里（系统记录）。"
     }
   },
   "clients": {
