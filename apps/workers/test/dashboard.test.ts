@@ -97,6 +97,8 @@ describe('访客列表的时间范围', () => {
     ])
     const list = async (q: string) => ((await (await api(ops, 'GET', `/api/tracking/visitors?siteId=${siteId}${q}`)).json()) as { data: { id: string }[] }).data.map((v) => v.id)
     expect(await list(`&from=${FROM}&to=${TO}`)).toEqual([inRange])
+    const withSummary = (await (await api(ops, 'GET', `/api/tracking/visitors?siteId=${siteId}&from=${FROM}&to=${TO}`)).json()) as { total: number; summary: { withLead: number; withActions: number } }
+    expect(withSummary).toMatchObject({ total: 1, summary: { withLead: 0, withActions: 0 } })
     expect((await list('')).sort()).toEqual([inRange, outRange].sort())
     const { data } = await dash(admin)
     expect(data.kpis.visitors.value).toBe(1)

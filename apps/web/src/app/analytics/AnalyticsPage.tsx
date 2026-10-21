@@ -66,27 +66,39 @@ function VisitorsPanel() {
       if (channel) p.set('channel', channel)
       if (withLead) p.set('withLead', withLead)
       if (range.from && range.to) { p.set('from', range.from); p.set('to', range.to) }
-      return crmApi.get<{ data: Visitor[]; total: number }>(`/tracking/visitors?${p}`).then((r) => r.data)
+      return crmApi.get<{ data: Visitor[]; total: number; summary?: { withLead: number; withActions: number } }>(`/tracking/visitors?${p}`).then((r) => r.data)
     },
   })
 
   if (sites && sites.length === 0) {
     return (
-      <div className="rounded-lg border bg-white px-4 py-10 text-center text-sm text-gray-400">
-        {t('analytics.visitors.noSites')}{' '}
-        <Link to="/app/ai-access?tab=sites" className="text-primary-600 hover:underline">{t('analytics.visitors.goSites')}</Link>
-      </div>
+      <>
+        <h1 className="mb-4 text-lg font-semibold text-gray-900 sm:mb-5 sm:text-xl">{t('analytics.title')}</h1>
+        <div className="rounded-lg border bg-white px-4 py-10 text-center text-sm text-gray-400">
+          {t('analytics.visitors.noSites')}{' '}
+          <Link to="/app/ai-access?tab=sites" className="text-primary-600 hover:underline">{t('analytics.visitors.goSites')}</Link>
+        </div>
+      </>
     )
   }
 
+  const siteName = sites?.find((x) => x.id === siteId)?.name
+  const rangeLabel = range.preset === 'custom' ? `${range.from} ~ ${range.to}` : t(`dateRange.presets.${range.preset}`)
   return (
+    <>
+    <div className="mb-4 sm:mb-5">
+      <h1 className="text-lg font-semibold text-gray-900 sm:text-xl">{t('analytics.title')}</h1>
+      {/* 统计总结：随时间段、站点和筛选条件变化 */}
+      <p className="mt-0.5 text-sm text-gray-500">
+        {data && siteName
+          ? t('analytics.summary', { range: rangeLabel, site: siteName, total: data.total, leads: data.summary?.withLead ?? 0, actions: data.summary?.withActions ?? 0 })
+          : '\u00a0'}
+      </p>
+    </div>
     <div className="overflow-hidden rounded-lg border bg-white">
-      {/* 筛选：第一行时间段 + 总数；第二行三个下拉框，手机上等宽排成一行 */}
+      {/* 筛选：第一行时间段；第二行三个下拉框，手机上等宽排成一行（总数在页面标题下的统计总结里） */}
       <div className="space-y-2 border-b px-3 py-3 sm:flex sm:flex-wrap sm:items-center sm:gap-2 sm:space-y-0 sm:px-4">
-        <div className="flex items-center justify-between gap-2 sm:contents">
-          <DateRangePicker value={range} onChange={(v) => { setRange(v); setPage(1) }} allowAll />
-          {data && <span className="text-xs text-gray-400 sm:order-last sm:ml-auto">{t('analytics.visitors.total', { count: data.total })}</span>}
-        </div>
+        <DateRangePicker value={range} onChange={(v) => { setRange(v); setPage(1) }} allowAll />
         <div className="grid grid-cols-3 gap-2 sm:contents">
           <FilterSelect value={siteId} onChange={(v) => { setSiteId(v); setPage(1) }} label={t('analytics.visitors.site')}>
             {(sites ?? []).map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
@@ -182,6 +194,7 @@ function VisitorsPanel() {
       )}
       {openVisitor && <JourneyDrawer url={`/tracking/visitors/${siteId}/${openVisitor}`} onClose={() => setOpenVisitor(null)} />}
     </div>
+    </>
   )
 }
 
@@ -193,10 +206,6 @@ export default function AnalyticsPage() {
 
   return (
     <div className="p-4 sm:p-6">
-      <div className="mb-5">
-        <h1 className="text-lg font-semibold text-gray-900 sm:text-xl">{t('analytics.title')}</h1>
-        <p className="mt-0.5 text-sm text-gray-500">{t('analytics.subtitle')}</p>
-      </div>
       <VisitorsPanel />
     </div>
   )

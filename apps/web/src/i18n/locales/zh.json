@@ -1141,7 +1141,7 @@
   },
   "analytics": {
     "title": "访客",
-    "subtitle": "网站访客从哪里来、看了什么、做了什么，以及是否已经留资。",
+    "summary": "{{range}} · {{site}}：共 {{total}} 位访客，{{leads}} 位已留资，{{actions}} 位有关键行为",
     "channels": {
       "paid": "广告",
       "search": "搜索",
@@ -1167,7 +1167,6 @@
       "allVisitors": "全部访客",
       "withLead": "已留资",
       "withoutLead": "未留资",
-      "total": "共 {{count}} 位访客",
       "empty": "暂无访客数据。网站接入后，有人访问就会出现在这里。",
       "noSites": "还没有接入网站。",
       "cols": {
