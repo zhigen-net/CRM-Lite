@@ -23,7 +23,8 @@ export interface DashboardData {
     siteLeads?: number
   }
   trend: { day: string; leads: number; visitors?: number }[]
-  sources: { source: string; count: number }[]
+  /** 各来源的线索数，以及其中各状态的数量（来源最多 8 个，其余合并为 __other__） */
+  sources: { source: string; count: number; statuses: Record<string, number> }[]
   statuses: { status: string; count: number }[]
   todo: { overdueLeads: number; todayLeads: number; overdueClients: number; todayClients: number }
   leaderboard?: { userId: string; name: string; leads: number; followups: number; clients: number }[]
@@ -72,8 +73,8 @@ export async function getDashboard(db: D1Database, actor: Actor, range: DayRange
     followupsIn(s, e), followupsIn(ps, pe),
     db.prepare(`SELECT ${leadDay} AS day, COUNT(*) AS n FROM leads l WHERE l.deleted_at IS NULL AND l.created_at >= ? AND l.created_at < ?${lv.sql} GROUP BY day`)
       .bind(s, e, ...lv.params).all<{ day: string; n: number }>(),
-    db.prepare(`SELECT COALESCE(NULLIF(TRIM(l.source), ''), '—') AS source, COUNT(*) AS n FROM leads l WHERE l.deleted_at IS NULL AND l.created_at >= ? AND l.created_at < ?${lv.sql} GROUP BY 1 ORDER BY n DESC`)
-      .bind(s, e, ...lv.params).all<{ source: string; n: number }>(),
+    db.prepare(`SELECT COALESCE(NULLIF(TRIM(l.source), ''), '—') AS source, l.status AS status, COUNT(*) AS n FROM leads l WHERE l.deleted_at IS NULL AND l.created_at >= ? AND l.created_at < ?${lv.sql} GROUP BY 1, 2`)
+      .bind(s, e, ...lv.params).all<{ source: string; status: string; n: number }>(),
     db.prepare(`SELECT l.status AS status, COUNT(*) AS n FROM leads l WHERE l.deleted_at IS NULL AND l.created_at >= ? AND l.created_at < ?${lv.sql} GROUP BY l.status ORDER BY n DESC`)
       .bind(s, e, ...lv.params).all<{ status: string; n: number }>(),
     // 待跟进（不受时间范围影响）：下次联系日期早于今天 / 就是今天，已转化、已丢失的线索不算
@@ -87,9 +88,23 @@ export async function getDashboard(db: D1Database, actor: Actor, range: DayRange
   ])
 
   // 来源最多显示 8 个，其余合并为「其它」
-  const sources = sourceRows.results.slice(0, 8).map((r) => ({ source: r.source, count: r.n }))
-  const rest = sourceRows.results.slice(8).reduce((sum, r) => sum + r.n, 0)
-  if (rest > 0) sources.push({ source: '__other__', count: rest })
+  const bySource = new Map<string, { source: string; count: number; statuses: Record<string, number> }>()
+  for (const r of sourceRows.results) {
+    const row = bySource.get(r.source) ?? { source: r.source, count: 0, statuses: {} }
+    row.count += r.n
+    row.statuses[r.status] = (row.statuses[r.status] ?? 0) + r.n
+    bySource.set(r.source, row)
+  }
+  const ranked = [...bySource.values()].sort((a, b) => b.count - a.count)
+  const sources = ranked.slice(0, 8)
+  if (ranked.length > 8) {
+    const other = { source: '__other__', count: 0, statuses: {} as Record<string, number> }
+    for (const r of ranked.slice(8)) {
+      other.count += r.count
+      for (const [st, n] of Object.entries(r.statuses)) other.statuses[st] = (other.statuses[st] ?? 0) + n
+    }
+    sources.push(other)
+  }
 
   const leadsByDay = new Map(trendRows.results.map((r) => [r.day, r.n]))
   const data: DashboardData = {
