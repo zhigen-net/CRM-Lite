@@ -10,12 +10,13 @@ import { Button } from '@/shared/components/Button'
 import { Input } from '@/shared/components/Input'
 import { ApiFailuresPanel } from '@/app/ai-access/ApiFailuresPanel'
 import { SiteConnect } from './SiteConnect'
+import { SiteStats } from './SiteStats'
 import {
   CopyBlock, isCloudflare, isStale, Note, PLATFORM_GROUPS, Section, Stat,
   type Platform, type SiteDetail, type SiteFeatures,
 } from './ui'
 
-export const SITE_TABS = ['overview', 'connect', 'records'] as const
+export const SITE_TABS = ['overview', 'settings', 'connect', 'records'] as const
 export type SiteTab = typeof SITE_TABS[number]
 export const toSiteTab = (v: string | null): SiteTab => (SITE_TABS as readonly string[]).includes(v ?? '') ? v as SiteTab : 'overview'
 
@@ -101,15 +102,21 @@ export function SiteDrawer({ id, tab, onTab, initialKey, onClose }: {
                   <CopyBlock label="CRM_SITE_KEY" code={siteKey} />
                 </div>
               )}
+              {/* 概览：接入状态 + 数据分析；站点设置单独一个标签 */}
               {tab === 'overview' && (
                 <div className="space-y-4">
                   <Overview site={site} />
+                  <SiteStats siteId={site.id} />
+                </div>
+              )}
+              {tab === 'settings' && (
+                <div className="space-y-4">
                   <Settings site={site} onSaved={refresh} onGoConnect={() => onTab('connect')}
                     onToggle={() => { if (!site.isActive || confirm(t('analytics.sites.disableConfirm', { name: site.name }))) toggle.mutate() }} toggling={toggle.isPending}
                     onRotate={() => { if (confirm(t('analytics.sites.rotateConfirm', { name: site.name }))) rotate.mutate() }} rotating={rotate.isPending} />
                 </div>
               )}
-              {tab === 'connect' && <SiteConnect site={site} siteKey={siteKey} onRotate={() => rotate.mutate()} rotating={rotate.isPending} onGoFeatures={() => onTab('overview')} />}
+              {tab === 'connect' && <SiteConnect site={site} siteKey={siteKey} onRotate={() => rotate.mutate()} rotating={rotate.isPending} onGoFeatures={() => onTab('settings')} />}
               {tab === 'records' && <Records site={site} />}
             </>
           )}

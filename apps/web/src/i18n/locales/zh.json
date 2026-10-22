@@ -1541,6 +1541,7 @@
     "keyNotice": "请立即复制站点密钥，离开页面后不再显示。它只能放在网站服务器端（加密环境变量或服务器配置），不要发给 AI，也不要提交到代码仓库。",
     "tabs": {
       "overview": "概览",
+      "settings": "站点设置",
       "connect": "接入",
       "records": "记录"
     },
@@ -1619,7 +1620,7 @@
       "widgetsHint": "悬浮咨询按钮、手机底部咨询栏、留资弹窗等，在 CRM 里配置，网站不用改代码。",
       "soon": "即将推出"
     },
-    "needPlatform": "请先在「概览 → 站点设置」里选择网站的部署平台。",
+    "needPlatform": "请先在「站点设置」标签里选择网站的部署平台。",
     "goFeatures": "去选择",
     "promptTitle": "交给 AI 的接入提示词",
     "promptHint": "复制后交给编码 AI（Claude Code、Cursor 等），在网站仓库里执行。提示词按部署平台和开启的功能生成，包含转发代码、页面脚本、需要设置的配置和自检方法。",
@@ -1700,6 +1701,30 @@
     },
     "records": {
       "submissions": "表单提交记录"
+    },
+    "stats": {
+      "empty": "所选时间段暂无数据",
+      "visitors": "访客",
+      "leads": "网站留资",
+      "conversion": "留资转化率",
+      "conversionHint": "留资 ÷ 访客",
+      "visitsPageviews": "访问 / 浏览",
+      "perVisit": "每次访问 {{n}} 页",
+      "avgDuration": "平均停留",
+      "avgDurationHint": "每次访问",
+      "bounce": "跳出率",
+      "bounceHint": "只看了一页就离开",
+      "trend": "访客与留资趋势",
+      "sources": "具体来源（不含直接访问）",
+      "channels": "渠道",
+      "landings": "落地页",
+      "pages": "热门页面",
+      "pagesEmpty": "暂无浏览明细（浏览明细可能已清理）",
+      "countries": "地区",
+      "devicesActions": "设备与关键行为",
+      "actions": "关键行为",
+      "actionsEmpty": "暂无关键行为",
+      "unknown": "未知"
     }
   },
   "dateRange": {

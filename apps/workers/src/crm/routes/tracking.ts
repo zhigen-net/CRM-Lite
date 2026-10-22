@@ -17,6 +17,7 @@ import { submitSiteLead, type SiteLeadResult } from '../../domain/tracking/siteL
 import { depsFrom } from '../../domain/actor'
 import { resolveRange, systemTimezone } from '../../domain/timeRange'
 import { purgeTrackEvents, trackEventStats } from '../../domain/tracking/retention'
+import { getSiteStats } from '../../domain/tracking/siteStats'
 
 const MAX_BODY_BYTES = 16 * 1024
 
@@ -165,6 +166,12 @@ trackingSitesAdminRoutes.post('/:id/check', zValidator('json', z.object({
 
 // 站点详情（含接入状态）
 trackingSitesAdminRoutes.get('/:id', async (c) => c.json({ data: await getSiteDetail(c.env.DB, c.req.param('id')) }))
+
+// 网站数据分析（概览）：from / to 为系统时区日期，默认最近 7 天
+trackingSitesAdminRoutes.get('/:id/stats', async (c) => {
+  const range = resolveRange(await systemTimezone(c.env.DB), c.req.query('from'), c.req.query('to'))
+  return c.json({ data: await getSiteStats(c.env.DB, c.req.param('id'), range) })
+})
 
 // 最近的表单提交记录（含被拦截的）
 trackingSitesAdminRoutes.get('/:id/submissions', async (c) => c.json({ data: await listSiteSubmissions(c.env.DB, c.req.param('id')) }))
