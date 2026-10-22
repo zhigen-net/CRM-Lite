@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef } from 'react'
 import { Clip, DesktopTable, ListCard, ListMessage, MobileList, PageHeader, SearchBox, tableCls } from '@/shared/components/ListLayout'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { Drawer } from '@/shared/components/Drawer'
+import { LeadDetail } from './LeadDetailPage'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -112,6 +114,17 @@ export default function LeadsPage() {
   const [assignedToFilter, setAssignedToFilter] = useState('')
   // 仪表盘「待跟进」跳转时带 ?nextContact=overdue / today
   const [searchParams] = useSearchParams()
+  // 详情在抽屉里打开：地址 /app/leads/:id，关闭回到列表（保留查询参数）
+  const { id: openId } = useParams<{ id: string }>()
+  const location = useLocation()
+  const navigate = useNavigate()
+  const detailTo = (id: string) => ({ pathname: `/app/leads/${id}`, search: location.search })
+  const closeDetail = () => navigate({ pathname: '/app/leads', search: location.search })
+  const { data: openLead } = useQuery({
+    queryKey: ['lead', openId],
+    queryFn: () => crmApi.get<{ data: Lead }>(`/leads/${openId}`).then((r) => r.data.data),
+    enabled: !!openId,
+  })
   const [nextContactFilter, setNextContactFilter] = useState(() => searchParams.get('nextContact') ?? '')
   const [createdAtFilter, setCreatedAtFilter] = useState('')
   const [activityCountFilter, setActivityCountFilter] = useState('')
@@ -314,8 +327,9 @@ export default function LeadsPage() {
 
       <ListCard
         footer={<Pagination page={page} totalPages={totalPages} total={total} pageSize={PAGE_SIZE} onPageChange={setPage} />}
-        toolbar={<>
-      <div className="relative" ref={filterPanelRef}>
+        toolbar={<div className="sm:flex sm:items-center sm:gap-3">
+      {/* 桌面端搜索框与状态标签在同一行；手机上状态标签换到下一行 */}
+      <div className="relative sm:w-[26rem] sm:flex-none" ref={filterPanelRef}>
         <SearchBox
           value={search} onChange={handleSearch} placeholder={t('leads.search')}
           filter={{
@@ -325,7 +339,7 @@ export default function LeadsPage() {
         />
 
         {showFilterPanel && (
-          <div className="absolute z-20 top-full left-0 right-0 mt-1 rounded-md border border-gray-200 bg-white shadow-lg p-3">
+          <div className="absolute z-20 top-full left-0 right-0 mt-1 rounded-md border border-gray-200 bg-white p-3 shadow-lg sm:right-auto sm:w-[40rem]">
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {sourceOptions.length > 0 && (
                 <div className="flex flex-col gap-1">
@@ -393,8 +407,8 @@ export default function LeadsPage() {
         )}
       </div>
 
-      <div className="mt-2">
-        <div className="flex gap-1.5 overflow-x-auto overflow-y-hidden pb-0.5 scrollbar-none">
+      <div className="mt-2 min-w-0 sm:mt-0">
+        <div className="flex gap-1.5 overflow-x-auto overflow-y-hidden pb-0.5 scrollbar-none sm:pb-0">
           {statusFilterOptions.map(({ value, label }) => (
             <button key={value} onClick={() => { setStatusFilter(value); setPage(1) }} className={`flex-shrink-0 rounded-full px-3 py-1 text-xs font-medium transition-colors ${statusFilter === value ? 'bg-primary-600 text-white' : 'bg-white text-gray-600 border hover:bg-gray-50'}`}>
               {label}
@@ -402,7 +416,7 @@ export default function LeadsPage() {
           ))}
         </div>
       </div>
-      </>}
+      </div>}
       >
       {isLoading ? (
         <ListMessage>{t('common.loading')}</ListMessage>
@@ -443,7 +457,7 @@ export default function LeadsPage() {
                       <div className="flex items-center justify-end gap-2">
                         <button onClick={(e) => openFollowUp(lead, e)} className="text-xs text-primary-600 hover:text-primary-800 font-medium">{t('leads.addActivity')}</button>
                         <span className="text-gray-300">|</span>
-                        <Link to={`/app/leads/${lead.id}`} className="text-xs text-gray-500 hover:text-gray-700">{t('common.detail')}</Link>
+                        <Link to={detailTo(lead.id)} className="text-xs text-gray-500 hover:text-gray-700">{t('common.detail')}</Link>
                         {isAdmin && (
                           <>
                             <span className="text-gray-300">|</span>
@@ -460,7 +474,7 @@ export default function LeadsPage() {
           <MobileList>
             {filtered.map((lead) => (
               <li key={lead.id}>
-                <Link to={`/app/leads/${lead.id}`} className="block px-3 pt-3 active:bg-gray-50">
+                <Link to={detailTo(lead.id)} className="block px-3 pt-3 active:bg-gray-50">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <p className="font-medium text-gray-900 truncate">{lead.name}</p>
@@ -540,6 +554,11 @@ export default function LeadsPage() {
           onSubmit={(d) => addActivity.mutate(d)}
           entityType="lead"
         />
+      )}
+      {openId && (
+        <Drawer title={openLead ? `${openLead.name}${openLead.leadNo != null ? ` · L-${String(openLead.leadNo).padStart(4, '0')}` : ''}` : t('common.loading')} onClose={closeDetail}>
+          <LeadDetail id={openId} />
+        </Drawer>
       )}
     </div>
   )
