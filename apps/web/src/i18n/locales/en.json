@@ -1541,6 +1541,7 @@
     "keyNotice": "Copy the site key now; it will not be shown again after you leave this page. Keep it on the website's server side only (encrypted environment variable or server config). Do not give it to the AI or commit it.",
     "tabs": {
       "overview": "Overview",
+      "settings": "Site settings",
       "connect": "Connect",
       "records": "Records"
     },
@@ -1619,7 +1620,7 @@
       "widgetsHint": "Floating contact button, mobile contact bar, lead popups and more, configured in the CRM with no website code changes.",
       "soon": "Coming soon"
     },
-    "needPlatform": "Pick the website's hosting platform under Overview → Site settings first.",
+    "needPlatform": "Pick the website's hosting platform in the Site settings tab first.",
     "goFeatures": "Pick now",
     "promptTitle": "Prompt for your AI agent",
     "promptHint": "Copy it to a coding AI (Claude Code, Cursor, etc.) in the website repository. It is generated for the hosting platform and enabled features, and includes the proxy code, page script, settings to configure and self-checks.",
@@ -1700,6 +1701,30 @@
     },
     "records": {
       "submissions": "Form submissions"
+    },
+    "stats": {
+      "empty": "No data for the selected period",
+      "visitors": "Visitors",
+      "leads": "Website leads",
+      "conversion": "Lead conversion",
+      "conversionHint": "leads ÷ visitors",
+      "visitsPageviews": "Visits / pageviews",
+      "perVisit": "{{n}} pages per visit",
+      "avgDuration": "Avg. time on site",
+      "avgDurationHint": "per visit",
+      "bounce": "Bounce rate",
+      "bounceHint": "left after one page",
+      "trend": "Visitors and leads",
+      "sources": "Top sources (excluding direct)",
+      "channels": "Channels",
+      "landings": "Landing pages",
+      "pages": "Top pages",
+      "pagesEmpty": "No page view details (they may have been cleaned up)",
+      "countries": "Locations",
+      "devicesActions": "Devices and key actions",
+      "actions": "Key actions",
+      "actionsEmpty": "No key actions",
+      "unknown": "Unknown"
     }
   },
   "dateRange": {
