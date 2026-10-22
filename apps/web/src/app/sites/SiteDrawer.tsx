@@ -12,7 +12,7 @@ import { ApiFailuresPanel } from '@/app/ai-access/ApiFailuresPanel'
 import { SiteConnect } from './SiteConnect'
 import { SiteStats } from './SiteStats'
 import {
-  CopyBlock, isCloudflare, isStale, Note, PLATFORM_GROUPS, Section, Stat,
+  CopyBlock, isCloudflare, isStale, Note, PLATFORM_GROUPS, Section,
   type Platform, type SiteDetail, type SiteFeatures,
 } from './ui'
 
@@ -105,7 +105,7 @@ export function SiteDrawer({ id, tab, onTab, initialKey, onClose }: {
               {/* 概览：接入状态 + 数据分析；站点设置单独一个标签 */}
               {tab === 'overview' && (
                 <div className="space-y-4">
-                  <Overview site={site} />
+                  <StaleNotice site={site} />
                   <SiteStats siteId={site.id} />
                 </div>
               )}
@@ -126,23 +126,11 @@ export function SiteDrawer({ id, tab, onTab, initialKey, onClose }: {
   )
 }
 
-function Overview({ site }: { site: SiteDetail }) {
+/** 超过 24 小时没收到数据时提醒（接入状态的统计数字在站点列表里已有，概览只放数据分析） */
+function StaleNotice({ site }: { site: SiteDetail }) {
   const { t } = useTranslation()
-  return (
-    <Section title={t('siteConnect.overview.status')}>
-      <div className="flex flex-wrap items-center gap-1.5 text-xs">
-        <Stat label={t('analytics.sites.stat.visitors')} value={site.visitorsDay ?? 0} />
-        <Stat label={t('analytics.sites.stat.leads')} value={site.leadsDay ?? 0} tone={(site.leadsDay ?? 0) > 0 ? 'green' : 'gray'} />
-        <Stat label={t('analytics.sites.stat.blocked')} value={site.blockedDay ?? 0} tone={(site.blockedDay ?? 0) > 0 ? 'amber' : 'gray'} />
-        {(site.openFailures ?? 0) > 0 && <Stat label={t('analytics.sites.stat.failures')} value={site.openFailures ?? 0} tone="red" />}
-        <span className="text-gray-500">
-          {site.lastSeenAt ? t('analytics.sites.lastSeen', { time: formatDate(site.lastSeenAt) }) : t('analytics.sites.noData')}
-          {' · '}{t('analytics.sites.visitors', { count: site.visitorCount })}
-        </span>
-      </div>
-      {site.isActive && isStale(site.lastSeenAt) && <Note tone="amber">{site.lastSeenAt ? t('analytics.sites.stale') : t('analytics.sites.neverSeen')}</Note>}
-    </Section>
-  )
+  if (!site.isActive || !isStale(site.lastSeenAt)) return null
+  return <Note tone="amber">{site.lastSeenAt ? t('analytics.sites.stale') : t('analytics.sites.neverSeen')}</Note>
 }
 
 /** 一行设置：左侧标题与说明，右侧控件 */
