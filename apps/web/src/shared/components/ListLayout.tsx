@@ -111,3 +111,17 @@ export function SearchBox({ value, onChange, placeholder, filter }: {
     </div>
   )
 }
+
+/** 悬停提示（显示在右侧，支持多行）；tip 为空时只渲染内容 */
+export function Tip({ tip, children }: { tip?: ReactNode; children: ReactNode }) {
+  if (!tip) return <>{children}</>
+  return (
+    <span className="group/tip relative inline-flex">
+      {children}
+      <span role="tooltip"
+        className="pointer-events-none absolute left-full top-1/2 z-20 ml-2 hidden w-max max-w-[16rem] -translate-y-1/2 whitespace-pre-line rounded-md bg-gray-900 px-2.5 py-1.5 text-xs leading-5 text-white shadow-lg group-hover/tip:block">
+        {tip}
+      </span>
+    </span>
+  )
+}

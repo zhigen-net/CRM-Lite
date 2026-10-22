@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Clip, DesktopTable, ListCard, ListMessage, MobileList, PageHeader, SearchBox, tableCls } from '@/shared/components/ListLayout'
+import { Tip, Clip, DesktopTable, ListCard, ListMessage, MobileList, PageHeader, SearchBox, tableCls } from '@/shared/components/ListLayout'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { Drawer } from '@/shared/components/Drawer'
@@ -191,6 +191,7 @@ export default function LeadsPage() {
   }
 
   const { options: leadStatusOpts } = useOptionGroup('lead_status')
+  const { options: lostReasonOpts } = useOptionGroup('lost_reason')
   // 与仪表盘共用缓存 ['lead-sources']，两处都存来源数组（同一个 queryKey 的数据格式必须一致）
   const { data: sourcesData } = useQuery({
     queryKey: ['lead-sources'],
@@ -276,6 +277,19 @@ export default function LeadsPage() {
 
   const visibleCols = colConfig.filter((c) => c.visible)
 
+  // 状态的悬停说明：丢失显示丢失原因，已转化说明去向，其它显示跟进次数、下次联系和最近更新
+  const statusTip = (lead: Lead) => {
+    if (lead.status === 'Lost') {
+      return t('leads.statusTip.lostReason', { reason: lead.lostReason ? getOptionLabel(lostReasonOpts, lead.lostReason) : t('leads.statusTip.noReason') })
+    }
+    if (lead.status === 'Converted') return t('leads.statusTip.converted')
+    return [
+      t('leads.statusTip.activities', { count: lead.activityCount ?? 0 }),
+      lead.nextContactDate ? t('leads.statusTip.nextContact', { date: formatDate(lead.nextContactDate) }) : t('leads.statusTip.noNextContact'),
+      t('leads.statusTip.updated', { date: formatDate(lead.updatedAt) }),
+    ].join('\n')
+  }
+
   const renderTd = (lead: Lead, key: ColKey) => {
     switch (key) {
       case 'leadNo':
@@ -295,7 +309,9 @@ export default function LeadsPage() {
       case 'status':
         return (
           <td key={key} className={tableCls.td}>
-            <Badge variant={getOptionColor(leadStatusOpts, lead.status)}>{getOptionLabel(leadStatusOpts, lead.status)}</Badge>
+            <Tip tip={statusTip(lead)}>
+              <Badge variant={getOptionColor(leadStatusOpts, lead.status)}>{getOptionLabel(leadStatusOpts, lead.status)}</Badge>
+            </Tip>
           </td>
         )
       case 'source':
@@ -450,14 +466,13 @@ export default function LeadsPage() {
               </thead>
               <tbody className={tableCls.tbody}>
                 {filtered.map((lead) => (
-                  <tr key={lead.id} className={`group ${tableCls.tr}`}>
+                  <tr key={lead.id} className={`group cursor-pointer ${tableCls.tr}`} onClick={() => navigate(detailTo(lead.id))}>
                     {visibleCols.map((c) => renderTd(lead, c.key))}
                     {/* 操作列固定在右侧，表格横向滚动时也能看到 */}
-                    <td className="sticky right-0 whitespace-nowrap bg-white px-4 py-2.5 shadow-[-6px_0_6px_-6px_rgba(0,0,0,0.12)] group-hover:bg-gray-50">
+                    {/* 点击整行打开详情；操作列的点击不冒泡到行 */}
+                    <td className="sticky right-0 cursor-default whitespace-nowrap bg-white px-4 py-2.5 shadow-[-6px_0_6px_-6px_rgba(0,0,0,0.12)] group-hover:bg-gray-50" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-end gap-2">
                         <button onClick={(e) => openFollowUp(lead, e)} className="text-xs text-primary-600 hover:text-primary-800 font-medium">{t('leads.addActivity')}</button>
-                        <span className="text-gray-300">|</span>
-                        <Link to={detailTo(lead.id)} className="text-xs text-gray-500 hover:text-gray-700">{t('common.detail')}</Link>
                         {isAdmin && (
                           <>
                             <span className="text-gray-300">|</span>

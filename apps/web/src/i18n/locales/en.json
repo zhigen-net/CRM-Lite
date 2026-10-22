@@ -210,6 +210,15 @@
       "client": "Client {{name}}",
       "owner": "Owner {{name}}",
       "unassigned": "Unassigned"
+    },
+    "statusTip": {
+      "lostReason": "Lost reason: {{reason}}",
+      "noReason": "not provided",
+      "converted": "Converted to a client, see Clients",
+      "activities": "{{count}} follow-ups",
+      "nextContact": "Next contact: {{date}}",
+      "noNextContact": "No next contact scheduled",
+      "updated": "Last updated: {{date}}"
     }
   },
   "clients": {
