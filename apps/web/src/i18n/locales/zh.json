@@ -1546,7 +1546,6 @@
       "records": "记录"
     },
     "overview": {
-      "status": "接入状态（近 24 小时）",
       "goConnect": "查看接入方式"
     },
     "groups": {
