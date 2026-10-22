@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { AnomalyIcons, type Anomaly } from './AnomalyIcons'
 import { CountryFlag, countryName } from './CountryFlag'
 import { languageName } from './language'
+import { sourceDetail } from './source'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
@@ -80,7 +81,7 @@ export function JourneyDrawer({ url, onClose }: { url: string; onClose: () => vo
         ) : (
           <div className="space-y-4 p-5 text-sm">
             <div className="grid grid-cols-2 gap-3 rounded-lg bg-gray-50 p-3 text-xs">
-              <div><p className="text-gray-400">{t('analytics.journey.firstSource')}</p><p className="mt-0.5 text-gray-800">{ch(data.visitor.firstChannel)}{data.visitor.firstUtmCampaign ? ` · ${data.visitor.firstUtmCampaign}` : ''}</p></div>
+              <div><p className="text-gray-400">{t('analytics.journey.firstSource')}</p><p className="mt-0.5 text-gray-800">{[ch(data.visitor.firstChannel), sourceDetail(t, { channel: data.visitor.firstChannel, referrer: data.visitor.firstReferrer, clickIdType: data.visitor.firstClickIdType, utmSource: data.visitor.firstUtmSource, utmCampaign: data.visitor.firstUtmCampaign })].filter(Boolean).join(' · ')}</p></div>
               <div><p className="text-gray-400">{t('analytics.journey.firstLanding')}</p><p className="mt-0.5 truncate text-gray-800"><UrlLink url={fullUrl(data.visitor.firstHost, data.visitor.firstLanding, data.visitor.siteDomain)} /></p></div>
               <div><p className="text-gray-400">{t('analytics.journey.visits')}</p><p className="mt-0.5 text-gray-800">{data.visitor.visitCount} / {data.visitor.pageviewCount}</p></div>
               <div><p className="text-gray-400">{t('analytics.journey.lead')}</p>
@@ -91,7 +92,7 @@ export function JourneyDrawer({ url, onClose }: { url: string; onClose: () => vo
             {data.visits.map((v) => (
               <div key={v.id} className="rounded-lg border">
                 <div className="border-b bg-gray-50 px-3 py-2 text-xs">
-                  <p className="font-medium text-gray-800">{formatDate(v.startedAt)} · {ch(v.channel)}{v.utmSource ? ` · ${v.utmSource}` : ''}{v.utmCampaign ? ` / ${v.utmCampaign}` : ''} <AnomalyIcons items={v.anomalies} /></p>
+                  <p className="font-medium text-gray-800">{formatDate(v.startedAt)} · {ch(v.channel)}{(() => { const d = sourceDetail(t, v); return d ? ` · ${d}` : '' })()} <AnomalyIcons items={v.anomalies} /></p>
                   <p className="mt-0.5 text-gray-500">
                     {t('analytics.journey.visitSummary', { pages: v.pageviews, time: duration(v.durationSec) })} · {[v.deviceType && t(`analytics.devices.${v.deviceType}`), v.os, v.browser].filter(Boolean).join(' / ')}{v.language ? ` · ${languageName(v.language, i18n.language)}` : ''}
                     {' · '}{v.ip ? `${v.ip} · ` : ''}<CountryFlag code={v.country} /> {place(v)}{v.isp ? ` · ${v.isp}` : ''}{v.network ? ` · ${v.network}` : ''}
@@ -138,7 +139,8 @@ export function VisitorSourceCard({ url }: { url: string }) {
   const ch = v.firstChannel ? t(`analytics.channels.${v.firstChannel}`, { defaultValue: v.firstChannel }) : '—'
   const ad = [v.firstUtmSource, v.firstUtmMedium, v.firstUtmCampaign].filter(Boolean).join(' / ')
   const items: [string, React.ReactNode, string?][] = [
-    [t('analytics.source.channel'), v.firstClickIdType ? `${ch}（${v.firstClickIdType}）` : ch],
+    // 渠道后面写明具体来源：哪个搜索引擎、哪个广告平台、哪个网站
+    [t('analytics.source.channel'), [ch, sourceDetail(t, { channel: v.firstChannel, referrer: v.firstReferrer, clickIdType: v.firstClickIdType, utmSource: v.firstUtmSource, utmCampaign: v.firstUtmCampaign })].filter(Boolean).join(' · ')],
     [t('analytics.source.campaign'), ad || '—'],
     [t('analytics.source.landing'), fullUrl(v.firstHost, v.firstLanding, v.siteDomain) ?? '—'],
     [t('analytics.source.referrer'), v.firstReferrer ?? '—'],

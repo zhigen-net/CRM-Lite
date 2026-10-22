@@ -1295,6 +1295,24 @@
         "uaScreenMismatch": "自称手机，但屏幕是 {{detail}} 的电脑分辨率",
         "headlessScreen": "屏幕 {{detail}} 是无头浏览器的默认窗口"
       }
+    },
+    "platforms": {
+      "google": "Google",
+      "bing": "Bing",
+      "baidu": "百度",
+      "sogou": "搜狗",
+      "so360": "360 搜索",
+      "shenma": "神马搜索",
+      "duckduckgo": "DuckDuckGo",
+      "yahoo": "Yahoo",
+      "yandex": "Yandex",
+      "toutiao": "头条搜索",
+      "googleAds": "Google Ads",
+      "microsoftAds": "Microsoft Ads",
+      "meta": "Meta 广告",
+      "tiktokAds": "TikTok 广告",
+      "baiduAds": "百度推广",
+      "tencentAds": "腾讯广告"
     }
   },
   "workflowHelp": {

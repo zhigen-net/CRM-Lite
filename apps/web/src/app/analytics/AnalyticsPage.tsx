@@ -1,5 +1,6 @@
 // 访客分析：按时间段、站点、来源筛选访客，查看访问轨迹
 import { useEffect, useState } from 'react'
+import { sourceDetail } from './source'
 import { DesktopTable, FilterSelect, ListCard, ListMessage, MobileList, PageHeader, Sub, ToolbarRow, tableCls } from '@/shared/components/ListLayout'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
@@ -17,6 +18,7 @@ interface SiteOption { id: string; name: string; domain: string | null; isActive
 interface Visitor {
   id: string; siteId: string; firstSeenAt: string; lastSeenAt: string; visitCount: number; pageviewCount: number
   firstChannel: string | null; firstUtmSource: string | null; firstUtmCampaign: string | null; firstLanding: string | null
+  firstReferrer: string | null; firstClickIdType: string | null
   deviceType: string | null; os: string | null; browser: string | null; country: string | null; region: string | null; city: string | null; isp: string | null
   leadId: string | null; leadName: string | null; keyActions: number; lastIp: string | null
   anomalies?: Anomaly[]
@@ -28,6 +30,7 @@ const PAGE_SIZE = 30
 /** 筛选下拉框：统一高度和箭头样式（不用各系统自带的样式，手机上排列整齐） */
 function VisitorsPanel() {
   const { t, i18n } = useTranslation()
+  const detailOf = (v: Visitor) => sourceDetail(t, { channel: v.firstChannel, referrer: v.firstReferrer, clickIdType: v.firstClickIdType, utmSource: v.firstUtmSource, utmCampaign: v.firstUtmCampaign })
   const [siteId, setSiteId] = useState('')
   const [channel, setChannel] = useState('')
   const [withLead, setWithLead] = useState('')
@@ -117,7 +120,8 @@ function VisitorsPanel() {
                 className="block w-full cursor-pointer px-3 py-3 text-left active:bg-gray-50">
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-sm font-medium text-gray-900">{v.firstChannel ? t(`analytics.channels.${v.firstChannel}`, { defaultValue: v.firstChannel }) : '—'}
-                    {(v.firstUtmSource || v.firstUtmCampaign) && <span className="ml-1 text-xs font-normal text-gray-400">{[v.firstUtmSource, v.firstUtmCampaign].filter(Boolean).join(' / ')}</span>}
+                    {/* 具体来源：哪个搜索引擎、哪个广告平台 / 计划、哪个网站 */}
+                    {detailOf(v) && <span className="ml-1 text-xs font-normal text-gray-400">{detailOf(v)}</span>}
                     <span className="ml-1"><AnomalyIcons items={v.anomalies} /></span>
                   </span>
                   <span className="shrink-0 text-xs text-gray-400">{formatDate(v.lastSeenAt)}</span>
@@ -150,7 +154,7 @@ function VisitorsPanel() {
                   <td className={`${tableCls.td} text-gray-600`}>{formatDate(v.lastSeenAt)}</td>
                   <td className={tableCls.td}>
                     <span className="text-gray-800">{v.firstChannel ? t(`analytics.channels.${v.firstChannel}`, { defaultValue: v.firstChannel }) : '—'}</span>
-                    {(v.firstUtmSource || v.firstUtmCampaign) && <Sub title={[v.firstUtmSource, v.firstUtmCampaign].filter(Boolean).join(' / ')}>{[v.firstUtmSource, v.firstUtmCampaign].filter(Boolean).join(' / ')}</Sub>}
+                    {detailOf(v) && <Sub title={v.firstReferrer ?? detailOf(v)}>{detailOf(v)}</Sub>}
                   </td>
                   <td className={`${tableCls.td} text-gray-600`}>{v.visitCount} / {v.pageviewCount}</td>
                   <td className={`${tableCls.td} text-gray-600`}>
