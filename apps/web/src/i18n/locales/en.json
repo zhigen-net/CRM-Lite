@@ -1295,6 +1295,24 @@
         "uaScreenMismatch": "Claims to be a phone but the screen is a desktop resolution ({{detail}})",
         "headlessScreen": "Screen {{detail}} is a headless browser's default window"
       }
+    },
+    "platforms": {
+      "google": "Google",
+      "bing": "Bing",
+      "baidu": "Baidu",
+      "sogou": "Sogou",
+      "so360": "360 Search",
+      "shenma": "Shenma",
+      "duckduckgo": "DuckDuckGo",
+      "yahoo": "Yahoo",
+      "yandex": "Yandex",
+      "toutiao": "Toutiao Search",
+      "googleAds": "Google Ads",
+      "microsoftAds": "Microsoft Ads",
+      "meta": "Meta Ads",
+      "tiktokAds": "TikTok Ads",
+      "baiduAds": "Baidu Ads",
+      "tencentAds": "Tencent Ads"
     }
   },
   "workflowHelp": {
