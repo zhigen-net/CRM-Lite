@@ -203,7 +203,7 @@ export default function ClientsPage() {
               </thead>
               <tbody className={tableCls.tbody}>
                 {filtered.map((client) => (
-                  <tr key={client.id} className={`group ${tableCls.tr}`}>
+                  <tr key={client.id} className={`group cursor-pointer ${tableCls.tr}`} onClick={() => navigate(detailTo(client.id))}>
                     <td className={`${tableCls.td} font-mono text-xs text-gray-400`}>{client.leadNo != null ? `L-${String(client.leadNo).padStart(4, '0')}` : '—'}</td>
                     <td className={`${tableCls.td} font-medium text-gray-900`}><Clip text={client.name} className="max-w-[10rem]" /></td>
                     <td className={`${tableCls.td} text-gray-600`}>
@@ -230,7 +230,8 @@ export default function ClientsPage() {
                     <td className={`${tableCls.td} text-gray-600`}>{client.createdByName ?? '—'}</td>
                     <td className={`${tableCls.td} text-gray-500`}>{formatDate(client.createdAt)}</td>
                     {/* 操作列固定在右侧，表格横向滚动时也能看到 */}
-                    <td className="sticky right-0 whitespace-nowrap bg-white px-4 py-2.5 shadow-[-6px_0_6px_-6px_rgba(0,0,0,0.12)] group-hover:bg-gray-50">
+                    {/* 点击整行打开详情；操作列的点击不冒泡到行 */}
+                    <td className="sticky right-0 cursor-default whitespace-nowrap bg-white px-4 py-2.5 shadow-[-6px_0_6px_-6px_rgba(0,0,0,0.12)] group-hover:bg-gray-50" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-end gap-2">
                         <button
                           onClick={(e) => openFollowUp(client, e)}
@@ -238,10 +239,6 @@ export default function ClientsPage() {
                         >
                           {t('clients.addActivity')}
                         </button>
-                        <span className="text-gray-300">|</span>
-                        <Link to={detailTo(client.id)} className="text-xs text-gray-500 hover:text-gray-700">
-                          {t('common.detail')}
-                        </Link>
                         {isAdmin && (
                           <>
                             <span className="text-gray-300">|</span>
