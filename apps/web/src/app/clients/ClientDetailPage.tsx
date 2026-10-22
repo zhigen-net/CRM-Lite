@@ -1,4 +1,3 @@
-import { useParams, useNavigate } from 'react-router-dom'
 import { VisitorSourceCard } from '@/app/analytics/Journey'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
@@ -207,10 +206,9 @@ function MilestonesTab({
   )
 }
 
-export default function ClientDetailPage() {
+/** 客户详情：在列表页的抽屉里显示（见 ClientsPage） */
+export function ClientDetail({ id }: { id: string }) {
   const { t } = useTranslation()
-  const { id } = useParams<{ id: string }>()
-  const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [showEdit, setShowEdit] = useState(false)
   const [showActivity, setShowActivity] = useState(false)
@@ -307,10 +305,7 @@ export default function ClientDetailPage() {
   if (!client) return <div className="p-6 text-sm text-gray-500">{t('common.loading')}</div>
 
   return (
-    <div className="p-4 sm:p-6 max-w-3xl">
-      <button onClick={() => navigate(-1)} className="mb-4 text-sm text-gray-500 hover:text-gray-700">
-        ← {t('common.back')}
-      </button>
+    <div>
 
       {/* 基本信息卡片 */}
       <div className="rounded-lg border bg-white p-4 sm:p-6 mb-4 sm:mb-6">

@@ -7,9 +7,7 @@ type Loader = () => Promise<{ default: ComponentType }>
 const loaders = {
   dashboard: () => import('@/app/dashboard/DashboardPage'),
   leads: () => import('@/app/leads/LeadsPage'),
-  leadDetail: () => import('@/app/leads/LeadDetailPage'),
   clients: () => import('@/app/clients/ClientsPage'),
-  clientDetail: () => import('@/app/clients/ClientDetailPage'),
   products: () => import('@/app/services/ServicesPage'),
   operationLog: () => import('@/app/operation-log/OperationLogPage'),
   users: () => import('@/app/users/UsersPage'),
@@ -30,8 +28,8 @@ for (const k of keys) pages[k] = lazy<ComponentType>(loaders[k])
 /** 导航地址对应的页面（列表页进入详情页的也一起预加载） */
 const byPath: Record<string, PageKey[]> = {
   '/app/dashboard': ['dashboard'],
-  '/app/leads': ['leads', 'leadDetail'],
-  '/app/clients': ['clients', 'clientDetail'],
+  '/app/leads': ['leads'],
+  '/app/clients': ['clients'],
   '/app/products': ['products'],
   '/app/operation-log': ['operationLog'],
   '/app/users': ['users'],

@@ -45,10 +45,9 @@ export default function App() {
                     }
                   >
                     <Route path="dashboard" element={<P.dashboard />} />
-                    <Route path="leads" element={<P.leads />} />
-                    <Route path="leads/:id" element={<P.leadDetail />} />
-                    <Route path="clients" element={<P.clients />} />
-                    <Route path="clients/:id" element={<P.clientDetail />} />
+                    {/* 详情在列表页的抽屉里打开：同一个路由，切换详情时列表不重新加载 */}
+                    <Route path="leads/:id?" element={<P.leads />} />
+                    <Route path="clients/:id?" element={<P.clients />} />
                     <Route path="products" element={<P.products />} />
                     <Route path="services" element={<Navigate to="/app/products" replace />} />
                     <Route path="partners" element={<Navigate to="/app/products" replace />} />

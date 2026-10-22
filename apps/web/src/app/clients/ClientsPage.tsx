@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef } from 'react'
 import { Clip, DesktopTable, ListCard, ListMessage, MobileList, PageHeader, SearchBox, Sub, tableCls } from '@/shared/components/ListLayout'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { Drawer } from '@/shared/components/Drawer'
+import { ClientDetail } from './ClientDetailPage'
 import { useTranslation } from 'react-i18next'
 import { crmApi } from '@/shared/utils/request'
 import { Badge } from '@/shared/components/Badge'
@@ -27,6 +29,17 @@ export default function ClientsPage() {
   const [page, setPage] = useState(1)
   const [followUpTarget, setFollowUpTarget] = useState<Client | null>(null)
   const [searchParams] = useSearchParams()
+  // 详情在抽屉里打开：地址 /app/clients/:id，关闭回到列表（保留查询参数）
+  const { id: openId } = useParams<{ id: string }>()
+  const location = useLocation()
+  const navigate = useNavigate()
+  const detailTo = (id: string) => ({ pathname: `/app/clients/${id}`, search: location.search })
+  const closeDetail = () => navigate({ pathname: '/app/clients', search: location.search })
+  const { data: openClient } = useQuery({
+    queryKey: ['client', openId],
+    queryFn: () => crmApi.get<{ data: Client }>(`/clients/${openId}`).then((r) => r.data.data),
+    enabled: !!openId,
+  })
   const [showFilterPanel, setShowFilterPanel] = useState(() => !!searchParams.get('nextContact'))
   const [contractStatusFilter, setContractStatusFilter] = useState('')
   const [assignedUserFilter, setAssignedUserFilter] = useState('')
@@ -226,7 +239,7 @@ export default function ClientsPage() {
                           {t('clients.addActivity')}
                         </button>
                         <span className="text-gray-300">|</span>
-                        <Link to={`/app/clients/${client.id}`} className="text-xs text-gray-500 hover:text-gray-700">
+                        <Link to={detailTo(client.id)} className="text-xs text-gray-500 hover:text-gray-700">
                           {t('common.detail')}
                         </Link>
                         {isAdmin && (
@@ -254,7 +267,7 @@ export default function ClientsPage() {
               const contact = client.phone ?? client.email
               return (
                 <li key={client.id}>
-                  <Link to={`/app/clients/${client.id}`} className="block px-3 pt-3 active:bg-gray-50">
+                  <Link to={detailTo(client.id)} className="block px-3 pt-3 active:bg-gray-50">
                     <div className="flex items-center justify-between gap-2">
                       <p className="min-w-0 truncate font-medium text-gray-900">{client.name}</p>
                       {client.contractStatus && (
@@ -299,6 +312,11 @@ export default function ClientsPage() {
           showNextContact
           entityType="client"
         />
+      )}
+      {openId && (
+        <Drawer title={openClient?.name ?? t('common.loading')} onClose={closeDetail}>
+          <ClientDetail id={openId} />
+        </Drawer>
       )}
     </div>
   )
