@@ -210,6 +210,15 @@
       "client": "客户 {{name}}",
       "owner": "负责人 {{name}}",
       "unassigned": "未分配"
+    },
+    "statusTip": {
+      "lostReason": "丢失原因：{{reason}}",
+      "noReason": "未填写",
+      "converted": "已转化为客户，可在「客户」中查看",
+      "activities": "已跟进 {{count}} 次",
+      "nextContact": "下次联系：{{date}}",
+      "noNextContact": "未安排下次联系",
+      "updated": "最近更新：{{date}}"
     }
   },
   "clients": {

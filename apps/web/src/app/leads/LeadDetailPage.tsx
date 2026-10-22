@@ -1,4 +1,4 @@
-import { useParams, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { crmApi } from '@/shared/utils/request'
@@ -19,9 +19,9 @@ import type { ActivityConfig } from '@/shared/hooks/useWorkflows'
 import type { Lead, LeadStatus, SalesActivity, User } from '@/shared/types'
 import { useState } from 'react'
 
-export default function LeadDetailPage() {
+/** 线索详情：在列表页的抽屉里显示（见 LeadsPage） */
+export function LeadDetail({ id }: { id: string }) {
   const { t } = useTranslation()
-  const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { user: me } = useCrmAuth()
@@ -121,9 +121,12 @@ export default function LeadDetailPage() {
         servicePlans: lead?.intendedServices ?? [],
         assignedSalesUserId: lead?.assignedToUserId,
       }),
-    onSuccess: () => {
+    onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: ['leads'] })
-      navigate('/app/clients')
+      queryClient.invalidateQueries({ queryKey: ['clients'] })
+      // 转化后直接打开新客户的详情抽屉
+      const clientId = (res.data as { data?: { id?: string } }).data?.id
+      navigate(clientId ? `/app/clients/${clientId}` : '/app/clients')
     },
   })
 
@@ -152,10 +155,7 @@ export default function LeadDetailPage() {
   const canEdit = !isConverted && (me?.role !== 'sales' || lead.assignedToUserId === me?.id)
 
   return (
-    <div className="p-4 sm:p-6 max-w-3xl">
-      <button onClick={() => navigate(-1)} className="mb-4 text-sm text-gray-500 hover:text-gray-700">
-        ← {t('common.back')}
-      </button>
+    <div>
 
       {/* 已转化提示 */}
       {isConverted && (

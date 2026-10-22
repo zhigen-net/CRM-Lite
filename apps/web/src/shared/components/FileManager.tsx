@@ -58,6 +58,7 @@ function PreviewModal({ state, onClose }: { state: PreviewState; onClose: () => 
 
   return (
     <div
+      data-modal-open
       className="fixed inset-0 z-50 flex flex-col bg-black/80"
       onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
     >

@@ -69,7 +69,7 @@ export function JourneyDrawer({ url, onClose }: { url: string; onClose: () => vo
   const ch = (c: string | null) => (c ? t(`analytics.channels.${c}`, { defaultValue: c }) : '—')
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-black/30" onClick={onClose}>
+    <div data-modal-open className="fixed inset-0 z-50 flex justify-end bg-black/30" onClick={onClose}>
       <div className="h-full w-full max-w-xl overflow-y-auto bg-white shadow-xl" onClick={(e) => e.stopPropagation()}>
         <div className="sticky top-0 flex items-center justify-between border-b bg-white px-5 py-4">
           <h2 className="text-base font-semibold text-gray-900">{t('analytics.journey.title')}</h2>
